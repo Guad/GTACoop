@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GTACoOp", "Client\GTACoOp.csproj", "{1BC495C9-DC44-478A-9E16-3FC482A8B850}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GTAServer", "Server\GTAServer.csproj", "{559EE224-BF7B-49D8-9CEE-11E6BA71FE4E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminTools", "AdminTools\AdminTools.csproj", "{158CCEB2-E6EC-457B-BA61-E448BD6B0F40}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1BC495C9-DC44-478A-9E16-3FC482A8B850}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BC495C9-DC44-478A-9E16-3FC482A8B850}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BC495C9-DC44-478A-9E16-3FC482A8B850}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BC495C9-DC44-478A-9E16-3FC482A8B850}.Release|Any CPU.Build.0 = Release|Any CPU
+		{559EE224-BF7B-49D8-9CEE-11E6BA71FE4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{559EE224-BF7B-49D8-9CEE-11E6BA71FE4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{559EE224-BF7B-49D8-9CEE-11E6BA71FE4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{559EE224-BF7B-49D8-9CEE-11E6BA71FE4E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{158CCEB2-E6EC-457B-BA61-E448BD6B0F40}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{158CCEB2-E6EC-457B-BA61-E448BD6B0F40}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{158CCEB2-E6EC-457B-BA61-E448BD6B0F40}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{158CCEB2-E6EC-457B-BA61-E448BD6B0F40}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
