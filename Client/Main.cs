@@ -336,36 +336,51 @@ namespace GTACoOp
 
 
         private static int _modSwitch = 0;
+        private static int _pedSwitch = 0;
+        private static Dictionary<int, int> _vehMods = new Dictionary<int, int>();
+        private static Dictionary<int, int> _pedClothes = new Dictionary<int, int>();
         public static Dictionary<int, int> CheckPlayerVehicleMods()
         {
             if (!Game.Player.Character.IsInVehicle()) return null;
-            _modSwitch++;
-            if (_modSwitch%50 != 0) return null;
-
-            var vehMods = new Dictionary<int, int>();
-            for (int i = 0; i < 50; i++)
+            if (_modSwitch%10 == 0)
             {
-                var mod = Game.Player.Character.CurrentVehicle.GetMod((VehicleMod) i);
-                if(mod == -1) continue;
-                vehMods.Add(i, mod);
+                var id = _modSwitch/10;
+                var mod = Game.Player.Character.CurrentVehicle.GetMod((VehicleMod) id);
+                if (mod != -1)
+                {
+                    if (!_vehMods.ContainsKey(id))
+                        _vehMods.Add(id, mod);
+                    else
+                        _vehMods[id] = mod;
+                }
             }
-            var output = vehMods.Except(_emptyVehicleMods).ToDictionary(kv => kv.Key, kd => kd.Value);
-            return output;
+            _modSwitch++;
+            if (_modSwitch >= 500)
+            {
+                _modSwitch = 0;
+            }
+            return _vehMods;
         }
 
         public static Dictionary<int, int> CheckPlayerProps()
         {
-            _modSwitch++;
-            if (_modSwitch % 50 != 0) return null;
-            var props = new Dictionary<int, int>();
-            for (int i = 0; i < 15; i++)
+            if (_pedSwitch%10 == 0)
             {
-                var mod = Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, Game.Player.Character.Handle, i);
-                if (mod == -1) continue;
-                props.Add(i, mod);
+                var id = _pedSwitch/10;
+                var mod = Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, Game.Player.Character.Handle, id);
+                if (mod != -1)
+                {
+                    if (!_pedClothes.ContainsKey(id))
+                        _pedClothes.Add(id, mod);
+                    else
+                        _pedClothes[id] = mod;
+                }
             }
-            var output = props.Except(_emptyVehicleMods).ToDictionary(kv => kv.Key, kd => kd.Value);
-            return output;
+
+            _pedSwitch++;
+            if (_pedSwitch >= 150)
+                _pedSwitch = 0;
+            return _vehMods;
         }
 
         public static void SendPlayerData()
@@ -385,11 +400,10 @@ namespace GTACoOp
                 obj.PlayerHealth = player.Health;
                 obj.VehicleHealth = veh.Health;
                 obj.VehicleSeat = Util.GetPedSeat(player);
-                obj.VehicleMods = CheckPlayerVehicleMods();
                 obj.IsPressingHorn = Game.Player.IsPressingHorn;
                 obj.IsSirenActive = veh.SirenActive;
+                obj.VehicleMods = CheckPlayerVehicleMods();
                 
-
                 var bin = SerializeBinary(obj);
 
                 var msg = _client.CreateMessage();

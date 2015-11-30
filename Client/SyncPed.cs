@@ -256,7 +256,7 @@ namespace GTACoOp
                     _mainVehicle.PrimaryColor = (VehicleColor) VehiclePrimaryColor;
                     _mainVehicle.SecondaryColor = (VehicleColor) VehicleSecondaryColor;
 
-                    if (VehicleMods != null && _switch % 50 == 0)
+                    if (VehicleMods != null && _switch % 100 == 0 && Game.Player.Character.IsInRangeOf(VehiclePosition, 30f))
                     {
                         Function.Call(Hash.SET_VEHICLE_MOD_KIT, _mainVehicle.Handle, 0);
                         foreach (var mod in VehicleMods.Except(Util.GetVehicleMods(_mainVehicle)))
@@ -283,7 +283,7 @@ namespace GTACoOp
                         _mainVehicle.ApplyForce(dir);
                     if (Main.GlobalSyncMode == SynchronizationMode.Teleport && !_mainVehicle.IsInRangeOf(VehiclePosition, 0.8f))
                         _mainVehicle.Position = VehiclePosition;
-                    if (Main.GlobalSyncMode == SynchronizationMode.Tasks && !_mainVehicle.IsInRangeOf(VehiclePosition, 20f))
+                    if (Main.GlobalSyncMode == SynchronizationMode.Tasks && !_mainVehicle.IsInRangeOf(VehiclePosition, 30f))
                         _mainVehicle.Position = VehiclePosition;
                     _mainVehicle.Quaternion = VehicleRotation;
                 }
@@ -291,7 +291,7 @@ namespace GTACoOp
             }
             else
             {
-                if (PedProps != null && _switch%50==0)
+                if (PedProps != null && _switch%100 == 0 && Game.Player.Character.IsInRangeOf(Position, 30f))
                 {
                     var trimmedList = new Dictionary<int, int>(PedProps.Except(Util.GetPlayerProps(Character)).ToDictionary(dv => dv.Key, dv => dv.Value));
                     foreach (var i in trimmedList)
@@ -371,7 +371,8 @@ namespace GTACoOp
 
         public void Clear()
         {
-            _mainVehicle?.Delete();
+            if(_mainVehicle != null && Util.IsVehicleEmpty(_mainVehicle))
+                _mainVehicle.Delete();
             Character?.Delete();
         }
     }
