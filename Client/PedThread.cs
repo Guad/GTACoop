@@ -57,8 +57,8 @@ namespace GTACoOp
 
             if (Main.SendNpcs)
             {
-                var list = new List<int>(localNpcs.Select(pair => pair.Value.Character.Handle));
-                list.AddRange(localOpps.Select(pair => pair.Value.Character.Handle));
+                var list = new List<int>(localNpcs.Where(pair => pair.Value.Character != null).Select(pair => pair.Value.Character.Handle));
+                list.AddRange(localOpps.Where(pair => pair.Value.Character != null).Select(pair => pair.Value.Character.Handle));
                 list.Add(Game.Player.Character.Handle);
 
                 foreach (Ped ped in World.GetAllPeds()

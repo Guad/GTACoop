@@ -91,6 +91,9 @@ namespace GTACoOp
         private Dictionary<int, int> _vehicleMods;
         private Dictionary<int, int> _pedProps;
 
+        private bool _isStreamedIn;
+        private Blip _mainBlip;
+
         public SyncPed(int hash, Vector3 pos, Quaternion rot, bool blip = true)
         {
             Position = pos;
@@ -110,8 +113,41 @@ namespace GTACoOp
             Function.Call(Hash._0xBC38B49BCB83BC9B, blip);
         }
 
+        private int _modSwitch = 0;
+        private int _clothSwitch = 0;
         public void DisplayLocally()
         {
+            var gPos = IsInVehicle ? VehiclePosition : Position;
+            var inRange = Game.Player.Character.IsInRangeOf(gPos, 100f);
+
+            
+
+            if (inRange && !_isStreamedIn)
+            {
+                _isStreamedIn = true;
+                _mainBlip?.Remove();
+            }
+            else if(!inRange && _isStreamedIn)
+            {
+                Clear();
+                _isStreamedIn = false;
+            }
+
+            if (!inRange)
+            {
+                if (_mainBlip == null && _blip)
+                {
+                    _mainBlip = World.CreateBlip(gPos);
+                    _mainBlip.Color = BlipColor.White;
+                    _mainBlip.Scale = 0.8f;
+                    SetBlipNameFromTextFile(_mainBlip, Name);
+                }
+                if(_blip && _mainBlip != null)
+                    _mainBlip.Position = gPos;
+                return;
+            }
+
+
             if (Character == null || !Character.Exists() || Character.Model.Hash != ModelHash || (Character.IsDead && PedHealth > 0))
             {
                 if (Character != null) Character.Delete();
@@ -150,7 +186,7 @@ namespace GTACoOp
                 } //*/
             }
 
-            if (!_lastVehicle && IsInVehicle && VehicleHash != 0)
+            if ((!_lastVehicle && IsInVehicle && VehicleHash != 0) || _mainVehicle == null || !Character.IsInVehicle(_mainVehicle) || _mainVehicle.Model.Hash != VehicleHash || VehicleSeat != Util.GetPedSeat(Character))
             {
                 if (_mainVehicle != null && Util.IsVehicleEmpty(_mainVehicle))
                     _mainVehicle.Delete();
@@ -169,7 +205,6 @@ namespace GTACoOp
                 else
                 {
                     _mainVehicle = World.CreateVehicle(new Model(VehicleHash), VehiclePosition, 0);
-
                 }
 
                 if (_mainVehicle != null)
@@ -186,8 +221,8 @@ namespace GTACoOp
                 _enterVehicleStarted = DateTime.Now;
                 return;
             }
-
-            if (_lastVehicle && _justEnteredVeh && IsInVehicle && !Character.IsInVehicle() && DateTime.Now.Subtract(_enterVehicleStarted).TotalSeconds <= 4)
+           
+            if (_lastVehicle && _justEnteredVeh && IsInVehicle && !Character.IsInVehicle(_mainVehicle) && DateTime.Now.Subtract(_enterVehicleStarted).TotalSeconds <= 4)
             {
                 return;
             }
@@ -203,40 +238,6 @@ namespace GTACoOp
             _switch++;
             if (IsInVehicle)
             {
-                if (!Character.IsInVehicle() || _mainVehicle == null || _mainVehicle.Model.Hash != VehicleHash || VehicleSeat != Util.GetPedSeat(Character))
-                {
-                    if (_mainVehicle != null && Util.IsVehicleEmpty(_mainVehicle))
-                        _mainVehicle.Delete();
-
-                    var vehs = World.GetAllVehicles().OrderBy(v =>
-                    {
-                        if (v == null) return float.MaxValue;
-                        return (v.Position - Character.Position).Length();
-                    }).ToList();
-
-                    if (vehs.Any() && vehs[0].Model.Hash == VehicleHash)
-                    {
-                        _mainVehicle = vehs[0];
-                    }
-                    else
-                    {
-                        _mainVehicle = World.CreateVehicle(new Model(VehicleHash), VehiclePosition, 0);
-                    }
-
-                    if (_mainVehicle != null)
-                    {
-
-                        _mainVehicle.PrimaryColor = (VehicleColor)VehiclePrimaryColor;
-                        _mainVehicle.SecondaryColor = (VehicleColor)VehicleSecondaryColor;
-                        _mainVehicle.Quaternion = VehicleRotation;
-                        _mainVehicle.IsInvincible = true;
-                        Character.Task.WarpIntoVehicle(_mainVehicle, (VehicleSeat)VehicleSeat);
-                    }
-                    _lastVehicle = true;
-                    _justEnteredVeh = true;
-                    return;
-                }
-
                 if (VehicleSeat == (int)GTA.VehicleSeat.Driver ||
                     _mainVehicle.GetPedOnSeat(GTA.VehicleSeat.Driver) == null)
                 {
@@ -252,18 +253,26 @@ namespace GTACoOp
                         if (_mainVehicle.IsDead)
                             _mainVehicle.Repair();
                     }
-
+                    
                     _mainVehicle.PrimaryColor = (VehicleColor)VehiclePrimaryColor;
                     _mainVehicle.SecondaryColor = (VehicleColor)VehicleSecondaryColor;
-
-                    if (VehicleMods != null && _switch % 100 == 0 && Game.Player.Character.IsInRangeOf(VehiclePosition, 30f))
+                    
+                    if (VehicleMods != null && _modSwitch % 50 == 0 && Game.Player.Character.IsInRangeOf(VehiclePosition, 30f))                   
                     {
-                        Function.Call(Hash.SET_VEHICLE_MOD_KIT, _mainVehicle.Handle, 0);
-                        foreach (var mod in VehicleMods.Except(Util.GetVehicleMods(_mainVehicle)))
+                        var id = _modSwitch/50;
+
+                        if (VehicleMods.ContainsKey(id) && VehicleMods[id] != _mainVehicle.GetMod((VehicleMod) id))
                         {
-                            _mainVehicle.SetMod((VehicleMod)mod.Key, mod.Value, false);
+                            Function.Call(Hash.SET_VEHICLE_MOD_KIT, _mainVehicle.Handle, 0);
+                            _mainVehicle.SetMod((VehicleMod)id, VehicleMods[id], false);
+                            Function.Call(Hash.RELEASE_PRELOAD_MODS, id);
                         }
                     }
+                    _modSwitch++;
+
+                    if (_modSwitch >= 2500)
+                        _modSwitch = 0;
+                        
 
                     if (IsHornPressed && DateTime.Now.Subtract(_lastHornPress).TotalMilliseconds > 1500)
                     {
@@ -291,15 +300,20 @@ namespace GTACoOp
             }
             else
             {
-                if (PedProps != null && _switch % 100 == 0 && Game.Player.Character.IsInRangeOf(Position, 30f))
+                if (PedProps != null && _clothSwitch%50 == 0 && Game.Player.Character.IsInRangeOf(Position, 30f))
                 {
-                    var trimmedList = new Dictionary<int, int>(PedProps.Except(Util.GetPlayerProps(Character)).ToDictionary(dv => dv.Key, dv => dv.Value));
-                    foreach (var i in trimmedList)
+                    var id = _clothSwitch/50;
+
+                    if (PedProps.ContainsKey(id) && PedProps[id] != Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, Character.Handle, id))
                     {
-                        Function.Call(Hash.SET_PED_COMPONENT_VARIATION, Character.Handle, i.Key, i.Value, 0, 0);
+                        Function.Call(Hash.SET_PED_COMPONENT_VARIATION, Character.Handle, id, PedProps[id], 0, 0);
                     }
                 }
-
+                
+                _clothSwitch++;
+                if (_clothSwitch >= 750)
+                    _clothSwitch = 0;
+                
                 if (Character.Weapons.Current.Hash != (WeaponHash)CurrentWeapon)
                 {
                     var wep = Character.Weapons.Give((WeaponHash)CurrentWeapon, 9999, true, true);
@@ -346,9 +360,9 @@ namespace GTACoOp
                         case SynchronizationMode.Tasks:
                             if (!Character.IsInRangeOf(Position, 0.5f))
                             {
-                                //Character.Task.RunTo(Position, true, 500);
-                                var targetAngle = Rotation.Z / Math.Sqrt(1 - Rotation.W * Rotation.W);
-                                Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, Character.Handle, Position.X, Position.Y, Position.Z, 5f, 3000, targetAngle, 0);
+                                Character.Task.RunTo(Position, true, 500);
+                                //var targetAngle = Rotation.Z/Math.Sqrt(1 - Rotation.W*Rotation.W);
+                                //Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, Character.Handle, Position.X, Position.Y, Position.Z, 5f, 3000, targetAngle, 0);
                             }
                             if (!Character.IsInRangeOf(Position, 5f))
                             {
@@ -374,6 +388,7 @@ namespace GTACoOp
             if (_mainVehicle != null && Util.IsVehicleEmpty(_mainVehicle))
                 _mainVehicle.Delete();
             if (Character != null) Character.Delete();
+            if (_mainBlip != null) _mainBlip.Remove();
         }
     }
 }
