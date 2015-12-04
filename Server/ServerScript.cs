@@ -4,7 +4,7 @@ namespace GTAServer
 {
     public class ServerScript
     {
-        public virtual string Name { get; }
+        public virtual string Name { get; set; }
 
         public virtual void Start()
         {
