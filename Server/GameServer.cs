@@ -749,6 +749,11 @@ namespace GTAServer
 
         // SCRIPTING
 
+        public void SendChatMessageToAll(string message)
+        {
+            SendChatMessageToAll("", message);
+        }
+
         public void SendChatMessageToAll(string sender, string message)
         {
             var chatObj = new ChatData()
@@ -758,6 +763,11 @@ namespace GTAServer
             };
 
             SendToAll(chatObj, PacketType.ChatData, 0);
+        }
+
+        public void SendChatMessageToPlayer(NetConnection player, string message)
+        {
+            SendChatMessageToPlayer(player, "", message);
         }
 
         public void SendChatMessageToPlayer(NetConnection player, string sender, string message)
