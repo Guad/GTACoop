@@ -16,7 +16,7 @@ namespace GTACoOp
         {
             const int threshold = 10000; // 10 second timeout
 
-            for(int i = Main.Npcs.Count - 1; i >= 0; i--)
+            for (int i = Main.Npcs.Count - 1; i >= 0; i--)
             {
                 if (DateTime.Now.Subtract(Main.Npcs.ElementAt(i).Value.LastUpdateReceived).TotalMilliseconds > threshold)
                 {
@@ -25,7 +25,7 @@ namespace GTACoOp
                     Main.Npcs.Remove(key);
                 }
             }
-            
+
             for (int i = Main.Opponents.Count - 1; i >= 0; i--)
             {
                 if (DateTime.Now.Subtract(Main.Opponents.ElementAt(i).Value.LastUpdateReceived).TotalMilliseconds > threshold)
@@ -36,7 +36,7 @@ namespace GTACoOp
                 }
             }
         }
-        
+
         public void OnTick(object sender, EventArgs e)
         {
             if (!Main.IsOnServer()) return;
@@ -44,7 +44,7 @@ namespace GTACoOp
             CheckExpiredNpcs();
 
             var localOpps = new Dictionary<long, SyncPed>(Main.Opponents);
-            for(int i = 0; i < localOpps.Count; i++)
+            for (int i = 0; i < localOpps.Count; i++)
             {
                 localOpps.ElementAt(i).Value.DisplayLocally();
             }

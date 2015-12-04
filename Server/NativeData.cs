@@ -19,7 +19,7 @@ namespace GTAServer
     {
         [ProtoMember(1)]
         public ulong Hash { get; set; }
-        
+
         [ProtoMember(2)]
         public List<NativeArgument> Arguments { get; set; }
 

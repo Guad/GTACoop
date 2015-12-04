@@ -35,7 +35,7 @@ namespace GTACoOp
 
             var res = UIMenu.GetScreenResolutionMantainRatio();
 
-            new UIResRectangle(new Point(0,0), new Size((int)res.Width, 40), Color.FromArgb(160, 0, 0, 0)).Draw();
+            new UIResRectangle(new Point(0, 0), new Size((int)res.Width, 40), Color.FromArgb(160, 0, 0, 0)).Draw();
             new UIResText(CurrentInput + (_switch > 15 ? "|" : ""), new Point(5, 5), 0.35f, Color.WhiteSmoke,
                 Font.ChaletLondon, UIResText.Alignment.Left)
             {
@@ -48,7 +48,7 @@ namespace GTACoOp
 
         public void OnKeyDown(Keys key)
         {
-            if(!IsFocused) return;
+            if (!IsFocused) return;
             if (key == Keys.Escape)
                 IsFocused = false;
 
@@ -64,7 +64,7 @@ namespace GTACoOp
             }
             if (keyChar[0] == (char)13)
             {
-                OnComplete?.Invoke(this, EventArgs.Empty);
+                if (OnComplete != null) OnComplete.Invoke(this, EventArgs.Empty);
                 CurrentInput = "";
                 return;
             }
@@ -72,7 +72,7 @@ namespace GTACoOp
 
             CurrentInput += str;
         }
-        
+
 
         [DllImport("user32.dll")]
         public static extern int ToUnicode(uint virtualKeyCode, uint scanCode,
@@ -80,7 +80,7 @@ namespace GTACoOp
         [Out, MarshalAs(UnmanagedType.LPWStr, SizeConst = 64)]
         StringBuilder receivingBuffer,
         int bufferSize, uint flags);
-        
+
         public static string GetCharFromKey(Keys key, bool shift, bool altGr)
         {
             var buf = new StringBuilder(256);

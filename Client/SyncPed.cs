@@ -150,7 +150,7 @@ namespace GTACoOp
 
             if (Character == null || !Character.Exists() || Character.Model.Hash != ModelHash || (Character.IsDead && PedHealth > 0))
             {
-                Character?.Delete();
+                if (Character != null) Character.Delete();
                 Character = World.CreatePed(new Model(ModelHash), Position, Rotation.Z);
                 if (Character == null) return;
 
@@ -175,8 +175,8 @@ namespace GTACoOp
                 if (oldPos.X != 0 && oldPos.Y != 0)
                 {
                     var res = UIMenu.GetScreenResolutionMantainRatio();
-                    var pos = new Point((int) ((oldPos.X/(float) UI.WIDTH)*res.Width),
-                        (int) ((oldPos.Y/(float) UI.HEIGHT)*res.Height));
+                    var pos = new Point((int)((oldPos.X / (float)UI.WIDTH) * res.Width),
+                        (int)((oldPos.Y / (float)UI.HEIGHT) * res.Height));
 
 
                     new UIResText(Name, pos, 0.3f, Color.WhiteSmoke, Font.ChaletLondon, UIResText.Alignment.Centered)
@@ -213,7 +213,7 @@ namespace GTACoOp
                     _mainVehicle.SecondaryColor = (VehicleColor)VehicleSecondaryColor;
                     _mainVehicle.Quaternion = VehicleRotation;
                     _mainVehicle.IsInvincible = true;
-                    Character.Task.WarpIntoVehicle(_mainVehicle, (VehicleSeat) VehicleSeat);
+                    Character.Task.WarpIntoVehicle(_mainVehicle, (VehicleSeat)VehicleSeat);
                 }
 
                 _lastVehicle = true;
@@ -221,7 +221,7 @@ namespace GTACoOp
                 _enterVehicleStarted = DateTime.Now;
                 return;
             }
-            
+           
             if (_lastVehicle && _justEnteredVeh && IsInVehicle && !Character.IsInVehicle(_mainVehicle) && DateTime.Now.Subtract(_enterVehicleStarted).TotalSeconds <= 4)
             {
                 return;
@@ -230,7 +230,7 @@ namespace GTACoOp
 
             if (_lastVehicle && !IsInVehicle && _mainVehicle != null)
             {
-                Character?.Task.LeaveVehicle(_mainVehicle, true);
+                if (Character != null) Character.Task.LeaveVehicle(_mainVehicle, true);
             }
 
             Character.Health = PedHealth;
@@ -238,8 +238,7 @@ namespace GTACoOp
             _switch++;
             if (IsInVehicle)
             {
-
-                if (VehicleSeat == (int) GTA.VehicleSeat.Driver ||
+                if (VehicleSeat == (int)GTA.VehicleSeat.Driver ||
                     _mainVehicle.GetPedOnSeat(GTA.VehicleSeat.Driver) == null)
                 {
                     _mainVehicle.Health = VehicleHealth;
@@ -251,14 +250,14 @@ namespace GTACoOp
                     else
                     {
                         _mainVehicle.IsInvincible = true;
-                        if(_mainVehicle.IsDead)
+                        if (_mainVehicle.IsDead)
                             _mainVehicle.Repair();
                     }
-
-                    _mainVehicle.PrimaryColor = (VehicleColor) VehiclePrimaryColor;
-                    _mainVehicle.SecondaryColor = (VehicleColor) VehicleSecondaryColor;
                     
-                    if (VehicleMods != null && _modSwitch % 50 == 0 && Game.Player.Character.IsInRangeOf(VehiclePosition, 30f))
+                    _mainVehicle.PrimaryColor = (VehicleColor)VehiclePrimaryColor;
+                    _mainVehicle.SecondaryColor = (VehicleColor)VehicleSecondaryColor;
+                    
+                    if (VehicleMods != null && _modSwitch % 50 == 0 && Game.Player.Character.IsInRangeOf(VehiclePosition, 30f))                   
                     {
                         var id = _modSwitch/50;
 
@@ -281,9 +280,9 @@ namespace GTACoOp
                         _lastHornPress = DateTime.Now;
                     }
 
-                    if(_mainVehicle.SirenActive && !Siren)
+                    if (_mainVehicle.SirenActive && !Siren)
                         _mainVehicle.SirenActive = Siren;
-                    else if(!_mainVehicle.SirenActive && Siren)
+                    else if (!_mainVehicle.SirenActive && Siren)
                         _mainVehicle.SirenActive = Siren;
 
                     var dir = VehiclePosition - _mainVehicle.Position;
@@ -320,14 +319,14 @@ namespace GTACoOp
                     var wep = Character.Weapons.Give((WeaponHash)CurrentWeapon, 9999, true, true);
                     Character.Weapons.Select(wep);
                 }
-                    
+
                 if (!_lastJumping && IsJumping)
                 {
                     Character.Task.Jump();
                 }
 
                 var dest = Position;
-                    
+
                 const int threshold = 50;
                 if (IsAiming && !IsShooting && !Character.IsInRangeOf(Position, 0.5f) && _switch % threshold == 0)
                 {
@@ -386,10 +385,10 @@ namespace GTACoOp
 
         public void Clear()
         {
-            if(_mainVehicle != null && Util.IsVehicleEmpty(_mainVehicle))
-                _mainVehicle?.Delete();
-            Character?.Delete();
-            _mainBlip?.Remove();
+            if (_mainVehicle != null && Util.IsVehicleEmpty(_mainVehicle))
+                _mainVehicle.Delete();
+            if (Character != null) Character.Delete();
+            if (_mainBlip != null) _mainBlip.Remove();
         }
     }
 }

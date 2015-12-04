@@ -65,10 +65,10 @@ namespace GTACoOp
         public static int GetPedSeat(Ped ped)
         {
             if (ped == null || !ped.IsInVehicle()) return -3;
-            if (ped.CurrentVehicle.GetPedOnSeat(VehicleSeat.Driver) == ped) return (int) VehicleSeat.Driver;
+            if (ped.CurrentVehicle.GetPedOnSeat(VehicleSeat.Driver) == ped) return (int)VehicleSeat.Driver;
             for (int i = 0; i < ped.CurrentVehicle.PassengerSeats; i++)
             {
-                if (ped.CurrentVehicle.GetPedOnSeat((VehicleSeat) i) == ped)
+                if (ped.CurrentVehicle.GetPedOnSeat((VehicleSeat)i) == ped)
                     return i;
             }
             return -3;
