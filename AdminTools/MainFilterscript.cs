@@ -13,19 +13,20 @@ namespace AdminTools
     [Serializable]
     public class TestServerScript : ServerScript
     {
-        public override string Name => "Server Administration Tools";
+        public static string Location { get { return AppDomain.CurrentDomain.BaseDirectory; } }
+        public override string Name { get { return "Server Administration Tools"; } }
 
         public override void Start()
         {
-            LoadAccounts("Accounts.xml");
-            LoadBanlist("Banlist.xml");
+            LoadAccounts(Location + "Accounts.xml");
+            LoadBanlist(Location + "Banlist.xml");
             _authenticatedUsers = new Dictionary<long, Account>();
             Console.WriteLine("Accounts have been loaded.");
         }
 
         public override void OnPlayerConnect(NetConnection player)
         {
-            if (_banned.BannedIps.Any(b => b.Address  == player.RemoteEndPoint.Address.ToString()))
+            if (_banned.BannedIps.Any(b => b.Address == player.RemoteEndPoint.Address.ToString()))
             {
                 Program.ServerInstance.SendChatMessageToPlayer(player, "BANNED", "You are banned.");
                 Program.ServerInstance.KickPlayer(player, "You are banned.");
@@ -44,7 +45,7 @@ namespace AdminTools
                 Program.ServerInstance.SendChatMessageToPlayer(player, "ACCOUNT", "Please authenticate to your account using /login [password]");
             }
         }
-        
+
         public override bool OnChatMessage(NetConnection sender, string message)
         {
             var account = _authenticatedUsers.ContainsKey(sender.RemoteUniqueIdentifier)
@@ -54,7 +55,7 @@ namespace AdminTools
 
             if (message.StartsWith("/tp"))
             {
-                if (account == null || (int) account.Level < 1)
+                if (account == null || (int)account.Level < 1)
                 {
                     Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCESS DENIED", "Insufficent privileges.");
                     return false;
@@ -81,11 +82,11 @@ namespace AdminTools
 
                 Program.ServerInstance.GetPlayerPosition(target, o =>
                 {
-                    var newPos = (Vector3) o;
+                    var newPos = (Vector3)o;
                     Program.ServerInstance.TeleportPlayer(sender, newPos);
                 });
 
-                Console.WriteLine($"ADMINTOOLS: {account.Name} has teleported to player {Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier]}");
+                Console.WriteLine("ADMINTOOLS: {account.Name} has teleported to player {Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier]}");
 
                 return false;
             }
@@ -118,7 +119,7 @@ namespace AdminTools
                 }
 
                 Program.ServerInstance.SetPlayerHealth(target, -1);
-                Console.WriteLine($"ADMINTOOLS: {account.Name} has killed player {Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier]}");
+                Console.WriteLine("ADMINTOOLS: {account.Name} has killed player {Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier]}");
                 return false;
             }
 
@@ -158,9 +159,9 @@ namespace AdminTools
                     Name = Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier],
                 });
 
-                SaveBanlist("Banlist.xml");
-                
-                Console.WriteLine($"ADMINTOOLS: {account.Name} has banned player {Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier]} with reason: {args[2]}");
+                SaveBanlist(Location + "Banlist.xml");
+
+                Console.WriteLine("ADMINTOOLS: {account.Name} has banned player {Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier]} with reason: {args[2]}");
                 Program.ServerInstance.KickPlayer(target, "You have been banned: " + args[2]);
                 return false;
             }
@@ -193,7 +194,7 @@ namespace AdminTools
                 }
 
                 Program.ServerInstance.KickPlayer(target, args[2]);
-                Console.WriteLine($"ADMINTOOLS: {account.Name} has kickd player {Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier]}");
+                Console.WriteLine("ADMINTOOLS: {account.Name} has kickd player {Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier]}");
                 return false;
             }
 
@@ -221,11 +222,11 @@ namespace AdminTools
                     Password = password,
                 };
                 _accounts.Accounts.Add(accObject);
-                SaveAccounts("Accounts.xml");
+                SaveAccounts(Location + "Accounts.xml");
                 _authenticatedUsers.Add(sender.RemoteUniqueIdentifier, accObject);
 
                 Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCOUNT", "Your account has been created!");
-                Console.WriteLine($"ADMINTOOLS: New player registered: {accObject.Name}");
+                Console.WriteLine("ADMINTOOLS: New player registered: {accObject.Name}");
                 return false;
             }
 
@@ -259,10 +260,10 @@ namespace AdminTools
                     Program.ServerInstance.SendChatMessageToPlayer(sender, "ERROR", "Wrong password.");
                     return false;
                 }
-                
+
                 _authenticatedUsers.Add(sender.RemoteUniqueIdentifier, account);
                 Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCOUNT", "Authentication successful!");
-                Console.WriteLine($"ADMINTOOLS: New player logged in: {account.Name}");
+                Console.WriteLine("ADMINTOOLS: New player logged in: {account.Name}");
                 return false;
             }
 
@@ -271,7 +272,7 @@ namespace AdminTools
             {
                 if (_authenticatedUsers.ContainsKey(sender.RemoteUniqueIdentifier))
                 {
-                    Console.WriteLine($"ADMINTOOLS: Player has logged out: {_authenticatedUsers[sender.RemoteUniqueIdentifier].Name}");
+                    Console.WriteLine("ADMINTOOLS: Player has logged out: {_authenticatedUsers[sender.RemoteUniqueIdentifier].Name}");
                     Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCOUNT", "You have been logged out.");
                     _authenticatedUsers.Remove(sender.RemoteUniqueIdentifier);
                 }

@@ -38,16 +38,8 @@
     </AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="GTAServer, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\GTAServer\bin\Debug\GTAServer.exe</HintPath>
-    </Reference>
     <Reference Include="Lidgren.Network">
-      <HintPath>..\GTAServer\libs\Lidgren.Network.dll</HintPath>
-    </Reference>
-    <Reference Include="protobuf-net, Version=2.0.0.668, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\GTAServer\bin\Debug\protobuf-net.dll</HintPath>
+      <HintPath>..\libs\Lidgren.Network.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -61,6 +53,12 @@
   <ItemGroup>
     <Compile Include="MainFilterscript.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Server\GTAServer.csproj">
+      <Project>{559ee224-bf7b-49d8-9cee-11e6ba71fe4e}</Project>
+      <Name>GTAServer</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
