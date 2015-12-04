@@ -342,9 +342,9 @@ namespace GTACoOp
         public static Dictionary<int, int> CheckPlayerVehicleMods()
         {
             if (!Game.Player.Character.IsInVehicle()) return null;
-            if (_modSwitch%10 == 0)
+            if (_modSwitch % 30 == 0)
             {
-                var id = _modSwitch/10;
+                var id = _modSwitch/30;
                 var mod = Game.Player.Character.CurrentVehicle.GetMod((VehicleMod) id);
                 if (mod != -1)
                 {
@@ -355,7 +355,7 @@ namespace GTACoOp
                 }
             }
             _modSwitch++;
-            if (_modSwitch >= 500)
+            if (_modSwitch >= 1500)
             {
                 _modSwitch = 0;
             }
@@ -364,9 +364,9 @@ namespace GTACoOp
 
         public static Dictionary<int, int> CheckPlayerProps()
         {
-            if (_pedSwitch%10 == 0)
+            if (_pedSwitch%30 == 0)
             {
-                var id = _pedSwitch/10;
+                var id = _pedSwitch/30;
                 var mod = Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, Game.Player.Character.Handle, id);
                 if (mod != -1)
                 {
@@ -378,7 +378,7 @@ namespace GTACoOp
             }
 
             _pedSwitch++;
-            if (_pedSwitch >= 150)
+            if (_pedSwitch >= 450)
                 _pedSwitch = 0;
             return _vehMods;
         }
