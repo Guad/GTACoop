@@ -27,6 +27,8 @@ namespace GTACoOp
         public string CurrentInput;
 
         private int _switch = 1;
+        private Keys _lastKey;
+
         public void Tick()
         {
             if (!IsFocused) return;
@@ -45,10 +47,16 @@ namespace GTACoOp
             if (_switch >= 30) _switch = 0;
         }
 
-
+        
         public void OnKeyDown(Keys key)
         {
             if (!IsFocused) return;
+
+            if ((key == Keys.ShiftKey && _lastKey == Keys.Menu) || (key == Keys.Menu && _lastKey == Keys.ShiftKey))
+                ActivateKeyboardLayout(1, 0);
+
+            _lastKey = key;
+
             if (key == Keys.Escape)
                 IsFocused = false;
 
@@ -75,11 +83,14 @@ namespace GTACoOp
 
 
         [DllImport("user32.dll")]
-        public static extern int ToUnicode(uint virtualKeyCode, uint scanCode,
+        public static extern int ToUnicodeEx(uint virtualKeyCode, uint scanCode,
         byte[] keyboardState,
         [Out, MarshalAs(UnmanagedType.LPWStr, SizeConst = 64)]
         StringBuilder receivingBuffer,
-        int bufferSize, uint flags);
+        int bufferSize, uint flags, IntPtr kblayout);
+
+        [DllImport("user32.dll")]
+        public static extern int ActivateKeyboardLayout(int hkl, uint flags);
 
         public static string GetCharFromKey(Keys key, bool shift, bool altGr)
         {
@@ -92,7 +103,8 @@ namespace GTACoOp
                 keyboardState[(int)Keys.ControlKey] = 0xff;
                 keyboardState[(int)Keys.Menu] = 0xff;
             }
-            ToUnicode((uint)key, 0, keyboardState, buf, 256, 0);
+
+            ToUnicodeEx((uint)key, 0, keyboardState, buf, 256, 0, InputLanguage.CurrentInputLanguage.Handle);
             return buf.ToString();
         }
     }
