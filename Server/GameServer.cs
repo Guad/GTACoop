@@ -678,7 +678,7 @@ namespace GTAServer
             msg.Write(bin.Length);
             msg.Write(bin);
 
-            Clients.ForEach(c => c.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(c)));
+            Server.SendToAll(msg, NetDeliveryMethod.ReliableOrdered);
         }
 
         private Dictionary<string, Action<object>> _callbacks = new Dictionary<string, Action<object>>();

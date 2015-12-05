@@ -327,7 +327,8 @@ namespace GTACoOp
                 newItem.SetRightLabel(((int)(ped.Latency * 1000)) + "ms");
                 newItem.Activated += (sender, item) =>
                 {
-                    Function.Call(Hash.SET_NEW_WAYPOINT, ped.Position.X, ped.Position.Y);
+                    var pos = ped.IsInVehicle ? ped.VehiclePosition : ped.Position;
+                    Function.Call(Hash.SET_NEW_WAYPOINT, pos.X, pos.Y);
                 };
                 _playersMenu.AddItem(newItem);
             }
