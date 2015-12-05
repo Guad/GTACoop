@@ -14,7 +14,7 @@ namespace GTACoOp
 
         public void CheckExpiredNpcs()
         {
-            const int threshold = 10000; // 10 second timeout
+            const int threshold = 5000; // 5 second timeout
 
             for (int i = Main.Npcs.Count - 1; i >= 0; i--)
             {

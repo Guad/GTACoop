@@ -16,12 +16,35 @@ namespace AdminTools
         public static string Location { get { return AppDomain.CurrentDomain.BaseDirectory; } }
         public override string Name { get { return "Server Administration Tools"; } }
 
+        public int ServerWeather;
+        public TimeSpan ServerTime;
+        public bool IsGodmodeDisabled;
+
+        private string[] _weatherNames = new[]
+        {
+            "CLEAR",
+            "EXTRASUNNY",
+            "CLOUDS",
+            "OVERCAST",
+            "RAIN",
+            "CLEARING",
+            "THUNDER",
+            "SMOG",
+            "FOGGY",
+            "XMAS",
+            "SNOWLIGHT",
+            "BLIZZARD",
+        };
+
         public override void Start()
         {
             LoadAccounts(Location + "Accounts.xml");
             LoadBanlist(Location + "Banlist.xml");
             _authenticatedUsers = new Dictionary<long, Account>();
             Console.WriteLine("Accounts have been loaded.");
+
+            ServerWeather = 0;
+            ServerTime = new TimeSpan(12, 0, 0);
         }
 
         public override void OnPlayerConnect(NetConnection player)
@@ -43,6 +66,16 @@ namespace AdminTools
             else
             {
                 Program.ServerInstance.SendChatMessageToPlayer(player, "ACCOUNT", "Please authenticate to your account using /login [password]");
+            }
+
+            Program.ServerInstance.SendNativeCallToPlayer(player, 0x29B487C359E19889, _weatherNames[ServerWeather]);
+
+            Program.ServerInstance.SendNativeCallToPlayer(player, 0x47C3B5848C3E45D8, ServerTime.Hours, ServerTime.Minutes, ServerTime.Seconds);
+            Program.ServerInstance.SendNativeCallToPlayer(player, 0x4055E40BD2DBEC1D, true);
+
+            if (IsGodmodeDisabled)
+            {
+                Program.ServerInstance.SetNativeCallOnTickForPlayer(player, "GODMODE", 0x239528EACDC3E7DE, new LocalGamePlayerArgument(), false);
             }
         }
 
@@ -86,7 +119,122 @@ namespace AdminTools
                     Program.ServerInstance.TeleportPlayer(sender, newPos);
                 });
 
-                Console.WriteLine("ADMINTOOLS: {account.Name} has teleported to player {Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier]}");
+                Console.WriteLine(string.Format("ADMINTOOLS: {0} has teleported to player {1}", account.Name,
+                    Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier]));
+
+                return false;
+            }
+
+            if (message.StartsWith("/godmode"))
+            {
+                if (account == null || (int)account.Level < 1)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCESS DENIED", "Insufficent privileges.");
+                    return false;
+                }
+
+                var args = message.Split();
+                if (args.Length <= 1)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "USAGE", "/godmode [true/false]");
+                    return false;
+                }
+
+                bool newValue;
+                if (!bool.TryParse(args[1], out newValue))
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "USAGE", "/godmode [true/false]");
+                    return false;
+                }
+                IsGodmodeDisabled = !newValue;
+
+                if (IsGodmodeDisabled)
+                {
+                    Program.ServerInstance.SetNativeCallOnTickForAllPlayers("GODMODE", 0x239528EACDC3E7DE, new LocalGamePlayerArgument(), false);
+                }
+                else
+                {
+                    Program.ServerInstance.RecallNativeCallOnTickForAllPlayers("GODMODE");
+                }
+
+                Console.WriteLine(string.Format("ADMINTOOLS: {0} has set global god mode disabling to {1}", account.Name, !newValue));
+
+                return false;
+            }
+
+            if (message.StartsWith("/weather"))
+            {
+                if (account == null || (int)account.Level < 1)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCESS DENIED", "Insufficent privileges.");
+                    return false;
+                }
+
+                var args = message.Split();
+                if (args.Length <= 1)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "USAGE", "/weather [Weather ID]");
+                    return false;
+                }
+
+                int newWeather;
+                if (!int.TryParse(args[1], out newWeather))
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "USAGE", "/weather [Weather ID]");
+                    return false;
+                }
+
+                if (newWeather < 0 || newWeather >= _weatherNames.Length)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "USAGE", "Weather ID must be between 0 and " + (_weatherNames.Length-1));
+                    return false;
+                }
+
+                ServerWeather = newWeather;
+                Program.ServerInstance.SendNativeCallToAllPlayers(0x29B487C359E19889, _weatherNames[ServerWeather]);
+
+                Console.WriteLine(string.Format("ADMINTOOLS: {0} has changed the weather to {1}", account.Name, ServerWeather));
+
+                return false;
+            }
+
+            if (message.StartsWith("/time"))
+            {
+                if (account == null || (int)account.Level < 1)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCESS DENIED", "Insufficent privileges.");
+                    return false;
+                }
+
+                var args = message.Split();
+                if (args.Length <= 1)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "USAGE", "/time [hours]:[minutes]");
+                    return false;
+                }
+
+                int hours;
+                int minutes;
+                var timeSplit = args[1].Split(':');
+
+                if (timeSplit.Length < 2 || !int.TryParse(timeSplit[0], out hours) || !int.TryParse(timeSplit[1], out minutes))
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "USAGE", "/time [hours]:[minutes]");
+                    return false;
+                }
+
+                if (hours < 0 || hours > 24 || minutes < 0 || minutes > 60)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "USAGE", "/time [hours]:[minutes]");
+                    return false;
+                }
+
+                ServerTime = new TimeSpan(hours, minutes, 0);
+
+                Program.ServerInstance.SendNativeCallToAllPlayers(0x47C3B5848C3E45D8, ServerTime.Hours, ServerTime.Minutes, ServerTime.Seconds);
+                Program.ServerInstance.SendNativeCallToAllPlayers(0x4055E40BD2DBEC1D, true);
+
+                Console.WriteLine(string.Format("ADMINTOOLS: {0} has changed the time to {1}", account.Name, ServerTime));
 
                 return false;
             }
@@ -119,7 +267,8 @@ namespace AdminTools
                 }
 
                 Program.ServerInstance.SetPlayerHealth(target, -1);
-                Console.WriteLine("ADMINTOOLS: {account.Name} has killed player {Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier]}");
+                Console.WriteLine(string.Format("ADMINTOOLS: {0} has killed player {1}", account.Name,
+                    Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier]));
                 return false;
             }
 
@@ -161,7 +310,8 @@ namespace AdminTools
 
                 SaveBanlist(Location + "Banlist.xml");
 
-                Console.WriteLine("ADMINTOOLS: {account.Name} has banned player {Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier]} with reason: {args[2]}");
+                Console.WriteLine(string.Format("ADMINTOOLS: {0} has banned player {1} with reason: {2}", account.Name,
+                    Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier], args[2]));
                 Program.ServerInstance.KickPlayer(target, "You have been banned: " + args[2]);
                 return false;
             }
@@ -194,7 +344,7 @@ namespace AdminTools
                 }
 
                 Program.ServerInstance.KickPlayer(target, args[2]);
-                Console.WriteLine("ADMINTOOLS: {account.Name} has kickd player {Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier]}");
+                Console.WriteLine(string.Format("ADMINTOOLS: {0} has kickd player {1}", account.Name, Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier]));
                 return false;
             }
 
@@ -226,7 +376,7 @@ namespace AdminTools
                 _authenticatedUsers.Add(sender.RemoteUniqueIdentifier, accObject);
 
                 Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCOUNT", "Your account has been created!");
-                Console.WriteLine("ADMINTOOLS: New player registered: {accObject.Name}");
+                Console.WriteLine(string.Format("ADMINTOOLS: New player registered: {0}", accObject.Name));
                 return false;
             }
 
@@ -263,7 +413,7 @@ namespace AdminTools
 
                 _authenticatedUsers.Add(sender.RemoteUniqueIdentifier, account);
                 Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCOUNT", "Authentication successful!");
-                Console.WriteLine("ADMINTOOLS: New player logged in: {account.Name}");
+                Console.WriteLine(string.Format("ADMINTOOLS: New player logged in: {0}", account.Name));
                 return false;
             }
 
@@ -272,7 +422,7 @@ namespace AdminTools
             {
                 if (_authenticatedUsers.ContainsKey(sender.RemoteUniqueIdentifier))
                 {
-                    Console.WriteLine("ADMINTOOLS: Player has logged out: {_authenticatedUsers[sender.RemoteUniqueIdentifier].Name}");
+                    Console.WriteLine(string.Format("ADMINTOOLS: Player has logged out: {0}", _authenticatedUsers[sender.RemoteUniqueIdentifier].Name));
                     Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCOUNT", "You have been logged out.");
                     _authenticatedUsers.Remove(sender.RemoteUniqueIdentifier);
                 }

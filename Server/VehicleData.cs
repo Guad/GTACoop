@@ -18,6 +18,8 @@ namespace GTAServer
         NativeCall = 9,
         NativeResponse = 10,
         PlayerKilled = 11,
+        NativeTick = 12,
+        NativeTickRecall = 13,
     }
 
     [ProtoContract]
@@ -94,6 +96,9 @@ namespace GTAServer
 
         [ProtoMember(15)]
         public bool IsSirenActive { get; set; }
+
+        [ProtoMember(16)]
+        public float Speed { get; set; }
     }
 
     [ProtoContract]
@@ -131,6 +136,9 @@ namespace GTAServer
 
         [ProtoMember(13)]
         public Dictionary<int, int> PedProps { get; set; }
+
+        [ProtoMember(14)]
+        public bool IsParachuteOpen { get; set; }
     }
 
 
