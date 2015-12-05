@@ -14,6 +14,15 @@ namespace GTACoOp
         public string Id { get; set; }
     }
 
+    [ProtoContract]
+    public class NativeTickCall
+    {
+        [ProtoMember(1)]
+        public NativeData Native { get; set; }
+
+        [ProtoMember(2)]
+        public string Identifier { get; set; }
+    }
 
     [ProtoContract]
     public class NativeData
@@ -39,6 +48,7 @@ namespace GTACoOp
     [ProtoInclude(6, typeof(BooleanArgument))]
     [ProtoInclude(7, typeof(LocalPlayerArgument))]
     [ProtoInclude(8, typeof(Vector3Argument))]
+    [ProtoInclude(9, typeof(LocalGamePlayerArgument))]
     public class NativeArgument
     {
         [ProtoMember(1)]
@@ -47,6 +57,11 @@ namespace GTACoOp
 
     [ProtoContract]
     public class LocalPlayerArgument : NativeArgument
+    {
+    }
+
+    [ProtoContract]
+    public class LocalGamePlayerArgument : NativeArgument
     {
     }
 

@@ -18,6 +18,7 @@ namespace AdminTools
 
         public int ServerWeather;
         public TimeSpan ServerTime;
+        public bool IsGodmodeDisabled;
 
         private string[] _weatherNames = new[]
         {
@@ -71,6 +72,11 @@ namespace AdminTools
 
             Program.ServerInstance.SendNativeCallToPlayer(player, 0x47C3B5848C3E45D8, ServerTime.Hours, ServerTime.Minutes, ServerTime.Seconds);
             Program.ServerInstance.SendNativeCallToPlayer(player, 0x4055E40BD2DBEC1D, true);
+
+            if (IsGodmodeDisabled)
+            {
+                Program.ServerInstance.SetNativeCallOnTickForPlayer(player, "GODMODE", 0x239528EACDC3E7DE, new LocalGamePlayerArgument(), false);
+            }
         }
 
         public override bool OnChatMessage(NetConnection sender, string message)
@@ -115,6 +121,43 @@ namespace AdminTools
 
                 Console.WriteLine(string.Format("ADMINTOOLS: {0} has teleported to player {1}", account.Name,
                     Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier]));
+
+                return false;
+            }
+
+            if (message.StartsWith("/godmode"))
+            {
+                if (account == null || (int)account.Level < 1)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCESS DENIED", "Insufficent privileges.");
+                    return false;
+                }
+
+                var args = message.Split();
+                if (args.Length <= 1)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "USAGE", "/godmode [true/false]");
+                    return false;
+                }
+
+                bool newValue;
+                if (!bool.TryParse(args[1], out newValue))
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "USAGE", "/godmode [true/false]");
+                    return false;
+                }
+                IsGodmodeDisabled = !newValue;
+
+                if (IsGodmodeDisabled)
+                {
+                    Program.ServerInstance.SetNativeCallOnTickForAllPlayers("GODMODE", 0x239528EACDC3E7DE, new LocalGamePlayerArgument(), false);
+                }
+                else
+                {
+                    Program.ServerInstance.RecallNativeCallOnTickForAllPlayers("GODMODE");
+                }
+
+                Console.WriteLine(string.Format("ADMINTOOLS: {0} has set global god mode disabling to {1}", account.Name, !newValue));
 
                 return false;
             }

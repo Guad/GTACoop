@@ -603,6 +603,10 @@ namespace GTAServer
                 {
                     list.Add((OpponentPedHandleArgument)o);
                 }
+                else if (o is LocalGamePlayerArgument)
+                {
+                    list.Add((LocalGamePlayerArgument)o);
+                }
             }
 
             obj.Arguments = list.ToList();
@@ -664,6 +668,10 @@ namespace GTAServer
                 {
                     list.Add((OpponentPedHandleArgument)o);
                 }
+                else if (o is LocalGamePlayerArgument)
+                {
+                    list.Add((LocalGamePlayerArgument)o);
+                }
             }
 
             obj.Arguments = list.ToList();
@@ -681,14 +689,184 @@ namespace GTAServer
             Server.SendToAll(msg, NetDeliveryMethod.ReliableOrdered);
         }
 
+        public void SetNativeCallOnTickForPlayer(NetConnection player, string identifier, ulong hash, params object[] arguments)
+        {
+            var obj = new NativeData();
+            obj.Hash = hash;
+
+            var list = new List<NativeArgument>();
+            foreach (var o in arguments)
+            {
+                if (o is int)
+                {
+                    list.Add(new IntArgument() { Data = ((int)o) });
+                }
+                else if (o is uint)
+                {
+                    list.Add(new UIntArgument() { Data = ((uint)o) });
+                }
+                else if (o is string)
+                {
+                    list.Add(new StringArgument() { Data = ((string)o) });
+                }
+                else if (o is float)
+                {
+                    list.Add(new FloatArgument() { Data = ((float)o) });
+                }
+                else if (o is bool)
+                {
+                    list.Add(new BooleanArgument() { Data = ((bool)o) });
+                }
+                else if (o is Vector3)
+                {
+                    var tmp = (Vector3)o;
+                    list.Add(new Vector3Argument()
+                    {
+                        X = tmp.X,
+                        Y = tmp.Y,
+                        Z = tmp.Z,
+                    });
+                }
+                else if (o is LocalPlayerArgument)
+                {
+                    list.Add((LocalPlayerArgument)o);
+                }
+                else if (o is OpponentPedHandleArgument)
+                {
+                    list.Add((OpponentPedHandleArgument)o);
+                }
+                else if (o is LocalGamePlayerArgument)
+                {
+                    list.Add((LocalGamePlayerArgument)o);
+                }
+            }
+            obj.Arguments = list.ToList();
+
+            var wrapper = new NativeTickCall();
+            wrapper.Identifier = identifier;
+            wrapper.Native = obj;
+
+            var bin = SerializeBinary(wrapper);
+
+            var msg = Server.CreateMessage();
+
+            msg.Write((int)PacketType.NativeTick);
+            msg.Write(bin.Length);
+            msg.Write(bin);
+
+            player.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(player));
+        }
+
+        public void SetNativeCallOnTickForAllPlayers(string identifier, ulong hash, params object[] arguments)
+        {
+            var obj = new NativeData();
+            obj.Hash = hash;
+
+            var list = new List<NativeArgument>();
+            foreach (var o in arguments)
+            {
+                if (o is int)
+                {
+                    list.Add(new IntArgument() { Data = ((int)o) });
+                }
+                else if (o is uint)
+                {
+                    list.Add(new UIntArgument() { Data = ((uint)o) });
+                }
+                else if (o is string)
+                {
+                    list.Add(new StringArgument() { Data = ((string)o) });
+                }
+                else if (o is float)
+                {
+                    list.Add(new FloatArgument() { Data = ((float)o) });
+                }
+                else if (o is bool)
+                {
+                    list.Add(new BooleanArgument() { Data = ((bool)o) });
+                }
+                else if (o is Vector3)
+                {
+                    var tmp = (Vector3)o;
+                    list.Add(new Vector3Argument()
+                    {
+                        X = tmp.X,
+                        Y = tmp.Y,
+                        Z = tmp.Z,
+                    });
+                }
+                else if (o is LocalPlayerArgument)
+                {
+                    list.Add((LocalPlayerArgument)o);
+                }
+                else if (o is OpponentPedHandleArgument)
+                {
+                    list.Add((OpponentPedHandleArgument)o);
+                }
+                else if (o is LocalGamePlayerArgument)
+                {
+                    list.Add((LocalGamePlayerArgument)o);
+                }
+            }
+            obj.Arguments = list.ToList();
+
+            var wrapper = new NativeTickCall();
+            wrapper.Identifier = identifier;
+            wrapper.Native = obj;
+
+            var bin = SerializeBinary(wrapper);
+
+            var msg = Server.CreateMessage();
+
+            msg.Write((int)PacketType.NativeTick);
+            msg.Write(bin.Length);
+            msg.Write(bin);
+
+            Server.SendToAll(msg, NetDeliveryMethod.ReliableOrdered);
+        }
+
+        public void RecallNativeCallOnTickForPlayer(NetConnection player, string identifier)
+        {
+            var wrapper = new NativeTickCall();
+            wrapper.Identifier = identifier;
+
+            var bin = SerializeBinary(wrapper);
+
+            var msg = Server.CreateMessage();
+            msg.Write((int)PacketType.NativeTickRecall);
+            msg.Write(bin.Length);
+            msg.Write(bin);
+
+            player.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(player));
+        }
+
+        public void RecallNativeCallOnTickForAllPlayers(string identifier)
+        {
+            var wrapper = new NativeTickCall();
+            wrapper.Identifier = identifier;
+
+            var bin = SerializeBinary(wrapper);
+
+            var msg = Server.CreateMessage();
+            msg.Write((int)PacketType.NativeTickRecall);
+            msg.Write(bin.Length);
+            msg.Write(bin);
+
+            Server.SendToAll(msg, NetDeliveryMethod.ReliableOrdered);
+        }
+
         private Dictionary<string, Action<object>> _callbacks = new Dictionary<string, Action<object>>();
-        public void GetNativeCallFromPlayer(NetConnection player, string identifier, ulong hash, NativeArgument returnType, Action<object> callback,
+        public void GetNativeCallFromPlayer(NetConnection player, string salt, ulong hash, NativeArgument returnType, Action<object> callback,
             params object[] arguments)
         {
             var obj = new NativeData();
             obj.Hash = hash;
             obj.ReturnType = returnType;
-            obj.Id = identifier;
+            salt = Environment.TickCount.ToString() +
+                   salt +
+                   player.RemoteUniqueIdentifier.ToString() +
+                   DateTime.Now.Subtract(new DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds.ToString();
+            obj.Id = salt;
 
             var list = new List<NativeArgument>();
             foreach (var o in arguments)
@@ -731,6 +909,10 @@ namespace GTAServer
                 {
                     list.Add((OpponentPedHandleArgument)o);
                 }
+                else if (o is LocalGamePlayerArgument)
+                {
+                    list.Add((LocalGamePlayerArgument)o);
+                }
             }
 
             obj.Arguments = list.ToList();
@@ -743,7 +925,7 @@ namespace GTAServer
             msg.Write(bin.Length);
             msg.Write(bin);
 
-            _callbacks.Add(identifier, callback);
+            _callbacks.Add(salt, callback);
             player.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(player));
         }
 
@@ -805,20 +987,13 @@ namespace GTAServer
         public void GetPlayerPosition(NetConnection player, Action<object> callback, string salt = "salt")
         {
             GetNativeCallFromPlayer(player,
-                Environment.TickCount.ToString() +
-                salt +
-                player.RemoteUniqueIdentifier.ToString() +
-                DateTime.Now.Subtract(new DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds.ToString(),
+                salt,
                 0x3FEF770D40960D5A, new Vector3Argument(), callback, new LocalPlayerArgument(), 0);
         }
 
         public void HasPlayerControlBeenPressed(NetConnection player, int controlId, Action<object> callback, string salt = "salt")
         {
-            GetNativeCallFromPlayer(player,
-                Environment.TickCount.ToString() +
-                salt +
-                player.RemoteUniqueIdentifier.ToString() +
-                DateTime.Now.Subtract(new DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds.ToString(),
+            GetNativeCallFromPlayer(player, salt,
                 0x580417101DDB492F, new BooleanArgument(), callback, 0, controlId);
         }
 
@@ -829,11 +1004,7 @@ namespace GTAServer
 
         public void GetPlayerHealth(NetConnection player, Action<object> callback, string salt = "salt")
         {
-            GetNativeCallFromPlayer(player,
-                Environment.TickCount.ToString() +
-                salt +
-                player.RemoteUniqueIdentifier.ToString() +
-                DateTime.Now.Subtract(new DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds.ToString(),
+            GetNativeCallFromPlayer(player, salt,
                 0xEEF059FAD016D209, new IntArgument(), callback, new LocalPlayerArgument());
         }
     }

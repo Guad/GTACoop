@@ -45,6 +45,7 @@ namespace GTACoOp
         public string Name;
         public bool Siren;
         public float Speed;
+        public bool IsParachuteOpen;
 
         public Dictionary<int, int> VehicleMods
         {
@@ -94,6 +95,9 @@ namespace GTACoOp
 
         private bool _isStreamedIn;
         private Blip _mainBlip;
+        private bool _lastHorn;
+        private bool _lastParachute;
+        private Prop _parachuteProp;
 
         public SyncPed(int hash, Vector3 pos, Quaternion rot, bool blip = true)
         {
@@ -124,7 +128,11 @@ namespace GTACoOp
             if (inRange && !_isStreamedIn)
             {
                 _isStreamedIn = true;
-                if (_mainBlip != null) _mainBlip.Remove();
+                if (_mainBlip != null)
+                {
+                    _mainBlip.Remove();
+                    _mainBlip = null;
+                }
             }
             else if(!inRange && _isStreamedIn)
             {
@@ -147,7 +155,7 @@ namespace GTACoOp
             }
 
 
-            if (Character == null || !Character.Exists() || Character.Model.Hash != ModelHash || (Character.IsDead && PedHealth > 0))
+            if (Character == null || !Character.Exists() || Character.Model.Hash != ModelHash || (Character.IsDead && PedHealth > 0) || !Character.IsInRangeOf(IsInVehicle ? Position : VehiclePosition, 100f))
             {
                 if (Character != null) Character.Delete();
 
@@ -274,10 +282,22 @@ namespace GTACoOp
                         _modSwitch = 0;
                         
 
-                    if (IsHornPressed && DateTime.Now.Subtract(_lastHornPress).TotalMilliseconds > 1500)
+                    /*if (IsHornPressed && DateTime.Now.Subtract(_lastHornPress).TotalMilliseconds > 1500)
                     {
                         _mainVehicle.SoundHorn(1500);
                         _lastHornPress = DateTime.Now;
+                    }*/
+
+                    if (IsHornPressed && !_lastHorn)
+                    {
+                        _lastHorn = true;
+                        _mainVehicle.SoundHorn(99999);
+                    }
+
+                    if (!IsHornPressed && _lastHorn)
+                    {
+                        _lastHorn = false;
+                        _mainVehicle.SoundHorn(1);
                     }
 
                     if (_mainVehicle.SirenActive && !Siren)
@@ -288,7 +308,7 @@ namespace GTACoOp
                     var dir = VehiclePosition - _mainVehicle.Position;
                     dir.Normalize();
 
-                    var range = Math.Max(20f, Speed*DateTime.Now.Subtract(LastUpdateReceived).TotalSeconds);
+                    var range = Math.Max(20f, Speed*Math.Ceiling(DateTime.Now.Subtract(LastUpdateReceived).TotalSeconds));
 
                     if (!_mainVehicle.IsInRangeOf(VehiclePosition, 0.08f))
                         _mainVehicle.ApplyForce(dir);
@@ -327,55 +347,81 @@ namespace GTACoOp
                     Character.Task.Jump();
                 }
 
-                var dest = Position;
-
-                const int threshold = 50;
-                if (IsAiming && !IsShooting && !Character.IsInRangeOf(Position, 0.5f) && _switch % threshold == 0)
+                if (IsParachuteOpen)
                 {
-                    Function.Call(Hash.TASK_GO_TO_COORD_WHILE_AIMING_AT_COORD, Character.Handle, dest.X, dest.Y,
-                        dest.Z, AimCoords.X, AimCoords.Y, AimCoords.Z, 2f, 0, 0x3F000000, 0x40800000, 1, 512, 0,
-                        (uint)FiringPattern.FullAuto);
-                }
-                else if (IsAiming && !IsShooting && Character.IsInRangeOf(Position, 0.5f))
-                {
-                    Character.Task.AimAt(AimCoords, 100);
-                }
-
-                if (!Character.IsInRangeOf(Position, 0.5f) &&
-                    ((IsShooting && !_lastShooting) || (IsShooting && _lastShooting && _switch % (threshold * 2) == 0)))
-                {
-                    Function.Call(Hash.TASK_GO_TO_COORD_WHILE_AIMING_AT_COORD, Character.Handle, dest.X, dest.Y,
-                        dest.Z, AimCoords.X, AimCoords.Y, AimCoords.Z, 2f, 1, 0x3F000000, 0x40800000, 1, 0, 0,
-                        (uint)FiringPattern.FullAuto);
-                }
-                else if ((IsShooting && !_lastShooting) ||
-                         (IsShooting && _lastShooting && _switch % (threshold / 2) == 0))
-                {
-                    Function.Call(Hash.TASK_SHOOT_AT_COORD, Character.Handle, AimCoords.X, AimCoords.Y,
-                                AimCoords.Z, 1500, (uint)FiringPattern.FullAuto);
-                }
-
-                if (!IsAiming && !IsShooting && !IsJumping)
-                {
-                    switch (SyncMode)
+                    if (_parachuteProp == null)
                     {
-                        case SynchronizationMode.Tasks:
-                            if (!Character.IsInRangeOf(Position, 0.5f))
-                            {
-                                Character.Task.RunTo(Position, true, 500);
-                                //var targetAngle = Rotation.Z/Math.Sqrt(1 - Rotation.W*Rotation.W);
-                                //Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, Character.Handle, Position.X, Position.Y, Position.Z, 5f, 3000, targetAngle, 0);
-                            }
-                            if (!Character.IsInRangeOf(Position, 5f))
-                            {
+                        _parachuteProp = World.CreateProp(new Model(1740193300), Character.Position, Character.Rotation, false, false);
+                        _parachuteProp.FreezePosition = true;
+                        Function.Call(Hash.SET_ENTITY_COLLISION, _parachuteProp.Handle, false, 0);
+                    }
+                    Character.FreezePosition = true;
+                    Character.Position = Position - new Vector3(0, 0, 1);
+                    Character.Quaternion = Rotation;
+                    _parachuteProp.Position = Character.Position + new Vector3(0, 0, 3.7f);
+                    _parachuteProp.Quaternion = Character.Quaternion;
+
+                    Character.Task.PlayAnimation("skydive@parachute@first_person", "chute_idle_right", 8f, -1, false, 8f);
+                }
+                else
+                {
+                    var dest = Position;
+                    Character.FreezePosition = false;
+
+                    if (_parachuteProp != null)
+                    {
+                        _parachuteProp.Delete();
+                        _parachuteProp = null;
+                    }
+
+                    const int threshold = 50;
+                    if (IsAiming && !IsShooting && !Character.IsInRangeOf(Position, 0.5f) && _switch%threshold == 0)
+                    {
+                        Function.Call(Hash.TASK_GO_TO_COORD_WHILE_AIMING_AT_COORD, Character.Handle, dest.X, dest.Y,
+                            dest.Z, AimCoords.X, AimCoords.Y, AimCoords.Z, 2f, 0, 0x3F000000, 0x40800000, 1, 512, 0,
+                            (uint) FiringPattern.FullAuto);
+                    }
+                    else if (IsAiming && !IsShooting && Character.IsInRangeOf(Position, 0.5f))
+                    {
+                        Character.Task.AimAt(AimCoords, 100);
+                    }
+
+                    if (!Character.IsInRangeOf(Position, 0.5f) &&
+                        ((IsShooting && !_lastShooting) || (IsShooting && _lastShooting && _switch%(threshold*2) == 0)))
+                    {
+                        Function.Call(Hash.TASK_GO_TO_COORD_WHILE_AIMING_AT_COORD, Character.Handle, dest.X, dest.Y,
+                            dest.Z, AimCoords.X, AimCoords.Y, AimCoords.Z, 2f, 1, 0x3F000000, 0x40800000, 1, 0, 0,
+                            (uint) FiringPattern.FullAuto);
+                    }
+                    else if ((IsShooting && !_lastShooting) ||
+                             (IsShooting && _lastShooting && _switch%(threshold/2) == 0))
+                    {
+                        Function.Call(Hash.TASK_SHOOT_AT_COORD, Character.Handle, AimCoords.X, AimCoords.Y,
+                            AimCoords.Z, 1500, (uint) FiringPattern.FullAuto);
+                    }
+
+                    if (!IsAiming && !IsShooting && !IsJumping)
+                    {
+                        switch (SyncMode)
+                        {
+                            case SynchronizationMode.Tasks:
+                                if (!Character.IsInRangeOf(Position, 0.5f))
+                                {
+                                    Character.Task.RunTo(Position, true, 500);
+                                    //var targetAngle = Rotation.Z/Math.Sqrt(1 - Rotation.W*Rotation.W);
+                                    //Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, Character.Handle, Position.X, Position.Y, Position.Z, 5f, 3000, targetAngle, 0);
+                                }
+                                if (!Character.IsInRangeOf(Position, 5f))
+                                {
+                                    Character.Position = dest - new Vector3(0, 0, 1f);
+                                    Character.Quaternion = Rotation;
+                                }
+                                break;
+                            case SynchronizationMode.Teleport:
                                 Character.Position = dest - new Vector3(0, 0, 1f);
                                 Character.Quaternion = Rotation;
-                            }
-                            break;
-                        case SynchronizationMode.Teleport:
-                            Character.Position = dest - new Vector3(0, 0, 1f);
-                            Character.Quaternion = Rotation;
-                            break;
+                                break;
+                        }
                     }
                 }
                 _lastJumping = IsJumping;
@@ -387,10 +433,26 @@ namespace GTACoOp
 
         public void Clear()
         {
+            if (Character != null)
+            {
+                Character.Model.MarkAsNoLongerNeeded();
+                Character.Delete();
+            }
+            if (_mainBlip != null)
+            {
+                _mainBlip.Remove();
+                _mainBlip = null;
+            }
             if (_mainVehicle != null && Util.IsVehicleEmpty(_mainVehicle))
+            {
+                _mainVehicle.Model.MarkAsNoLongerNeeded();
                 _mainVehicle.Delete();
-            if (Character != null) Character.Delete();
-            if (_mainBlip != null) _mainBlip.Remove();
+            }
+            if (_parachuteProp != null)
+            {
+                _parachuteProp.Delete();
+                _parachuteProp = null;
+            }
         }
     }
 }

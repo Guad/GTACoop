@@ -1,18 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.NetworkInformation;
-using System.Net.Sockets;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Xml.Serialization;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -108,7 +101,8 @@ namespace GTACoOp
             {
                 var newPlayer = Opponents.FirstOrDefault(ops => ops.Value.Name == _playersMenu.MenuItems[index].Text);
                 if (newPlayer.Equals(new KeyValuePair<long, SyncPed>())) return;
-                Function.Call(Hash.LOCK_MINIMAP_POSITION, newPlayer.Value.Position.X, newPlayer.Value.Position.Y);
+                var pos = newPlayer.Value.IsInVehicle ? newPlayer.Value.VehiclePosition : newPlayer.Value.Position;
+                Function.Call(Hash.LOCK_MINIMAP_POSITION, pos.X, pos.Y);
                 Function.Call(Hash.SET_RADAR_ZOOM, 0);
             };
 
@@ -337,7 +331,7 @@ namespace GTACoOp
         }
 
         private static Dictionary<int, int> _emptyVehicleMods;
-
+        private Dictionary<string, NativeData> _tickNatives;
 
         private static int _modSwitch = 0;
         private static int _pedSwitch = 0;
@@ -441,6 +435,7 @@ namespace GTACoOp
                 obj.IsAiming = aiming;
                 obj.IsShooting = shooting;
                 obj.IsJumping = Function.Call<bool>(Hash.IS_PED_JUMPING, player.Handle);
+                obj.IsParachuteOpen = Function.Call<int>(Hash.GET_PED_PARACHUTE_STATE, Game.Player.Character.Handle) == 2;
 
                 obj.PedProps = CheckPlayerProps();
 
@@ -510,7 +505,7 @@ namespace GTACoOp
                 obj.IsAiming = false;
                 obj.IsShooting = shooting;
                 obj.IsJumping = Function.Call<bool>(Hash.IS_PED_JUMPING, ped.Handle);
-
+                obj.IsParachuteOpen = Function.Call<int>(Hash.GET_PED_PARACHUTE_STATE, ped.Handle) == 2;
 
                 var bin = SerializeBinary(obj);
 
@@ -608,19 +603,20 @@ namespace GTACoOp
 
             Function.Call(Hash.SET_TIME_SCALE, 1f);
 
-            #region NET
-
-            #endregion
-
-            string stats = string.Format("{0}Kb (D)/{1}Kb (U), {2}Msg (D)/{3}Msg (U)", _bytesReceived / 1000,
+            /*string stats = string.Format("{0}Kb (D)/{1}Kb (U), {2}Msg (D)/{3}Msg (U)", _bytesReceived / 1000,
                 _bytesSent / 1000, _messagesReceived, _messagesSent);
-
+                */
             //UI.ShowSubtitle(stats);
 
             if (_threadJumping.Any())
             {
                 Action action = _threadJumping.Dequeue();
                 if (action != null) action.Invoke();
+            }
+
+            for (int i = 0; i < _tickNatives.Count; i++)
+            {
+                DecodeNativeCall(_tickNatives.ElementAt(i).Value);
             }
         }
 
@@ -690,6 +686,7 @@ namespace GTACoOp
             }
             Opponents = new Dictionary<long, SyncPed>();
             Npcs = new Dictionary<string, SyncPed>();
+            _tickNatives = new Dictionary<string, NativeData>();
 
             var msg = _client.CreateMessage();
 
@@ -789,7 +786,7 @@ namespace GTACoOp
                                 Opponents[data.Id].IsJumping = data.IsJumping;
                                 Opponents[data.Id].IsShooting = data.IsShooting;
                                 Opponents[data.Id].Latency = data.Latency;
-
+                                Opponents[data.Id].IsParachuteOpen = data.IsParachuteOpen;
                                 Opponents[data.Id].PedProps = data.PedProps;
                             }
                             break;
@@ -854,6 +851,7 @@ namespace GTACoOp
                                 Npcs[data.Name].IsAiming = data.IsAiming;
                                 Npcs[data.Name].IsJumping = data.IsJumping;
                                 Npcs[data.Name].IsShooting = data.IsShooting;
+                                Npcs[data.Name].IsParachuteOpen = data.IsParachuteOpen;
                             }
                             break;
                         case PacketType.ChatData:
@@ -914,6 +912,32 @@ namespace GTACoOp
                                 var data = (NativeData)DeserializeBinary<NativeData>(msg.ReadBytes(len));
                                 if (data == null) return;
                                 DecodeNativeCall(data);
+                            }
+                            break;
+                        case PacketType.NativeTick:
+                            {
+                                var len = msg.ReadInt32();
+                                var data = (NativeTickCall)DeserializeBinary<NativeTickCall>(msg.ReadBytes(len));
+                                if (data == null) return;
+                                if (_tickNatives.ContainsKey(data.Identifier))
+                                {
+                                    _tickNatives[data.Identifier] = data.Native;
+                                }
+                                else
+                                {
+                                    _tickNatives.Add(data.Identifier, data.Native);
+                                }
+                            }
+                            break;
+                        case PacketType.NativeTickRecall:
+                            {
+                                var len = msg.ReadInt32();
+                                var data = (NativeTickCall)DeserializeBinary<NativeTickCall>(msg.ReadBytes(len));
+                                if (data == null) return;
+                                if (_tickNatives.ContainsKey(data.Identifier))
+                                {
+                                    _tickNatives.Remove(data.Identifier);
+                                }
                             }
                             break;
                     }
@@ -1147,17 +1171,54 @@ namespace GTACoOp
                             }
                         }
 
-                        int speed = GetPedSpeed(player.Position, oldplayerpos);
-                        switch (speed)
+                        UI.ShowSubtitle(Function.Call<int>(Hash.GET_PED_PARACHUTE_STATE, Game.Player.Character.Handle).ToString());
+
+                        if (Function.Call<int>(Hash.GET_PED_PARACHUTE_STATE, Game.Player.Character.Handle) == 0)
                         {
-                            case 1:
-                                Function.Call(Hash.TASK_PLAY_ANIM, mainPed.Handle, "move_m@casual@e", "walk", 8f, -8f,
-                                    -1, 1, 8f, 1, 1, 1);
-                                break;
-                            case 2:
-                                Function.Call(Hash.TASK_PLAY_ANIM, mainPed.Handle, "move_m@casual@e", "run", 8f, -8f, -1,
-                                    1, 8f, 1, 1, 1);
-                                break;
+                            mainPed.Weapons.Give((WeaponHash)4222310262, 1, true, true);
+                        }
+
+                        //if (Function.Call<int>(Hash.GET_PED_PARACHUTE_STATE, Game.Player.Character.Handle) == 2)
+                            //&& !_debugLastPar)
+                        {
+                            //Function.Call((Hash) 0x16E42E800B472221, mainPed.Handle);
+                            //mainPed.CanRagdoll = false;
+                            //var dir = Game.Player.Character.Position - mainPed.Position;
+                            //dir.Normalize();
+                            //mainPed.ApplyForce(dir);
+                            /*if (_parachuteProp == null)
+                            {
+                                _parachuteProp = World.CreateProp(new Model(1740193300), mainPed.Position, mainPed.Rotation, false, false);
+                                _parachuteProp.FreezePosition = true;
+                                Function.Call(Hash.SET_ENTITY_COLLISION, _parachuteProp.Handle, false, 0);
+                            }
+                            mainPed.FreezePosition = true;
+                            mainPed.Position = Game.Player.Character.Position - new Vector3(0,0,1);
+                            mainPed.Quaternion = Game.Player.Character.Quaternion;
+                            _parachuteProp.Position = mainPed.Position + mainPed.UpVector*3.7f;
+                            _parachuteProp.Quaternion = mainPed.Quaternion;
+
+                            mainPed.Task.PlayAnimation("skydive@parachute@first_person", "chute_idle_right", 8f, -1, false, 8f);
+                        }
+                        else
+                        {
+                            _parachuteProp?.Delete();
+                            _parachuteProp = null;*/
+                            mainPed.FreezePosition = false;
+                            int speed = GetPedSpeed(player.Position, oldplayerpos);
+                            switch (speed)
+                            {
+                                case 1:
+                                    Function.Call(Hash.TASK_PLAY_ANIM, mainPed.Handle, "move_m@casual@e", "walk", 8f,
+                                        -8f,
+                                        -1, 1, 8f, 1, 1, 1);
+                                    break;
+                                case 2:
+                                    Function.Call(Hash.TASK_PLAY_ANIM, mainPed.Handle, "move_m@casual@e", "run", 8f, -8f,
+                                        -1,
+                                        1, 8f, 1, 1, 1);
+                                    break;
+                            }
                         }
                         _lastJumping = jumping;
                         _lastShooting = shooting;
@@ -1211,6 +1272,10 @@ namespace GTACoOp
                     list.Add(new InputArgument(tmp.X));
                     list.Add(new InputArgument(tmp.Y));
                     list.Add(new InputArgument(tmp.Z));
+                }
+                else if (arg is LocalGamePlayerArgument)
+                {
+                    list.Add(new InputArgument(Game.Player.Handle));
                 }
             }
 
