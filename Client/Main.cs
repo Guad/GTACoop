@@ -406,6 +406,7 @@ namespace GTACoOp
                 obj.IsPressingHorn = Game.Player.IsPressingHorn;
                 obj.IsSirenActive = veh.SirenActive;
                 obj.VehicleMods = CheckPlayerVehicleMods();
+                obj.Speed = veh.Speed;
 
                 var bin = SerializeBinary(obj);
 
@@ -474,6 +475,8 @@ namespace GTACoOp
                 obj.VehicleHealth = veh.Health;
                 obj.VehicleSeat = Util.GetPedSeat(ped);
                 obj.Name = ped.Handle.ToString();
+                obj.Speed = veh.Speed;
+                obj.IsSirenActive = veh.SirenActive;
 
                 var bin = SerializeBinary(obj);
 
@@ -755,7 +758,7 @@ namespace GTACoOp
 
                                 Opponents[data.Id].VehicleMods = data.VehicleMods;
                                 Opponents[data.Id].IsHornPressed = data.IsPressingHorn;
-
+                                Opponents[data.Id].Speed = data.Speed;
                                 Opponents[data.Id].Siren = data.IsSirenActive;
                             }
                             break;
@@ -818,6 +821,10 @@ namespace GTACoOp
                                 Npcs[data.Name].VehicleSecondaryColor = data.SecondaryColor;
                                 Npcs[data.Name].VehicleSeat = data.VehicleSeat;
                                 Npcs[data.Name].IsInVehicle = true;
+
+                                Npcs[data.Name].IsHornPressed = data.IsPressingHorn;
+                                Npcs[data.Name].Speed = data.Speed;
+                                Npcs[data.Name].Siren = data.IsSirenActive;
                             }
                             break;
                         case PacketType.NpcPedPositionData:

@@ -44,6 +44,7 @@ namespace GTACoOp
         public DateTime LastUpdateReceived;
         public string Name;
         public bool Siren;
+        public float Speed;
 
         public Dictionary<int, int> VehicleMods
         {
@@ -118,7 +119,7 @@ namespace GTACoOp
         public void DisplayLocally()
         {
             var gPos = IsInVehicle ? VehiclePosition : Position;
-            var inRange = Game.Player.Character.IsInRangeOf(gPos, 150f);
+            var inRange = Game.Player.Character.IsInRangeOf(gPos, 200f);
             
             if (inRange && !_isStreamedIn)
             {
@@ -287,11 +288,13 @@ namespace GTACoOp
                     var dir = VehiclePosition - _mainVehicle.Position;
                     dir.Normalize();
 
+                    var range = Math.Max(20f, Speed*DateTime.Now.Subtract(LastUpdateReceived).TotalSeconds);
+
                     if (!_mainVehicle.IsInRangeOf(VehiclePosition, 0.08f))
                         _mainVehicle.ApplyForce(dir);
                     if (Main.GlobalSyncMode == SynchronizationMode.Teleport && !_mainVehicle.IsInRangeOf(VehiclePosition, 0.8f))
                         _mainVehicle.Position = VehiclePosition;
-                    if (Main.GlobalSyncMode == SynchronizationMode.Tasks && !_mainVehicle.IsInRangeOf(VehiclePosition, 30f))
+                    if (Main.GlobalSyncMode == SynchronizationMode.Tasks && !_mainVehicle.IsInRangeOf(VehiclePosition, (float)range))
                         _mainVehicle.Position = VehiclePosition;
                     _mainVehicle.Quaternion = VehicleRotation;
                 }

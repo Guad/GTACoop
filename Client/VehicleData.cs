@@ -87,6 +87,9 @@ namespace GTACoOp
 
         [ProtoMember(15)]
         public bool IsSirenActive { get; set; }
+
+        [ProtoMember(16)]
+        public float Speed { get; set; }
     }
 
     [ProtoContract]
