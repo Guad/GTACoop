@@ -155,7 +155,7 @@ namespace GTACoOp
             }
 
 
-            if (Character == null || !Character.Exists() || Character.Model.Hash != ModelHash || (Character.IsDead && PedHealth > 0) || !Character.IsInRangeOf(IsInVehicle ? Position : VehiclePosition, 100f))
+            if (Character == null || !Character.Exists() || Character.Model.Hash != ModelHash || (Character.IsDead && PedHealth > 0))
             {
                 if (Character != null) Character.Delete();
 
