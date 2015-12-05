@@ -316,6 +316,9 @@ namespace GTACoOp
         private void RebuildPlayersList()
         {
             _playersMenu.Clear();
+            
+            if (Opponents == null ) return;
+
             var list = new List<SyncPed>(Opponents.Select(pair => pair.Value));
 
             foreach (var ped in list)
