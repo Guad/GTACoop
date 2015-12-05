@@ -118,10 +118,8 @@ namespace GTACoOp
         public void DisplayLocally()
         {
             var gPos = IsInVehicle ? VehiclePosition : Position;
-            var inRange = Game.Player.Character.IsInRangeOf(gPos, 100f);
-
+            var inRange = Game.Player.Character.IsInRangeOf(gPos, 150f);
             
-
             if (inRange && !_isStreamedIn)
             {
                 _isStreamedIn = true;
@@ -151,6 +149,7 @@ namespace GTACoOp
             if (Character == null || !Character.Exists() || Character.Model.Hash != ModelHash || (Character.IsDead && PedHealth > 0))
             {
                 if (Character != null) Character.Delete();
+
                 Character = World.CreatePed(new Model(ModelHash), Position, Rotation.Z);
                 if (Character == null) return;
 
@@ -186,7 +185,7 @@ namespace GTACoOp
                 } //*/
             }
 
-            if ((!_lastVehicle && IsInVehicle && VehicleHash != 0) || _mainVehicle == null || !Character.IsInVehicle(_mainVehicle) || _mainVehicle.Model.Hash != VehicleHash || VehicleSeat != Util.GetPedSeat(Character))
+            if ((!_lastVehicle && IsInVehicle && VehicleHash != 0) || (_lastVehicle && IsInVehicle && (_mainVehicle == null || !Character.IsInVehicle(_mainVehicle) || _mainVehicle.Model.Hash != VehicleHash || VehicleSeat != Util.GetPedSeat(Character))))
             {
                 if (_mainVehicle != null && Util.IsVehicleEmpty(_mainVehicle))
                     _mainVehicle.Delete();

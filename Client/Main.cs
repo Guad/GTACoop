@@ -59,7 +59,7 @@ namespace GTACoOp
 
         public Main()
         {
-            PlayerSettings = Util.ReadSettings(Program.Location + "scripts\\GTACOOPSettings.xml");
+            PlayerSettings = Util.ReadSettings(Program.Location + "\\GTACOOPSettings.xml");
             _threadJumping = new Queue<Action>();
             _emptyVehicleMods = new Dictionary<int, int>();
             for (int i = 0; i < 50; i++)
@@ -563,10 +563,12 @@ namespace GTACoOp
             if (IsOnServer())
             {
                 _mainMenu.MenuItems[5].Text = "Disconnect";
+                _mainMenu.MenuItems[6].Enabled = true;
             }
             else
             {
                 _mainMenu.MenuItems[5].Text = "Connect";
+                _mainMenu.MenuItems[6].Enabled = false;
             }
 
             if (display)
@@ -727,57 +729,34 @@ namespace GTACoOp
                                 var data = DeserializeBinary<VehicleData>(msg.ReadBytes(len)) as VehicleData;
                                 if (data == null) return;
 
-                                if (Opponents.ContainsKey(data.Id))
-                                {
-                                    Opponents[data.Id].Name = data.Name;
-                                    Opponents[data.Id].LastUpdateReceived = DateTime.Now;
-                                    Opponents[data.Id].VehiclePosition =
-                                        data.Position.ToVector();
-                                    Opponents[data.Id].ModelHash = data.PedModelHash;
-                                    Opponents[data.Id].VehicleHash =
-                                        data.VehicleModelHash;
-                                    Opponents[data.Id].VehicleRotation =
-                                        data.Quaternion.ToQuaternion();
-                                    Opponents[data.Id].PedHealth = data.PlayerHealth;
-                                    Opponents[data.Id].VehicleHealth = data.VehicleHealth;
-                                    Opponents[data.Id].VehiclePrimaryColor = data.PrimaryColor;
-                                    Opponents[data.Id].VehicleSecondaryColor = data.SecondaryColor;
-                                    Opponents[data.Id].VehicleSeat = data.VehicleSeat;
-                                    Opponents[data.Id].IsInVehicle = true;
-                                    Opponents[data.Id].Latency = data.Latency;
-
-                                    Opponents[data.Id].VehicleMods = data.VehicleMods;
-                                    Opponents[data.Id].IsHornPressed = data.IsPressingHorn;
-
-                                    Opponents[data.Id].Siren = data.IsSirenActive;
-                                }
-                                else
+                                if (!Opponents.ContainsKey(data.Id))
                                 {
                                     var repr = new SyncPed(data.PedModelHash, data.Position.ToVector(),
                                         data.Quaternion.ToQuaternion());
                                     Opponents.Add(data.Id, repr);
-                                    Opponents[data.Id].Name = data.Name;
-                                    Opponents[data.Id].LastUpdateReceived = DateTime.Now;
-                                    Opponents[data.Id].VehiclePosition =
-                                        data.Position.ToVector();
-                                    Opponents[data.Id].ModelHash = data.PedModelHash;
-                                    Opponents[data.Id].VehicleHash =
-                                        data.VehicleModelHash;
-                                    Opponents[data.Id].VehicleRotation =
-                                        data.Quaternion.ToQuaternion();
-                                    Opponents[data.Id].PedHealth = data.PlayerHealth;
-                                    Opponents[data.Id].VehicleHealth = data.VehicleHealth;
-                                    Opponents[data.Id].VehiclePrimaryColor = data.PrimaryColor;
-                                    Opponents[data.Id].VehicleSecondaryColor = data.SecondaryColor;
-                                    Opponents[data.Id].VehicleSeat = data.VehicleSeat;
-                                    Opponents[data.Id].IsInVehicle = true;
-                                    Opponents[data.Id].Latency = data.Latency;
-
-                                    Opponents[data.Id].VehicleMods = data.VehicleMods;
-                                    Opponents[data.Id].IsHornPressed = data.IsPressingHorn;
-
-                                    Opponents[data.Id].Siren = data.IsSirenActive;
                                 }
+
+                                Opponents[data.Id].Name = data.Name;
+                                Opponents[data.Id].LastUpdateReceived = DateTime.Now;
+                                Opponents[data.Id].VehiclePosition =
+                                    data.Position.ToVector();
+                                Opponents[data.Id].ModelHash = data.PedModelHash;
+                                Opponents[data.Id].VehicleHash =
+                                    data.VehicleModelHash;
+                                Opponents[data.Id].VehicleRotation =
+                                    data.Quaternion.ToQuaternion();
+                                Opponents[data.Id].PedHealth = data.PlayerHealth;
+                                Opponents[data.Id].VehicleHealth = data.VehicleHealth;
+                                Opponents[data.Id].VehiclePrimaryColor = data.PrimaryColor;
+                                Opponents[data.Id].VehicleSecondaryColor = data.SecondaryColor;
+                                Opponents[data.Id].VehicleSeat = data.VehicleSeat;
+                                Opponents[data.Id].IsInVehicle = true;
+                                Opponents[data.Id].Latency = data.Latency;
+
+                                Opponents[data.Id].VehicleMods = data.VehicleMods;
+                                Opponents[data.Id].IsHornPressed = data.IsPressingHorn;
+
+                                Opponents[data.Id].Siren = data.IsSirenActive;
                             }
                             break;
                         case PacketType.PedPositionData:
@@ -786,45 +765,28 @@ namespace GTACoOp
                                 var data = DeserializeBinary<PedData>(msg.ReadBytes(len)) as PedData;
                                 if (data == null) return;
 
-                                if (Opponents.ContainsKey(data.Id))
-                                {
-                                    Opponents[data.Id].Name = data.Name;
-                                    Opponents[data.Id].LastUpdateReceived = DateTime.Now;
-                                    Opponents[data.Id].Position = data.Position.ToVector();
-                                    Opponents[data.Id].ModelHash = data.PedModelHash;
-                                    Opponents[data.Id].Rotation = data.Quaternion.ToQuaternion();
-                                    Opponents[data.Id].PedHealth = data.PlayerHealth;
-                                    Opponents[data.Id].IsInVehicle = false;
-                                    Opponents[data.Id].AimCoords = data.AimCoords.ToVector();
-                                    Opponents[data.Id].CurrentWeapon = data.WeaponHash;
-                                    Opponents[data.Id].IsAiming = data.IsAiming;
-                                    Opponents[data.Id].IsJumping = data.IsJumping;
-                                    Opponents[data.Id].IsShooting = data.IsShooting;
-                                    Opponents[data.Id].Latency = data.Latency;
-
-                                    Opponents[data.Id].PedProps = data.PedProps;
-                                }
-                                else
+                                if (!Opponents.ContainsKey(data.Id))
                                 {
                                     var repr = new SyncPed(data.PedModelHash, data.Position.ToVector(),
                                         data.Quaternion.ToQuaternion());
                                     Opponents.Add(data.Id, repr);
-                                    Opponents[data.Id].LastUpdateReceived = DateTime.Now;
-                                    Opponents[data.Id].Name = data.Name;
-                                    Opponents[data.Id].Position = data.Position.ToVector();
-                                    Opponents[data.Id].ModelHash = data.PedModelHash;
-                                    Opponents[data.Id].Rotation = data.Quaternion.ToQuaternion();
-                                    Opponents[data.Id].PedHealth = data.PlayerHealth;
-                                    Opponents[data.Id].IsInVehicle = false;
-                                    Opponents[data.Id].AimCoords = data.AimCoords.ToVector();
-                                    Opponents[data.Id].CurrentWeapon = data.WeaponHash;
-                                    Opponents[data.Id].IsAiming = data.IsAiming;
-                                    Opponents[data.Id].IsJumping = data.IsJumping;
-                                    Opponents[data.Id].IsShooting = data.IsShooting;
-                                    Opponents[data.Id].Latency = data.Latency;
-
-                                    Opponents[data.Id].PedProps = data.PedProps;
                                 }
+
+                                Opponents[data.Id].Name = data.Name;
+                                Opponents[data.Id].LastUpdateReceived = DateTime.Now;
+                                Opponents[data.Id].Position = data.Position.ToVector();
+                                Opponents[data.Id].ModelHash = data.PedModelHash;
+                                Opponents[data.Id].Rotation = data.Quaternion.ToQuaternion();
+                                Opponents[data.Id].PedHealth = data.PlayerHealth;
+                                Opponents[data.Id].IsInVehicle = false;
+                                Opponents[data.Id].AimCoords = data.AimCoords.ToVector();
+                                Opponents[data.Id].CurrentWeapon = data.WeaponHash;
+                                Opponents[data.Id].IsAiming = data.IsAiming;
+                                Opponents[data.Id].IsJumping = data.IsJumping;
+                                Opponents[data.Id].IsShooting = data.IsShooting;
+                                Opponents[data.Id].Latency = data.Latency;
+
+                                Opponents[data.Id].PedProps = data.PedProps;
                             }
                             break;
                         case PacketType.NpcVehPositionData:
@@ -833,46 +795,29 @@ namespace GTACoOp
                                 var data = DeserializeBinary<VehicleData>(msg.ReadBytes(len)) as VehicleData;
                                 if (data == null) return;
 
-                                if (Npcs.ContainsKey(data.Name))
-                                {
-                                    Npcs[data.Name].LastUpdateReceived = DateTime.Now;
-                                    Npcs[data.Name].VehiclePosition =
-                                        data.Position.ToVector();
-                                    Npcs[data.Name].ModelHash = data.PedModelHash;
-                                    Npcs[data.Name].VehicleHash =
-                                        data.VehicleModelHash;
-                                    Npcs[data.Name].VehicleRotation =
-                                        data.Quaternion.ToQuaternion();
-                                    Npcs[data.Name].PedHealth = data.PlayerHealth;
-                                    Npcs[data.Name].VehicleHealth = data.VehicleHealth;
-                                    Npcs[data.Name].VehiclePrimaryColor = data.PrimaryColor;
-                                    Npcs[data.Name].VehicleSecondaryColor = data.SecondaryColor;
-                                    Npcs[data.Name].VehicleSeat = data.VehicleSeat;
-                                    Npcs[data.Name].IsInVehicle = true;
-                                }
-                                else
+                                if (!Npcs.ContainsKey(data.Name))
                                 {
                                     var repr = new SyncPed(data.PedModelHash, data.Position.ToVector(),
                                         data.Quaternion.ToQuaternion(), false);
                                     Npcs.Add(data.Name, repr);
-
-                                    Npcs[data.Name].LastUpdateReceived = DateTime.Now;
                                     Npcs[data.Name].Name = "";
                                     Npcs[data.Name].Host = data.Id;
-                                    Npcs[data.Name].VehiclePosition =
-                                        data.Position.ToVector();
-                                    Npcs[data.Name].ModelHash = data.PedModelHash;
-                                    Npcs[data.Name].VehicleHash =
-                                        data.VehicleModelHash;
-                                    Npcs[data.Name].VehicleRotation =
-                                        data.Quaternion.ToQuaternion();
-                                    Npcs[data.Name].PedHealth = data.PlayerHealth;
-                                    Npcs[data.Name].VehicleHealth = data.VehicleHealth;
-                                    Npcs[data.Name].VehiclePrimaryColor = data.PrimaryColor;
-                                    Npcs[data.Name].VehicleSecondaryColor = data.SecondaryColor;
-                                    Npcs[data.Name].VehicleSeat = data.VehicleSeat;
-                                    Npcs[data.Name].IsInVehicle = true;
                                 }
+
+                                Npcs[data.Name].LastUpdateReceived = DateTime.Now;
+                                Npcs[data.Name].VehiclePosition =
+                                    data.Position.ToVector();
+                                Npcs[data.Name].ModelHash = data.PedModelHash;
+                                Npcs[data.Name].VehicleHash =
+                                    data.VehicleModelHash;
+                                Npcs[data.Name].VehicleRotation =
+                                    data.Quaternion.ToQuaternion();
+                                Npcs[data.Name].PedHealth = data.PlayerHealth;
+                                Npcs[data.Name].VehicleHealth = data.VehicleHealth;
+                                Npcs[data.Name].VehiclePrimaryColor = data.PrimaryColor;
+                                Npcs[data.Name].VehicleSecondaryColor = data.SecondaryColor;
+                                Npcs[data.Name].VehicleSeat = data.VehicleSeat;
+                                Npcs[data.Name].IsInVehicle = true;
                             }
                             break;
                         case PacketType.NpcPedPositionData:
@@ -881,41 +826,26 @@ namespace GTACoOp
                                 var data = DeserializeBinary<PedData>(msg.ReadBytes(len)) as PedData;
                                 if (data == null) return;
 
-                                if (Npcs.ContainsKey(data.Name))
-                                {
-
-                                    Npcs[data.Name].LastUpdateReceived = DateTime.Now;
-                                    Npcs[data.Name].Position = data.Position.ToVector();
-                                    Npcs[data.Name].ModelHash = data.PedModelHash;
-                                    Npcs[data.Name].Rotation = data.Quaternion.ToQuaternion();
-                                    Npcs[data.Name].PedHealth = data.PlayerHealth;
-                                    Npcs[data.Name].IsInVehicle = false;
-                                    Npcs[data.Name].AimCoords = data.AimCoords.ToVector();
-                                    Npcs[data.Name].CurrentWeapon = data.WeaponHash;
-                                    Npcs[data.Name].IsAiming = data.IsAiming;
-                                    Npcs[data.Name].IsJumping = data.IsJumping;
-                                    Npcs[data.Name].IsShooting = data.IsShooting;
-                                }
-                                else
+                                if (!Npcs.ContainsKey(data.Name))
                                 {
                                     var repr = new SyncPed(data.PedModelHash, data.Position.ToVector(),
                                         data.Quaternion.ToQuaternion(), false);
                                     Npcs.Add(data.Name, repr);
-
-                                    Npcs[data.Name].LastUpdateReceived = DateTime.Now;
                                     Npcs[data.Name].Name = "";
                                     Npcs[data.Name].Host = data.Id;
-                                    Npcs[data.Name].Position = data.Position.ToVector();
-                                    Npcs[data.Name].ModelHash = data.PedModelHash;
-                                    Npcs[data.Name].Rotation = data.Quaternion.ToQuaternion();
-                                    Npcs[data.Name].PedHealth = data.PlayerHealth;
-                                    Npcs[data.Name].IsInVehicle = false;
-                                    Npcs[data.Name].AimCoords = data.AimCoords.ToVector();
-                                    Npcs[data.Name].CurrentWeapon = data.WeaponHash;
-                                    Npcs[data.Name].IsAiming = data.IsAiming;
-                                    Npcs[data.Name].IsJumping = data.IsJumping;
-                                    Npcs[data.Name].IsShooting = data.IsShooting;
                                 }
+
+                                Npcs[data.Name].LastUpdateReceived = DateTime.Now;
+                                Npcs[data.Name].Position = data.Position.ToVector();
+                                Npcs[data.Name].ModelHash = data.PedModelHash;
+                                Npcs[data.Name].Rotation = data.Quaternion.ToQuaternion();
+                                Npcs[data.Name].PedHealth = data.PlayerHealth;
+                                Npcs[data.Name].IsInVehicle = false;
+                                Npcs[data.Name].AimCoords = data.AimCoords.ToVector();
+                                Npcs[data.Name].CurrentWeapon = data.WeaponHash;
+                                Npcs[data.Name].IsAiming = data.IsAiming;
+                                Npcs[data.Name].IsJumping = data.IsJumping;
+                                Npcs[data.Name].IsShooting = data.IsShooting;
                             }
                             break;
                         case PacketType.ChatData:
