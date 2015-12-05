@@ -125,7 +125,7 @@ namespace GTACoOp
             if (inRange && !_isStreamedIn)
             {
                 _isStreamedIn = true;
-                _mainBlip?.Remove();
+                if (_mainBlip != null) _mainBlip.Remove();
             }
             else if(!inRange && _isStreamedIn)
             {
