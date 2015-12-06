@@ -382,7 +382,7 @@ namespace AdminTools
                     return false;
                 }
 
-                lock (Lists._authenticatedUsers) if (Lists._authenticatedUsers.Contains(sender.NetConnection.RemoteUniqueIdentifier)) Lists._authenticatedUsers.Add(sender.NetConnection.RemoteUniqueIdentifier);
+                lock (Lists._authenticatedUsers) if (!Lists._authenticatedUsers.Contains(sender.NetConnection.RemoteUniqueIdentifier)) Lists._authenticatedUsers.Add(sender.NetConnection.RemoteUniqueIdentifier);
 
                 Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCOUNT", "Authentication successful!");
                 Console.WriteLine(string.Format("ADMINTOOLS: New player logged in: {0}", account.Name + " (" + sender.DisplayName + ")"));
