@@ -876,9 +876,16 @@ namespace GTACoOp
                                     _threadJumping.Enqueue(() =>
                                     {
                                         if (!string.IsNullOrEmpty(data.Sender))
-                                            UI.Notify(data.Sender + ": " + data.Message);
-                                        else
-                                            UI.Notify(data.Message);
+                                        {
+                                            for (int i = 0; i < data.Message.Length; i += 108 - data.Sender.Length)
+                                            {
+                                                UI.Notify(data.Sender + ": " +
+                                                          data.Message.Substring(i,
+                                                              Math.Min(108 - data.Sender.Length, data.Message.Length - i)));
+                                            }
+                                        }
+                                        else for (int i = 0; i < data.Message.Length; i += 110)
+                                                UI.Notify(data.Message.Substring(i,Math.Min(110, data.Message.Length - i)));
                                     });
                                 }
                             }
