@@ -11,6 +11,13 @@ using Lidgren.Network;
 
 namespace AdminTools
 {
+    public class Lists
+    {
+        internal static UserList _accounts = new UserList();
+        internal static Banlist _banned = new Banlist();
+        internal static List<long> _authenticatedUsers = new List<long>();
+    }
+
     [Serializable]
     public class TestServerScript : ServerScript
     {
@@ -43,7 +50,6 @@ namespace AdminTools
         {
             LoadAccounts(Location + "Accounts.xml");
             LoadBanlist(Location + "Banlist.xml");
-            _authenticatedUsers = new List<long>();
             Console.WriteLine("Accounts have been loaded.");
 
             ServerWeather = 0;
@@ -52,22 +58,14 @@ namespace AdminTools
 
         public override bool OnPlayerConnect(Client player)
         {
-            lock (_banned.BannedIps)
+            if(player.IsBanned() || player.IsIPBanned())
             {
-                if (_banned.BannedIps.Any(b => b.Address == player.NetConnection.RemoteEndPoint.Address.ToString()))
-                {
-                    Program.ServerInstance.KickPlayer(player,
-                        "You are banned: " +
-                        _banned.BannedIps.First(b => b.Address == player.NetConnection.RemoteEndPoint.Address.ToString())
-                            .Reason);
-                    return false;
-                }
+                Program.ServerInstance.KickPlayer(player, "You are banned: " + player.GetBan().Reason);
+
+                return false;
             }
 
-            Account account = null;
-            lock (_accounts.Accounts) account = _accounts.Accounts.FirstOrDefault(acc => acc.Name == player.Name);
-
-            if (account == null)
+            if (player.GetAccount(false) == null)
             {
                 Program.ServerInstance.SendChatMessageToPlayer(player, "ACCOUNT", "You can register an account using /register [password]");
             }
@@ -91,11 +89,7 @@ namespace AdminTools
 
         public override bool OnChatMessage(Client sender, string message)
         {
-            bool authenticated = false;
-            lock (_authenticatedUsers) authenticated = _authenticatedUsers.Contains(sender.NetConnection.RemoteUniqueIdentifier);
-
-            Account account = null;
-            lock (_accounts.Accounts) if (authenticated) account = _accounts.Accounts.FirstOrDefault(acc => acc.Name == sender.Name);
+            Account account = sender.GetAccount();
 
             if (message.StartsWith("/tp"))
             {
@@ -299,17 +293,7 @@ namespace AdminTools
                     return false;
                 }
 
-                lock (_banned.BannedIps)
-                {
-                    _banned.BannedIps.Add(new Ban()
-                    {
-                        Address = target.NetConnection.RemoteEndPoint.Address.ToString(),
-                        BannedBy = account.Name,
-                        Reason = args[2],
-                        TimeIssued = DateTime.Now,
-                        Name = target.Name,
-                    });
-                }
+                target.Ban(args[2], sender);
 
                 SaveBanlist(Location + "Banlist.xml");
 
@@ -349,7 +333,7 @@ namespace AdminTools
 
             if (message.StartsWith("/register"))
             {
-                lock (_accounts.Accounts) account = _accounts.Accounts.FirstOrDefault(acc => acc.Name == sender.Name);
+                account = sender.GetAccount(false);
                 if (account != null)
                 {
                     Program.ServerInstance.SendChatMessageToPlayer(sender, "ERROR", "You already have an account.");
@@ -369,10 +353,11 @@ namespace AdminTools
                     Level = Privilege.User,
                     Name = sender.Name,
                     Password = password,
+                    Ban = null
                 };
-                lock (_accounts.Accounts) _accounts.Accounts.Add(accObject);
+                lock (Lists._accounts.Accounts) Lists._accounts.Accounts.Add(accObject);
                 SaveAccounts(Location + "Accounts.xml");
-                lock (_authenticatedUsers) _authenticatedUsers.Add(sender.NetConnection.RemoteUniqueIdentifier);
+                lock (Lists._authenticatedUsers) Lists._authenticatedUsers.Add(sender.NetConnection.RemoteUniqueIdentifier);
 
                 Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCOUNT", "Your account has been created!");
                 Console.WriteLine(string.Format("ADMINTOOLS: New player registered: {0}", accObject.Name));
@@ -387,7 +372,7 @@ namespace AdminTools
                     return false;
                 }
 
-                lock (_accounts.Accounts) account = _accounts.Accounts.FirstOrDefault(acc => acc.Name == sender.Name);
+                account = sender.GetAccount(false);
 
                 if (account == null)
                 {
@@ -410,7 +395,7 @@ namespace AdminTools
                     return false;
                 }
 
-                lock (_authenticatedUsers) _authenticatedUsers.Add(sender.NetConnection.RemoteUniqueIdentifier);
+                lock (Lists._authenticatedUsers) if (Lists._authenticatedUsers.Contains(sender.NetConnection.RemoteUniqueIdentifier)) Lists._authenticatedUsers.Add(sender.NetConnection.RemoteUniqueIdentifier);
 
                 Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCOUNT", "Authentication successful!");
                 Console.WriteLine(string.Format("ADMINTOOLS: New player logged in: {0}", account.Name + " (" + sender.DisplayName + ")"));
@@ -420,12 +405,12 @@ namespace AdminTools
 
             if (message == "/logout")
             {
-                if (authenticated)
+                if (sender.IsAuthenticated())
                 {
                     Console.WriteLine(string.Format("ADMINTOOLS: Player has logged out: {0}", sender.Name));
                     Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCOUNT", "You have been logged out.");
 
-                    lock (_authenticatedUsers) _authenticatedUsers.Remove(sender.NetConnection.RemoteUniqueIdentifier);
+                    lock (Lists._authenticatedUsers) if (Lists._authenticatedUsers.Contains(sender.NetConnection.RemoteUniqueIdentifier)) Lists._authenticatedUsers.Remove(sender.NetConnection.RemoteUniqueIdentifier);
                 }
                 else
                 {
@@ -461,19 +446,12 @@ namespace AdminTools
 
         public override bool OnPlayerDisconnect(Client player)
         {
-            lock (_authenticatedUsers) if (_authenticatedUsers.Contains(player.NetConnection.RemoteUniqueIdentifier)) _authenticatedUsers.Remove(player.NetConnection.RemoteUniqueIdentifier);
-            lock (_banned)
-            {
-                if (_banned.BannedIps.Any(b => b.Address == player.NetConnection.RemoteEndPoint.Address.ToString()))
-                    return false;
-            }
+            lock (Lists._authenticatedUsers) if (Lists._authenticatedUsers.Contains(player.NetConnection.RemoteUniqueIdentifier)) Lists._authenticatedUsers.Remove(player.NetConnection.RemoteUniqueIdentifier);
+
+            if (player.IsBanned() || player.IsIPBanned()) return false;
 
             return true;
         }
-
-        private UserList _accounts;
-        private Banlist _banned;
-        private List<long> _authenticatedUsers;
 
         private void LoadAccounts(string path)
         {
@@ -482,13 +460,13 @@ namespace AdminTools
             {
                 using (var stream = new FileStream(path, FileMode.Open, FileAccess.ReadWrite))
                 {
-                    _accounts = (UserList)ser.Deserialize(stream);
+                    Lists._accounts = (UserList)ser.Deserialize(stream);
                 }
             }
             else
             {
-                _accounts = new UserList();
-                _accounts.Accounts = new List<Account>();
+                Lists._accounts = new UserList();
+                Lists._accounts.Accounts = new List<Account>();
                 SaveAccounts(path);
             }
         }
@@ -498,7 +476,7 @@ namespace AdminTools
             XmlSerializer ser = new XmlSerializer(typeof(UserList));
             using (var stream = new FileStream(path, File.Exists(path) ? FileMode.Truncate : FileMode.Create, FileAccess.ReadWrite))
             {
-                ser.Serialize(stream, _accounts);
+                ser.Serialize(stream, Lists._accounts);
             }
         }
 
@@ -509,13 +487,29 @@ namespace AdminTools
             {
                 using (var stream = new FileStream(path, FileMode.Open, FileAccess.ReadWrite))
                 {
-                    _banned = (Banlist)ser.Deserialize(stream);
+                    Lists._banned = (Banlist)ser.Deserialize(stream);
                 }
+
+                Lists._accounts.Accounts.ForEach(acc=>
+                {
+                    acc.Ban = null;
+                    Lists._banned.BannedIps.Any(b =>
+                    {
+                        if (b.Name == acc.Name)
+                        {
+                            acc.Ban = b;
+
+                            return true;
+                        }
+
+                        return false;
+                    });
+                });
             }
             else
             {
-                _banned = new Banlist();
-                _banned.BannedIps = new List<Ban>();
+                Lists._banned = new Banlist();
+                Lists._banned.BannedIps = new List<Ban>();
                 SaveBanlist(path);
             }
         }
@@ -525,7 +519,7 @@ namespace AdminTools
             XmlSerializer ser = new XmlSerializer(typeof(Banlist));
             using (var stream = new FileStream(path, File.Exists(path) ? FileMode.Truncate : FileMode.Create, FileAccess.ReadWrite))
             {
-                ser.Serialize(stream, _banned);
+                ser.Serialize(stream, Lists._banned);
             }
         }
 
@@ -562,6 +556,89 @@ namespace AdminTools
         public string Name { get; set; }
         public string Password { get; set; }
         public Privilege Level { get; set; }
+        public Ban Ban { get; set; }
+    }
+
+    public static class Accounts
+    {
+        public static bool IsAuthenticated(this Client client)
+        {
+            lock (Lists._authenticatedUsers) return Lists._authenticatedUsers.Contains(client.NetConnection.RemoteUniqueIdentifier);
+        }
+
+        public static Account GetAccount(this Client client, bool checkauthentication = true)
+        {
+            if (!checkauthentication || client.IsAuthenticated()) lock (Lists._accounts.Accounts) return Lists._accounts.Accounts.FirstOrDefault(acc => acc.Name == client.Name);
+
+            return null;
+        }
+
+        public static bool IsIPBanned(this Client client)
+        {
+            bool banned = false;
+            lock (Lists._banned.BannedIps)
+            {
+                banned = Lists._banned.BannedIps.Any(b =>
+                {
+                    if(b.Address == client.NetConnection.RemoteEndPoint.Address.ToString())
+                    {
+                        client.GetAccount().Ban = b;
+
+                        return true;
+                    }
+
+                    return false;
+                });
+            }
+
+            return banned;
+        }
+
+        public static bool IsBanned(this Client client)
+        {
+            return client.GetBan() != null;
+        }
+
+        public static Ban GetBan(this Client client)
+        {
+            Account account = client.GetAccount();
+
+            return account == null ? null : account.Ban;
+        }
+
+        public static void Ban(this Client client, string Reason, Client IssuedBy = null)
+        {
+            Ban ban = new Ban()
+            {
+                Address = client.NetConnection.RemoteEndPoint.Address.ToString(),
+                BannedBy = IssuedBy == null ? "Server" : IssuedBy.Name,
+                Reason = Reason,
+                TimeIssued = DateTime.Now,
+                Name = client.Name,
+            };
+
+            lock (Lists._banned.BannedIps) Lists._banned.BannedIps.Add(ban);
+
+            client.GetAccount().Ban = ban;
+        }
+
+        public static Client GetClient(this Account account)
+        {
+            Client client = null;
+            lock (Program.ServerInstance.Clients) Program.ServerInstance.Clients.Any(c =>
+            {
+                if (c.Name == account.Name)
+                {
+                    client = c;
+
+                    return true;
+                }
+
+                return false;
+            });
+
+            return client;
+        }
     }
 
     public class Banlist
