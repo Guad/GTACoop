@@ -11,26 +11,26 @@ namespace GTAServer
         }
 
 
-        public virtual bool OnChatMessage(NetConnection sender, string message)
+        public virtual bool OnChatMessage(Client sender, string message)
         {
             return true;
         }
 
-        public virtual void OnPlayerConnect(NetConnection player)
+        public virtual void OnPlayerConnect(Client player)
         {
         }
 
 
-        public virtual void OnPlayerDisconnect(NetConnection player)
+        public virtual void OnPlayerDisconnect(Client player)
         {
         }
 
 
-        public virtual void OnConnectionRefused(NetConnection player, string reason)
+        public virtual void OnConnectionRefused(Client player, string reason)
         {
         }
 
-        public virtual void OnPlayerKilled(NetConnection player)
+        public virtual void OnPlayerKilled(Client player)
         {
         }
 

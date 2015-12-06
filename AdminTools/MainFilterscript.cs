@@ -40,24 +40,27 @@ namespace AdminTools
         {
             LoadAccounts(Location + "Accounts.xml");
             LoadBanlist(Location + "Banlist.xml");
-            _authenticatedUsers = new Dictionary<long, Account>();
+            _authenticatedUsers = new List<long>();
             Console.WriteLine("Accounts have been loaded.");
 
             ServerWeather = 0;
             ServerTime = new TimeSpan(12, 0, 0);
         }
 
-        public override void OnPlayerConnect(NetConnection player)
+        public override void OnPlayerConnect(Client player)
         {
-            if (_banned.BannedIps.Any(b => b.Address == player.RemoteEndPoint.Address.ToString()))
+            lock (_banned.BannedIps)
             {
-                Program.ServerInstance.SendChatMessageToPlayer(player, "BANNED", "You are banned.");
-                Program.ServerInstance.KickPlayer(player, "You are banned.");
-                return;
+                if (_banned.BannedIps.Any(b => b.Address == player.NetConnection.RemoteEndPoint.Address.ToString()))
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(player, "BANNED", "You are banned.");
+                    Program.ServerInstance.KickPlayer(player, "You are banned.");
+                    return;
+                }
             }
 
-            var name = Program.ServerInstance.NickNames[player.RemoteUniqueIdentifier];
-            var account = _accounts.Accounts.FirstOrDefault(acc => acc.Name == name);
+            Account account = null;
+            lock (_accounts.Accounts) account = _accounts.Accounts.FirstOrDefault(acc => acc.Name == player.Name);
 
             if (account == null)
             {
@@ -79,12 +82,13 @@ namespace AdminTools
             }
         }
 
-        public override bool OnChatMessage(NetConnection sender, string message)
+        public override bool OnChatMessage(Client sender, string message)
         {
-            var account = _authenticatedUsers.ContainsKey(sender.RemoteUniqueIdentifier)
-                ? _authenticatedUsers[sender.RemoteUniqueIdentifier]
-                : null;
+            bool authenticated = false;
+            lock (_authenticatedUsers) authenticated = _authenticatedUsers.Contains(sender.NetConnection.RemoteUniqueIdentifier);
 
+            Account account = null;
+            lock (_accounts.Accounts) if (authenticated) account = _accounts.Accounts.FirstOrDefault(acc => acc.Name == sender.Name);
 
             if (message.StartsWith("/tp"))
             {
@@ -101,11 +105,8 @@ namespace AdminTools
                     return false;
                 }
 
-                var target =
-                    Program.ServerInstance.Clients.FirstOrDefault(
-                        c =>
-                            c.RemoteUniqueIdentifier ==
-                            Program.ServerInstance.NickNames.FirstOrDefault(pair => pair.Value.ToLower().StartsWith(args[1].ToLower())).Key);
+                Client target = null;
+                lock (Program.ServerInstance.Clients) target = Program.ServerInstance.Clients.FirstOrDefault(c => c.DisplayName.ToLower().StartsWith(args[1].ToLower()));
 
                 if (target == null)
                 {
@@ -119,8 +120,7 @@ namespace AdminTools
                     Program.ServerInstance.TeleportPlayer(sender, newPos);
                 });
 
-                Console.WriteLine(string.Format("ADMINTOOLS: {0} has teleported to player {1}", account.Name,
-                    Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier]));
+                Console.WriteLine(string.Format("ADMINTOOLS: {0} has teleported to player {1}", account.Name + " (" + sender.DisplayName + ")", target.Name + " (" + target.DisplayName + ")"));
 
                 return false;
             }
@@ -157,7 +157,7 @@ namespace AdminTools
                     Program.ServerInstance.RecallNativeCallOnTickForAllPlayers("GODMODE");
                 }
 
-                Console.WriteLine(string.Format("ADMINTOOLS: {0} has set global god mode disabling to {1}", account.Name, !newValue));
+                Console.WriteLine(string.Format("ADMINTOOLS: {0} has set global god mode disabling to {1}", account.Name + " (" + sender.DisplayName + ")", !newValue));
 
                 return false;
             }
@@ -193,7 +193,7 @@ namespace AdminTools
                 ServerWeather = newWeather;
                 Program.ServerInstance.SendNativeCallToAllPlayers(0x29B487C359E19889, _weatherNames[ServerWeather]);
 
-                Console.WriteLine(string.Format("ADMINTOOLS: {0} has changed the weather to {1}", account.Name, ServerWeather));
+                Console.WriteLine(string.Format("ADMINTOOLS: {0} has changed the weather to {1}", account.Name + " (" + sender.DisplayName + ")", ServerWeather));
 
                 return false;
             }
@@ -234,7 +234,7 @@ namespace AdminTools
                 Program.ServerInstance.SendNativeCallToAllPlayers(0x47C3B5848C3E45D8, ServerTime.Hours, ServerTime.Minutes, ServerTime.Seconds);
                 Program.ServerInstance.SendNativeCallToAllPlayers(0x4055E40BD2DBEC1D, true);
 
-                Console.WriteLine(string.Format("ADMINTOOLS: {0} has changed the time to {1}", account.Name, ServerTime));
+                Console.WriteLine(string.Format("ADMINTOOLS: {0} has changed the time to {1}", account.Name + " (" + sender.DisplayName + ")", ServerTime));
 
                 return false;
             }
@@ -254,11 +254,8 @@ namespace AdminTools
                     return false;
                 }
 
-                var target =
-                    Program.ServerInstance.Clients.FirstOrDefault(
-                        c =>
-                            c.RemoteUniqueIdentifier ==
-                            Program.ServerInstance.NickNames.FirstOrDefault(pair => pair.Value.ToLower().StartsWith(args[1].ToLower())).Key);
+                Client target = null;
+                lock (Program.ServerInstance.Clients) target = Program.ServerInstance.Clients.FirstOrDefault(c => c.DisplayName.ToLower().StartsWith(args[1].ToLower()));
 
                 if (target == null)
                 {
@@ -267,8 +264,7 @@ namespace AdminTools
                 }
 
                 Program.ServerInstance.SetPlayerHealth(target, -1);
-                Console.WriteLine(string.Format("ADMINTOOLS: {0} has killed player {1}", account.Name,
-                    Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier]));
+                Console.WriteLine(string.Format("ADMINTOOLS: {0} has killed player {1}", account.Name + " (" + sender.DisplayName + ")", target.Name + " (" + target.DisplayName + ")"));
                 return false;
             }
 
@@ -287,11 +283,8 @@ namespace AdminTools
                     return false;
                 }
 
-                var target =
-                    Program.ServerInstance.Clients.FirstOrDefault(
-                        c =>
-                            c.RemoteUniqueIdentifier ==
-                            Program.ServerInstance.NickNames.FirstOrDefault(pair => pair.Value.ToLower().StartsWith(args[1].ToLower())).Key);
+                Client target = null;
+                lock (Program.ServerInstance.Clients) target = Program.ServerInstance.Clients.FirstOrDefault(c => c.DisplayName.ToLower().StartsWith(args[1].ToLower()));
 
                 if (target == null)
                 {
@@ -299,19 +292,21 @@ namespace AdminTools
                     return false;
                 }
 
-                _banned.BannedIps.Add(new Ban()
+                lock (_banned.BannedIps)
                 {
-                    Address = target.RemoteEndPoint.Address.ToString(),
-                    BannedBy = account.Name,
-                    Reason = args[2],
-                    TimeIssued = DateTime.Now,
-                    Name = Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier],
-                });
+                    _banned.BannedIps.Add(new Ban()
+                    {
+                        Address = target.NetConnection.RemoteEndPoint.Address.ToString(),
+                        BannedBy = account.Name,
+                        Reason = args[2],
+                        TimeIssued = DateTime.Now,
+                        Name = target.Name,
+                    });
+                }
 
                 SaveBanlist(Location + "Banlist.xml");
 
-                Console.WriteLine(string.Format("ADMINTOOLS: {0} has banned player {1} with reason: {2}", account.Name,
-                    Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier], args[2]));
+                Console.WriteLine(string.Format("ADMINTOOLS: {0} has banned player {1} with reason: {2}", account.Name + " (" + sender.DisplayName + ")", target.Name + " (" + target.DisplayName + ")", args[2]));
                 Program.ServerInstance.KickPlayer(target, "You have been banned: " + args[2]);
                 return false;
             }
@@ -331,11 +326,8 @@ namespace AdminTools
                     return false;
                 }
 
-                var target =
-                    Program.ServerInstance.Clients.FirstOrDefault(
-                        c =>
-                            c.RemoteUniqueIdentifier ==
-                            Program.ServerInstance.NickNames.FirstOrDefault(pair => pair.Value.ToLower().StartsWith(args[1].ToLower())).Key);
+                Client target = null;
+                lock (Program.ServerInstance.Clients) target = Program.ServerInstance.Clients.FirstOrDefault(c => c.DisplayName.ToLower().StartsWith(args[1].ToLower()));
 
                 if (target == null)
                 {
@@ -344,13 +336,13 @@ namespace AdminTools
                 }
 
                 Program.ServerInstance.KickPlayer(target, args[2]);
-                Console.WriteLine(string.Format("ADMINTOOLS: {0} has kickd player {1}", account.Name, Program.ServerInstance.NickNames[target.RemoteUniqueIdentifier]));
+                Console.WriteLine(string.Format("ADMINTOOLS: {0} has kicked player {1}", account.Name + " (" + sender.DisplayName + ")", target.Name + " (" + target.DisplayName + ")"));
                 return false;
             }
 
             if (message.StartsWith("/register"))
             {
-                account = _accounts.Accounts.FirstOrDefault(acc => acc.Name == Program.ServerInstance.NickNames[sender.RemoteUniqueIdentifier]);
+                lock (_accounts.Accounts) account = _accounts.Accounts.FirstOrDefault(acc => acc.Name == sender.Name);
                 if (account != null)
                 {
                     Program.ServerInstance.SendChatMessageToPlayer(sender, "ERROR", "You already have an account.");
@@ -368,12 +360,12 @@ namespace AdminTools
                 var accObject = new Account()
                 {
                     Level = Privilege.User,
-                    Name = Program.ServerInstance.NickNames[sender.RemoteUniqueIdentifier],
+                    Name = sender.Name,
                     Password = password,
                 };
-                _accounts.Accounts.Add(accObject);
+                lock (_accounts.Accounts) _accounts.Accounts.Add(accObject);
                 SaveAccounts(Location + "Accounts.xml");
-                _authenticatedUsers.Add(sender.RemoteUniqueIdentifier, accObject);
+                lock (_authenticatedUsers) _authenticatedUsers.Add(sender.NetConnection.RemoteUniqueIdentifier);
 
                 Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCOUNT", "Your account has been created!");
                 Console.WriteLine(string.Format("ADMINTOOLS: New player registered: {0}", accObject.Name));
@@ -388,7 +380,7 @@ namespace AdminTools
                     return false;
                 }
 
-                account = _accounts.Accounts.FirstOrDefault(acc => acc.Name == Program.ServerInstance.NickNames[sender.RemoteUniqueIdentifier]);
+                lock (_accounts.Accounts) account = _accounts.Accounts.FirstOrDefault(acc => acc.Name == sender.Name);
 
                 if (account == null)
                 {
@@ -411,20 +403,22 @@ namespace AdminTools
                     return false;
                 }
 
-                _authenticatedUsers.Add(sender.RemoteUniqueIdentifier, account);
+                lock (_authenticatedUsers) _authenticatedUsers.Add(sender.NetConnection.RemoteUniqueIdentifier);
+
                 Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCOUNT", "Authentication successful!");
-                Console.WriteLine(string.Format("ADMINTOOLS: New player logged in: {0}", account.Name));
+                Console.WriteLine(string.Format("ADMINTOOLS: New player logged in: {0}", account.Name + " (" + sender.DisplayName + ")"));
                 return false;
             }
 
 
             if (message == "/logout")
             {
-                if (_authenticatedUsers.ContainsKey(sender.RemoteUniqueIdentifier))
+                if (authenticated)
                 {
-                    Console.WriteLine(string.Format("ADMINTOOLS: Player has logged out: {0}", _authenticatedUsers[sender.RemoteUniqueIdentifier].Name));
+                    Console.WriteLine(string.Format("ADMINTOOLS: Player has logged out: {0}", sender.Name));
                     Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCOUNT", "You have been logged out.");
-                    _authenticatedUsers.Remove(sender.RemoteUniqueIdentifier);
+
+                    lock (_authenticatedUsers) _authenticatedUsers.Remove(sender.NetConnection.RemoteUniqueIdentifier);
                 }
                 else
                 {
@@ -436,15 +430,14 @@ namespace AdminTools
             return true;
         }
 
-        public override void OnPlayerDisconnect(NetConnection player)
+        public override void OnPlayerDisconnect(Client player)
         {
-            if (_authenticatedUsers.ContainsKey(player.RemoteUniqueIdentifier))
-                _authenticatedUsers.Remove(player.RemoteUniqueIdentifier);
+            lock (_authenticatedUsers) if (_authenticatedUsers.Contains(player.NetConnection.RemoteUniqueIdentifier)) _authenticatedUsers.Remove(player.NetConnection.RemoteUniqueIdentifier);
         }
 
         private UserList _accounts;
         private Banlist _banned;
-        private Dictionary<long, Account> _authenticatedUsers;
+        private List<long> _authenticatedUsers;
 
         private void LoadAccounts(string path)
         {

@@ -14,12 +14,24 @@ using ProtoBuf;
 
 namespace GTAServer
 {
+    public class Client
+    {
+        public NetConnection NetConnection { get; private set; }
+        public string Name { get; set; }
+        public string DisplayName { get; set; }
+        public float Latency { get; set; }
+
+        public Client(NetConnection nc)
+        {
+            NetConnection = nc;
+        }
+    }
+
     public class GameServer
     {
         public GameServer(int port, string name, string gamemodeName)
         {
-            Clients = new List<NetConnection>();
-            NickNames = new Dictionary<long, string>();
+            Clients = new List<Client>();
             MaxPlayers = 32;
             Port = port;
             GamemodeName = gamemodeName;
@@ -33,22 +45,21 @@ namespace GTAServer
             config.EnableMessageType(NetIncomingMessageType.UnconnectedData);
             config.EnableMessageType(NetIncomingMessageType.ConnectionLatencyUpdated);
             Server = new NetServer(config);
-            KnownLatencies = new Dictionary<long, float>();
         }
 
         public NetServer Server;
 
         public int MaxPlayers { get; set; }
         public int Port { get; set; }
-        public List<NetConnection> Clients { get; set; }
-        public Dictionary<long, float> KnownLatencies { get; set; }
-        public Dictionary<long, string> NickNames;
+        public List<Client> Clients { get; set; }
         public string Name { get; set; }
         public string Password { get; set; }
         public bool PasswordProtected { get; set; }
         public string GamemodeName { get; set; }
         public string MasterServer { get; set; }
         public bool AnnounceSelf { get; set; }
+
+        public bool AllowDisplayNames { get; set; }
 
         private ServerScript _gamemode { get; set; }
         private List<ServerScript> _filterscripts;
@@ -183,13 +194,16 @@ namespace GTAServer
             if (DateTime.UtcNow.Day != _lastDay)
             {
                 _lastDay = DateTime.UtcNow.Day;
-                if (AnnounceSelf)
-                    AnnounceSelfToMaster();
+                if (AnnounceSelf) AnnounceSelfToMaster();
             }
 
             NetIncomingMessage msg;
             while ((msg = Server.ReadMessage()) != null)
             {
+                Client client = null;
+                lock (Clients) foreach (Client c in Clients) if (c.NetConnection != null && c.NetConnection.RemoteUniqueIdentifier != null && c.NetConnection.RemoteUniqueIdentifier == msg.SenderConnection.RemoteUniqueIdentifier) { client = c; break; }
+                if (client == null) client = new Client(msg.SenderConnection);
+
                 switch (msg.MessageType)
                 {
                     case NetIncomingMessageType.UnconnectedData:
@@ -199,7 +213,7 @@ namespace GTAServer
                             Console.WriteLine("INFO: ping received from " + msg.SenderEndPoint.Address.ToString());
                             var pong = Server.CreateMessage();
                             pong.Write("pong");
-                            Server.SendMessage(pong, msg.SenderConnection, NetDeliveryMethod.ReliableOrdered);
+                            Server.SendMessage(pong, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
                         }
                         break;
                     case NetIncomingMessageType.VerboseDebugMessage:
@@ -209,11 +223,7 @@ namespace GTAServer
                         Console.WriteLine(msg.ReadString());
                         break;
                     case NetIncomingMessageType.ConnectionLatencyUpdated:
-                        var latency = msg.ReadFloat();
-                        if (KnownLatencies.ContainsKey(msg.SenderConnection.RemoteUniqueIdentifier))
-                            KnownLatencies[msg.SenderConnection.RemoteUniqueIdentifier] = latency;
-                        else
-                            KnownLatencies.Add(msg.SenderConnection.RemoteUniqueIdentifier, latency);
+                        client.Latency = msg.ReadFloat();
                         break;
                     case NetIncomingMessageType.ConnectionApproval:
                         var type = msg.ReadInt32();
@@ -221,91 +231,92 @@ namespace GTAServer
                         var connReq = DeserializeBinary<ConnectionRequest>(msg.ReadBytes(leng)) as ConnectionRequest;
                         if (connReq == null)
                         {
-                            msg.SenderConnection.Deny("Connection Object is null");
+                            client.NetConnection.Deny("Connection Object is null");
                             Server.Recycle(msg);
                             continue;
                         }
 
-                        if (Clients.Count < MaxPlayers)
+                        int clients = 0;
+                        lock (Clients) clients = Clients.Count;
+                        if (clients < MaxPlayers)
                         {
                             if (PasswordProtected && !string.IsNullOrWhiteSpace(Password))
                             {
                                 if (Password != connReq.Password)
                                 {
-                                    msg.SenderConnection.Deny("Wrong password.");
+                                    client.NetConnection.Deny("Wrong password.");
                                     Console.WriteLine("Player connection refused: wrong password.");
-                                    if (_gamemode != null) _gamemode.OnConnectionRefused(msg.SenderConnection, "Wrong password");
-                                    if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(msg.SenderConnection, "Wrong password"));
+                                    if (_gamemode != null) _gamemode.OnConnectionRefused(client, "Wrong password");
+                                    if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(client, "Wrong password"));
                                     Server.Recycle(msg);
                                     continue;
                                 }
                             }
 
-                            Clients.Add(msg.SenderConnection);
-                            if (NickNames.ContainsKey(msg.SenderConnection.RemoteUniqueIdentifier))
-                                NickNames[msg.SenderConnection.RemoteUniqueIdentifier] = connReq.Name;
-                            else
-                                NickNames.Add(msg.SenderConnection.RemoteUniqueIdentifier, connReq.Name);
+                            lock (Clients) Clients.Add(client);
+                            if (string.IsNullOrWhiteSpace(client.Name)) client.Name = connReq.Name;
+                            if (string.IsNullOrWhiteSpace(client.DisplayName)) client.DisplayName = AllowDisplayNames ? connReq.DisplayName : connReq.Name;
 
                             var channelHail = Server.CreateMessage();
-                            channelHail.Write(GetChannelIdForConnection(msg.SenderConnection));
-                            msg.SenderConnection.Approve(channelHail);
+                            channelHail.Write(GetChannelIdForConnection(client));
+                            client.NetConnection.Approve(channelHail);
 
                             var chatObj = new ChatData()
                             {
                                 Sender = "SERVER",
                                 Message =
-                                    "Player ~h~" + NickNames[msg.SenderConnection.RemoteUniqueIdentifier] +
+                                    "Player ~h~" + client.DisplayName +
                                     "~h~ has connected.",
                             };
 
                             SendToAll(chatObj, PacketType.ChatData, 0);
 
-                            Console.WriteLine("New player connected: " + NickNames[msg.SenderConnection.RemoteUniqueIdentifier]);
+                            Console.WriteLine("New player connected: " + client.Name + " (" + client.DisplayName + ")");
 
-                            if (_gamemode != null) _gamemode.OnPlayerConnect(msg.SenderConnection);
-                            if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnPlayerConnect(msg.SenderConnection));
+                            if (_gamemode != null) _gamemode.OnPlayerConnect(client);
+                            if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnPlayerConnect(client));
                         }
                         else
                         {
-                            msg.SenderConnection.Deny("No available player slots.");
+                            client.NetConnection.Deny("No available player slots.");
                             Console.WriteLine("Player connection refused: server full.");
-                            if (_gamemode != null) _gamemode.OnConnectionRefused(msg.SenderConnection, "Server is full");
-                            if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(msg.SenderConnection, "Server is full"));
+                            if (_gamemode != null) _gamemode.OnConnectionRefused(client, "Server is full");
+                            if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(client, "Server is full"));
                         }
                         break;
                     case NetIncomingMessageType.StatusChanged:
                         var newStatus = (NetConnectionStatus)msg.ReadByte();
-                        if (newStatus == NetConnectionStatus.Disconnected && Clients.Contains(msg.SenderConnection))
+                        if (newStatus == NetConnectionStatus.Disconnected)
                         {
-                            var name = "";
-                            if (NickNames.ContainsKey(msg.SenderConnection.RemoteUniqueIdentifier))
-                                name = NickNames[msg.SenderConnection.RemoteUniqueIdentifier];
-
-                            var chatObj = new ChatData()
+                            lock (Clients)
                             {
-                                Sender = "SERVER",
-                                Message =
-                                    "Player ~h~" + name +
-                                    "~h~ has disconnected.",
-                            };
+                                if (Clients.Contains(client))
+                                {
+                                    var chatObj = new ChatData()
+                                    {
+                                        Sender = "SERVER",
+                                        Message =
+                                            "Player ~h~" + client.DisplayName +
+                                            "~h~ has disconnected.",
+                                    };
 
-                            SendToAll(chatObj, PacketType.ChatData, 0);
+                                    SendToAll(chatObj, PacketType.ChatData, 0);
 
-                            var dcObj = new PlayerDisconnect()
-                            {
-                                Id = msg.SenderConnection.RemoteUniqueIdentifier,
-                            };
+                                    var dcObj = new PlayerDisconnect()
+                                    {
+                                        Id = client.NetConnection.RemoteUniqueIdentifier,
+                                    };
 
-                            SendToAll(dcObj, PacketType.PlayerDisconnect, 0);
+                                    SendToAll(dcObj, PacketType.PlayerDisconnect, 0);
 
-                            Console.WriteLine("Player disconnected: " + name);
+                                    Console.WriteLine("Player disconnected: " + client.Name + " (" + client.DisplayName + ")");
 
-                            if (_gamemode != null) _gamemode.OnPlayerDisconnect(msg.SenderConnection);
-                            if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnPlayerDisconnect(msg.SenderConnection));
+                                    if (_gamemode != null) _gamemode.OnPlayerDisconnect(client);
+                                    if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnPlayerDisconnect(client));
 
-                            Clients.Remove(msg.SenderConnection);
-                            NickNames.Remove(msg.SenderConnection.RemoteUniqueIdentifier);
+                                    Clients.Remove(client);
+                                }
+                            }
                         }
                         break;
                     case NetIncomingMessageType.DiscoveryRequest:
@@ -314,7 +325,7 @@ namespace GTAServer
                         obj.ServerName = Name;
                         obj.MaxPlayers = MaxPlayers;
                         obj.PasswordProtected = PasswordProtected;
-                        obj.PlayerCount = Clients.Count;
+                        lock (Clients) obj.PlayerCount = Clients.Count;
                         obj.Port = Port;
 
                         var bin = SerializeBinary(obj);
@@ -339,17 +350,14 @@ namespace GTAServer
                                         if (data != null)
                                         {
                                             var pass = true;
-                                            if (_gamemode != null)
-                                            {
-                                                pass = _gamemode.OnChatMessage(msg.SenderConnection, data.Message);
-                                            }
+                                            if (_gamemode != null) pass = _gamemode.OnChatMessage(client, data.Message);
 
-                                            if (_filterscripts != null) _filterscripts.ForEach(fs => pass = pass && fs.OnChatMessage(msg.SenderConnection, data.Message));
+                                            if (_filterscripts != null) _filterscripts.ForEach(fs => pass = pass && fs.OnChatMessage(client, data.Message));
 
                                             if (pass)
                                             {
-                                                data.Id = msg.SenderConnection.RemoteUniqueIdentifier;
-                                                data.Sender = NickNames[msg.SenderConnection.RemoteUniqueIdentifier];
+                                                data.Id = client.NetConnection.RemoteUniqueIdentifier;
+                                                data.Sender = client.DisplayName;
                                                 SendToAll(data, PacketType.ChatData, 0);
                                                 Console.WriteLine(data.Sender + ": " + data.Message);
                                             }
@@ -363,23 +371,17 @@ namespace GTAServer
                                 {
                                     try
                                     {
-                                        var name = "";
-                                        if (NickNames.ContainsKey(msg.SenderConnection.RemoteUniqueIdentifier))
-                                            name = NickNames[msg.SenderConnection.RemoteUniqueIdentifier];
-
                                         var len = msg.ReadInt32();
                                         var data =
                                             DeserializeBinary<VehicleData>(msg.ReadBytes(len)) as
                                                 VehicleData;
                                         if (data != null)
                                         {
-                                            data.Id = msg.SenderConnection.RemoteUniqueIdentifier;
-                                            data.Name = name;
-                                            if (KnownLatencies.ContainsKey(msg.SenderConnection.RemoteUniqueIdentifier))
-                                                data.Latency =
-                                                    KnownLatencies[msg.SenderConnection.RemoteUniqueIdentifier];
+                                            data.Id = client.NetConnection.RemoteUniqueIdentifier;
+                                            data.Name = client.Name;
+                                            data.Latency = client.Latency;
 
-                                            SendToAll(data, PacketType.VehiclePositionData, GetChannelIdForConnection(msg.SenderConnection), msg.SenderConnection.RemoteUniqueIdentifier);
+                                            SendToAll(data, PacketType.VehiclePositionData, GetChannelIdForConnection(client), client.NetConnection.RemoteUniqueIdentifier);
                                         }
                                     }
                                     catch (IndexOutOfRangeException)
@@ -390,20 +392,15 @@ namespace GTAServer
                                 {
                                     try
                                     {
-                                        var name = "";
-                                        if (NickNames.ContainsKey(msg.SenderConnection.RemoteUniqueIdentifier))
-                                            name = NickNames[msg.SenderConnection.RemoteUniqueIdentifier];
                                         var len = msg.ReadInt32();
-                                        var data =
-                                            DeserializeBinary<PedData>(msg.ReadBytes(len)) as PedData;
+                                        var data = DeserializeBinary<PedData>(msg.ReadBytes(len)) as PedData;
                                         if (data != null)
                                         {
-                                            data.Id = msg.SenderConnection.RemoteUniqueIdentifier;
-                                            data.Name = name;
-                                            if (KnownLatencies.ContainsKey(msg.SenderConnection.RemoteUniqueIdentifier))
-                                                data.Latency =
-                                                    KnownLatencies[msg.SenderConnection.RemoteUniqueIdentifier];
-                                            SendToAll(data, PacketType.PedPositionData, GetChannelIdForConnection(msg.SenderConnection), msg.SenderConnection.RemoteUniqueIdentifier);
+                                            data.Id = client.NetConnection.RemoteUniqueIdentifier;
+                                            data.Name = client.Name;
+                                            data.Latency = client.Latency;
+
+                                            SendToAll(data, PacketType.PedPositionData, GetChannelIdForConnection(client), client.NetConnection.RemoteUniqueIdentifier);
                                         }
                                     }
                                     catch (IndexOutOfRangeException)
@@ -420,8 +417,8 @@ namespace GTAServer
                                                 VehicleData;
                                         if (data != null)
                                         {
-                                            data.Id = msg.SenderConnection.RemoteUniqueIdentifier;
-                                            SendToAll(data, PacketType.NpcVehPositionData, GetChannelIdForConnection(msg.SenderConnection), msg.SenderConnection.RemoteUniqueIdentifier);
+                                            data.Id = client.NetConnection.RemoteUniqueIdentifier;
+                                            SendToAll(data, PacketType.NpcVehPositionData, GetChannelIdForConnection(client), client.NetConnection.RemoteUniqueIdentifier);
                                         }
                                     }
                                     catch (IndexOutOfRangeException)
@@ -438,7 +435,7 @@ namespace GTAServer
                                         if (data != null)
                                         {
                                             data.Id = msg.SenderConnection.RemoteUniqueIdentifier;
-                                            SendToAll(data, PacketType.NpcPedPositionData, GetChannelIdForConnection(msg.SenderConnection), msg.SenderConnection.RemoteUniqueIdentifier);
+                                            SendToAll(data, PacketType.NpcPedPositionData, GetChannelIdForConnection(client), client.NetConnection.RemoteUniqueIdentifier);
                                         }
                                     }
                                     catch (IndexOutOfRangeException)
@@ -449,7 +446,7 @@ namespace GTAServer
                                 {
                                     var dcObj = new PlayerDisconnect()
                                     {
-                                        Id = msg.SenderConnection.RemoteUniqueIdentifier,
+                                        Id = client.NetConnection.RemoteUniqueIdentifier,
                                     };
                                     SendToAll(dcObj, PacketType.WorldSharingStop, 0);
                                 }
@@ -497,8 +494,8 @@ namespace GTAServer
                                 break;
                             case PacketType.PlayerKilled:
                                 {
-                                    if (_gamemode != null) _gamemode.OnPlayerKilled(msg.SenderConnection);
-                                    if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnPlayerKilled(msg.SenderConnection));
+                                    if (_gamemode != null) _gamemode.OnPlayerKilled(client);
+                                    if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnPlayerKilled(client));
                                 }
                                 break;
                         }
@@ -516,14 +513,17 @@ namespace GTAServer
         public void SendToAll(object newData, PacketType packetType, int channel, long exclude = 0)
         {
             var data = SerializeBinary(newData);
-            foreach (var client in Clients)
+            lock (Clients)
             {
-                if (client.RemoteUniqueIdentifier == exclude) continue;
-                NetOutgoingMessage msg = Server.CreateMessage();
-                msg.Write((int)packetType);
-                msg.Write(data.Length);
-                msg.Write(data);
-                client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, channel);
+                foreach (var client in Clients)
+                {
+                    if (client.NetConnection.RemoteUniqueIdentifier == exclude) continue;
+                    NetOutgoingMessage msg = Server.CreateMessage();
+                    msg.Write((int)packetType);
+                    msg.Write(data.Length);
+                    msg.Write(data);
+                    client.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, channel);
+                }
             }
         }
 
@@ -552,12 +552,12 @@ namespace GTAServer
             }
         }
 
-        public int GetChannelIdForConnection(NetConnection conn)
+        public int GetChannelIdForConnection(Client conn)
         {
-            return (Clients.IndexOf(conn) % 31) + 1;
+            lock (Clients) return (Clients.IndexOf(conn) % 31) + 1;
         }
 
-        public void SendNativeCallToPlayer(NetConnection player, ulong hash, params object[] arguments)
+        public void SendNativeCallToPlayer(Client player, ulong hash, params object[] arguments)
         {
             var obj = new NativeData();
             obj.Hash = hash;
@@ -619,7 +619,7 @@ namespace GTAServer
             msg.Write(bin.Length);
             msg.Write(bin);
 
-            player.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(player));
+            player.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(player));
         }
 
         public void SendNativeCallToAllPlayers(ulong hash, params object[] arguments)
@@ -689,7 +689,7 @@ namespace GTAServer
             Server.SendToAll(msg, NetDeliveryMethod.ReliableOrdered);
         }
 
-        public void SetNativeCallOnTickForPlayer(NetConnection player, string identifier, ulong hash, params object[] arguments)
+        public void SetNativeCallOnTickForPlayer(Client player, string identifier, ulong hash, params object[] arguments)
         {
             var obj = new NativeData();
             obj.Hash = hash;
@@ -754,7 +754,7 @@ namespace GTAServer
             msg.Write(bin.Length);
             msg.Write(bin);
 
-            player.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(player));
+            player.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(player));
         }
 
         public void SetNativeCallOnTickForAllPlayers(string identifier, ulong hash, params object[] arguments)
@@ -825,7 +825,7 @@ namespace GTAServer
             Server.SendToAll(msg, NetDeliveryMethod.ReliableOrdered);
         }
 
-        public void RecallNativeCallOnTickForPlayer(NetConnection player, string identifier)
+        public void RecallNativeCallOnTickForPlayer(Client player, string identifier)
         {
             var wrapper = new NativeTickCall();
             wrapper.Identifier = identifier;
@@ -837,7 +837,7 @@ namespace GTAServer
             msg.Write(bin.Length);
             msg.Write(bin);
 
-            player.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(player));
+            player.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(player));
         }
 
         public void RecallNativeCallOnTickForAllPlayers(string identifier)
@@ -856,7 +856,7 @@ namespace GTAServer
         }
 
         private Dictionary<string, Action<object>> _callbacks = new Dictionary<string, Action<object>>();
-        public void GetNativeCallFromPlayer(NetConnection player, string salt, ulong hash, NativeArgument returnType, Action<object> callback,
+        public void GetNativeCallFromPlayer(Client player, string salt, ulong hash, NativeArgument returnType, Action<object> callback,
             params object[] arguments)
         {
             var obj = new NativeData();
@@ -864,7 +864,7 @@ namespace GTAServer
             obj.ReturnType = returnType;
             salt = Environment.TickCount.ToString() +
                    salt +
-                   player.RemoteUniqueIdentifier.ToString() +
+                   player.NetConnection.RemoteUniqueIdentifier.ToString() +
                    DateTime.Now.Subtract(new DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds.ToString();
             obj.Id = salt;
 
@@ -926,7 +926,7 @@ namespace GTAServer
             msg.Write(bin);
 
             _callbacks.Add(salt, callback);
-            player.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(player));
+            player.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(player));
         }
 
         // SCRIPTING
@@ -947,12 +947,12 @@ namespace GTAServer
             SendToAll(chatObj, PacketType.ChatData, 0);
         }
 
-        public void SendChatMessageToPlayer(NetConnection player, string message)
+        public void SendChatMessageToPlayer(Client player, string message)
         {
             SendChatMessageToPlayer(player, "", message);
         }
 
-        public void SendChatMessageToPlayer(NetConnection player, string sender, string message)
+        public void SendChatMessageToPlayer(Client player, string sender, string message)
         {
             var chatObj = new ChatData()
             {
@@ -966,43 +966,43 @@ namespace GTAServer
             msg.Write((int)PacketType.ChatData);
             msg.Write(data.Length);
             msg.Write(data);
-            player.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, 0);
+            player.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, 0);
         }
 
-        public void GivePlayerWeapon(NetConnection player, uint weaponHash, int ammo, bool equipNow, bool ammoLoaded)
+        public void GivePlayerWeapon(Client player, uint weaponHash, int ammo, bool equipNow, bool ammoLoaded)
         {
             SendNativeCallToPlayer(player, 0xBF0FD6E56C964FCB, new LocalPlayerArgument(), weaponHash, ammo, equipNow, ammo);
         }
 
-        public void KickPlayer(NetConnection player, string reason)
+        public void KickPlayer(Client player, string reason)
         {
-            player.Disconnect("Kicked: " + reason);
+            player.NetConnection.Disconnect("Kicked: " + reason);
         }
 
-        public void TeleportPlayer(NetConnection player, Vector3 newPosition)
+        public void TeleportPlayer(Client player, Vector3 newPosition)
         {
             SendNativeCallToPlayer(player, 0x06843DA7060A026B, new LocalPlayerArgument(), newPosition.X, newPosition.Y, newPosition.Z, 0, 0, 0, 1);
         }
 
-        public void GetPlayerPosition(NetConnection player, Action<object> callback, string salt = "salt")
+        public void GetPlayerPosition(Client player, Action<object> callback, string salt = "salt")
         {
             GetNativeCallFromPlayer(player,
                 salt,
                 0x3FEF770D40960D5A, new Vector3Argument(), callback, new LocalPlayerArgument(), 0);
         }
 
-        public void HasPlayerControlBeenPressed(NetConnection player, int controlId, Action<object> callback, string salt = "salt")
+        public void HasPlayerControlBeenPressed(Client player, int controlId, Action<object> callback, string salt = "salt")
         {
             GetNativeCallFromPlayer(player, salt,
                 0x580417101DDB492F, new BooleanArgument(), callback, 0, controlId);
         }
 
-        public void SetPlayerHealth(NetConnection player, int health)
+        public void SetPlayerHealth(Client player, int health)
         {
             SendNativeCallToPlayer(player, 0x6B76DC1F3AE6E6A3, new LocalPlayerArgument(), health + 100);
         }
 
-        public void GetPlayerHealth(NetConnection player, Action<object> callback, string salt = "salt")
+        public void GetPlayerHealth(Client player, Action<object> callback, string salt = "salt")
         {
             GetNativeCallFromPlayer(player, salt,
                 0xEEF059FAD016D209, new IntArgument(), callback, new LocalPlayerArgument());
