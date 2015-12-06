@@ -210,7 +210,21 @@ namespace GTAServer
             while ((msg = Server.ReadMessage()) != null)
             {
                 Client client = null;
-                lock (Clients) foreach (Client c in Clients) if (c.NetConnection != null && c.NetConnection.RemoteUniqueIdentifier != 0 && c.NetConnection.RemoteUniqueIdentifier == msg.SenderConnection.RemoteUniqueIdentifier) { client = c; break; }
+                lock (Clients)
+                {
+                    foreach (Client c in Clients)
+                    {
+                        if (c != null && c.NetConnection != null &&
+                            c.NetConnection.RemoteUniqueIdentifier != 0 &&
+                            msg.SenderConnection != null &&
+                            c.NetConnection.RemoteUniqueIdentifier == msg.SenderConnection.RemoteUniqueIdentifier)
+                        {
+                            client = c;
+                            break;
+                        }
+                    }
+                }
+
                 if (client == null) client = new Client(msg.SenderConnection);
 
                 switch (msg.MessageType)
