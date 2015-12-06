@@ -269,18 +269,44 @@ namespace GTAServer
                                 {
                                     client.NetConnection.Deny("Wrong password.");
                                     Console.WriteLine("Player connection refused: wrong password.");
+
                                     if (_gamemode != null) _gamemode.OnConnectionRefused(client, "Wrong password");
                                     if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(client, "Wrong password"));
+
                                     Server.Recycle(msg);
+
                                     continue;
                                 }
                             }
 
-                            lock (Clients) Clients.Add(client);
-                            if (string.IsNullOrWhiteSpace(client.Name)) client.Name = connReq.Name;
-                            if (string.IsNullOrWhiteSpace(client.DisplayName)) client.DisplayName = AllowDisplayNames ? connReq.DisplayName : connReq.Name;
-                            if (client.RemoteScriptVersion != (ScriptVersion) connReq.ScriptVersion)
-                                client.RemoteScriptVersion = (ScriptVersion) connReq.ScriptVersion;
+                            lock (Clients)
+                            {
+                                int duplicate = 0;
+                                string displayname = connReq.DisplayName;
+                                while (AllowDisplayNames && Clients.Any(c => c.DisplayName == connReq.DisplayName))
+                                {
+                                    /*client.NetConnection.Deny("Display name taken.");
+                                    Console.WriteLine("Player connection refused: display name taken.");
+
+                                    if (_gamemode != null) _gamemode.OnConnectionRefused(client, "Display name taken");
+                                    if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(client, "Display name taken"));
+
+                                    Server.Recycle(msg);
+
+                                    continue;*/
+
+                                    duplicate++;
+
+                                    connReq.DisplayName = displayname + " (" + duplicate + ")";
+                                }
+
+                                Clients.Add(client);
+                            }
+
+                            client.Name = connReq.Name;
+                            client.DisplayName = AllowDisplayNames ? connReq.DisplayName : connReq.Name;
+
+                            if (client.RemoteScriptVersion != (ScriptVersion)connReq.ScriptVersion) client.RemoteScriptVersion = (ScriptVersion)connReq.ScriptVersion;
                             if (client.GameVersion != connReq.GameVersion) client.GameVersion = connReq.GameVersion;
 
                             var channelHail = Server.CreateMessage();

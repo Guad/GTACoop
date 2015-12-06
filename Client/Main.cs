@@ -702,7 +702,7 @@ namespace GTACoOp
 
             var obj = new ConnectionRequest();
             obj.Name = string.IsNullOrWhiteSpace(Game.Player.Name) ? "Player" : Game.Player.Name; // To be used as identifiers in server files
-            obj.DisplayName = string.IsNullOrWhiteSpace(PlayerSettings.DisplayName) ? obj.Name : PlayerSettings.DisplayName;
+            obj.DisplayName = string.IsNullOrWhiteSpace(PlayerSettings.DisplayName) ? obj.Name : PlayerSettings.DisplayName.Trim();
             if (!string.IsNullOrEmpty(_password)) obj.Password = _password;
             obj.ScriptVersion = (byte)LocalScriptVersion;
             obj.GameVersion = (int)Game.Version;
