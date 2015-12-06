@@ -440,6 +440,14 @@ namespace AdminTools
             return true;
         }
 
+        public override void OnPlayerKilled(Client player)
+        {
+            Program.ServerInstance.SendNativeCallToPlayer(player, 0x29B487C359E19889, _weatherNames[ServerWeather]);
+
+            Program.ServerInstance.SendNativeCallToPlayer(player, 0x47C3B5848C3E45D8, ServerTime.Hours, ServerTime.Minutes, ServerTime.Seconds);
+            Program.ServerInstance.SendNativeCallToPlayer(player, 0x4055E40BD2DBEC1D, true);
+        }
+
         private void LoadAccounts(string path)
         {
             XmlSerializer ser = new XmlSerializer(typeof(UserList));
