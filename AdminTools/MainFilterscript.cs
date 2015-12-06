@@ -602,7 +602,12 @@ namespace AdminTools
             Client client = null;
             lock (Program.ServerInstance.Clients) Program.ServerInstance.Clients.Any(c =>
             {
-                if (c.Name == account.Name) return true;
+                if (c.Name == account.Name)
+                {
+                    client = c;
+
+                    return true;
+                }
 
                 return false;
             });
