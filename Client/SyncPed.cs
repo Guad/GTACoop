@@ -122,8 +122,9 @@ namespace GTACoOp
         private int _clothSwitch = 0;
         public void DisplayLocally()
         {
+            const float hRange = 200f;
             var gPos = IsInVehicle ? VehiclePosition : Position;
-            var inRange = Game.Player.Character.IsInRangeOf(gPos, 200f);
+            var inRange = Game.Player.Character.IsInRangeOf(gPos, hRange);
             
             if (inRange && !_isStreamedIn)
             {
@@ -154,8 +155,8 @@ namespace GTACoOp
                 return;
             }
 
-
-            if (Character == null || !Character.Exists() || Character.Model.Hash != ModelHash || (Character.IsDead && PedHealth > 0))
+            
+            if (Character == null || !Character.Exists() || !Character.IsInRangeOf(gPos, hRange) || Character.Model.Hash != ModelHash || (Character.IsDead && PedHealth > 0))
             {
                 if (Character != null) Character.Delete();
 

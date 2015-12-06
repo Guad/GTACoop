@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Xml.Serialization;
 using GTAServer;
 using Lidgren.Network;
@@ -26,6 +27,8 @@ namespace AdminTools
         public int ServerWeather;
         public TimeSpan ServerTime;
         public bool IsGodmodeDisabled;
+
+        private DateTime _lastCountdown;
 
         private string[] _weatherNames = new[]
         {
@@ -413,6 +416,28 @@ namespace AdminTools
                 {
                     Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCOUNT", "You are not logged in.");
                 }
+                return false;
+            }
+
+            if (message == "/countdown")
+            {
+                if (DateTime.Now.Subtract(_lastCountdown).TotalSeconds < 30)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "COUNTDOWN", "Please wait 30 seconds before starting another countdown.");
+                    return false;
+                }
+
+                _lastCountdown = DateTime.Now;
+
+                var cdThread = new Thread((ThreadStart) delegate
+                {
+                    for (int i = 3; i >= 0; i--)
+                    {
+                        Program.ServerInstance.SendChatMessageToAll("COUNTDOWN", i == 0 ? "Go!" : i.ToString());
+                        Thread.Sleep(1000);
+                    }
+                });
+                cdThread.Start();
                 return false;
             }
 

@@ -23,6 +23,11 @@ namespace GTAServer
         public ScriptVersion RemoteScriptVersion { get; set; }
         public int GameVersion { get; set; }
 
+        public Vector3 LastKnownPosition { get; internal set; }
+        public int Health { get; internal set; }
+        public int VehicleHealth { get; internal set; }
+        public bool IsInVehicle { get; internal set; }
+
         public Client(NetConnection nc)
         {
             NetConnection = nc;
@@ -205,7 +210,21 @@ namespace GTAServer
             while ((msg = Server.ReadMessage()) != null)
             {
                 Client client = null;
-                lock (Clients) foreach (Client c in Clients) if (c.NetConnection != null && c.NetConnection.RemoteUniqueIdentifier != 0 && c.NetConnection.RemoteUniqueIdentifier == msg.SenderConnection.RemoteUniqueIdentifier) { client = c; break; }
+                lock (Clients)
+                {
+                    foreach (Client c in Clients)
+                    {
+                        if (c != null && c.NetConnection != null &&
+                            c.NetConnection.RemoteUniqueIdentifier != 0 &&
+                            msg.SenderConnection != null &&
+                            c.NetConnection.RemoteUniqueIdentifier == msg.SenderConnection.RemoteUniqueIdentifier)
+                        {
+                            client = c;
+                            break;
+                        }
+                    }
+                }
+
                 if (client == null) client = new Client(msg.SenderConnection);
 
                 switch (msg.MessageType)
@@ -398,6 +417,11 @@ namespace GTAServer
                                             data.Name = client.Name;
                                             data.Latency = client.Latency;
 
+                                            client.Health = data.PlayerHealth;
+                                            client.LastKnownPosition = data.Position;
+                                            client.VehicleHealth = data.VehicleHealth;
+                                            client.IsInVehicle = true;
+
                                             SendToAll(data, PacketType.VehiclePositionData, GetChannelIdForConnection(client), client.NetConnection.RemoteUniqueIdentifier);
                                         }
                                     }
@@ -416,6 +440,10 @@ namespace GTAServer
                                             data.Id = client.NetConnection.RemoteUniqueIdentifier;
                                             data.Name = client.Name;
                                             data.Latency = client.Latency;
+
+                                            client.Health = data.PlayerHealth;
+                                            client.LastKnownPosition = data.Position;
+                                            client.IsInVehicle = false;
 
                                             SendToAll(data, PacketType.PedPositionData, GetChannelIdForConnection(client), client.NetConnection.RemoteUniqueIdentifier);
                                         }
