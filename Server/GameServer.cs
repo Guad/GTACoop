@@ -350,10 +350,7 @@ namespace GTAServer
                                         if (data != null)
                                         {
                                             var pass = true;
-                                            if (_gamemode != null)
-                                            {
-                                                pass = _gamemode.OnChatMessage(client, data.Message);
-                                            }
+                                            if (_gamemode != null) pass = _gamemode.OnChatMessage(client, data.Message);
 
                                             if (_filterscripts != null) _filterscripts.ForEach(fs => pass = pass && fs.OnChatMessage(client, data.Message));
 

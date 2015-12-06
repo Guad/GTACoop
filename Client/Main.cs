@@ -235,7 +235,7 @@ namespace GTACoOp
             _mainMenu.AddItem(listenItem);
             _mainMenu.AddItem(portItem);
             _mainMenu.AddItem(passItem);
-            //_mainMenu.AddItem(nameItem); // For some reason this screws up the items below it. NOTE: Once added, this should be disabled once connected to a server.
+            _mainMenu.AddItem(nameItem);
             _mainMenu.AddItem(browserItem);
             _mainMenu.AddItem(settItem);
             _mainMenu.AddItem(connectItem);
@@ -570,13 +570,13 @@ namespace GTACoOp
 
             if (IsOnServer())
             {
-                _mainMenu.MenuItems[5].Text = "Disconnect";
-                _mainMenu.MenuItems[6].Enabled = true;
+                _mainMenu.MenuItems[6].Text = "Disconnect";
+                _mainMenu.MenuItems[7].Enabled = true;
             }
             else
             {
-                _mainMenu.MenuItems[5].Text = "Connect";
-                _mainMenu.MenuItems[6].Enabled = false;
+                _mainMenu.MenuItems[6].Text = "Connect";
+                _mainMenu.MenuItems[7].Enabled = false;
             }
 
             if (display)
