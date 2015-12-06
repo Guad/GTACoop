@@ -87,30 +87,28 @@ namespace GTACoOp
 
         public static PlayerSettings ReadSettings(string path)
         {
+            var ser = new XmlSerializer(typeof(PlayerSettings));
+
+            PlayerSettings settings = null;
+
             if (File.Exists(path))
             {
-                using (var stream = File.OpenRead(path))
-                {
-                    var ser = new XmlSerializer(typeof(PlayerSettings));
-                    var settings = (PlayerSettings)ser.Deserialize(stream);
-                    return settings;
-                }
+                using (var stream = File.OpenRead(path)) settings = (PlayerSettings)ser.Deserialize(stream);
+
+                using (var stream = new FileStream(path, File.Exists(path) ? FileMode.Truncate : FileMode.Create, FileAccess.ReadWrite)) ser.Serialize(stream, settings);
             }
             else
             {
-                var settings = new PlayerSettings();
-                settings.Name = string.IsNullOrEmpty(Game.Player.Name) ? "Player" : Game.Player.Name;
-                settings.MaxStreamedNpcs = 10;
-                settings.MasterServerAddress = "http://46.101.1.92/";
-                settings.ActivationKey = Keys.F9;
-
-                var ser = new XmlSerializer(typeof(PlayerSettings));
-                using (var stream = File.OpenWrite(path))
-                {
-                    ser.Serialize(stream, settings);
-                }
-                return settings;
+                using (var stream = File.OpenWrite(path)) ser.Serialize(stream, settings = new PlayerSettings());
             }
+
+            return settings;
+        }
+
+        public static void SaveSettings(string path)
+        {
+            var ser = new XmlSerializer(typeof(PlayerSettings));
+            using (var stream = new FileStream(path, File.Exists(path) ? FileMode.Truncate : FileMode.Create, FileAccess.ReadWrite)) ser.Serialize(stream, Main.PlayerSettings);
         }
 
         public static Vector3 GetLastWeaponImpact(Ped ped)

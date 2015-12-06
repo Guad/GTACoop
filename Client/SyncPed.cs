@@ -191,7 +191,7 @@ namespace GTACoOp
                     {
                         Outline = true,
                     }.Draw();
-                } //*/
+                }
             }
 
             if ((!_lastVehicle && IsInVehicle && VehicleHash != 0) || (_lastVehicle && IsInVehicle && (_mainVehicle == null || !Character.IsInVehicle(_mainVehicle) || _mainVehicle.Model.Hash != VehicleHash || VehicleSeat != Util.GetPedSeat(Character))))

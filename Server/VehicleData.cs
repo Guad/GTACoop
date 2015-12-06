@@ -45,6 +45,9 @@ namespace GTAServer
 
         [ProtoMember(2)]
         public string Password { get; set; }
+
+        [ProtoMember(3)]
+        public string DisplayName { get; set; }
     }
 
     [ProtoContract]

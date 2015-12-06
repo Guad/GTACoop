@@ -33,6 +33,7 @@ namespace GTAServer
             ServerInstance.AnnounceSelf = settings.Announce;
             ServerInstance.MasterServer = settings.MasterServer;
             ServerInstance.MaxPlayers = settings.MaxPlayers;
+            ServerInstance.AllowDisplayNames = settings.AllowDisplayNames;
 
             ServerInstance.Start(settings.Filterscripts);
 
@@ -46,35 +47,22 @@ namespace GTAServer
 
         static ServerSettings ReadSettings(string path)
         {
+            var ser = new XmlSerializer(typeof(ServerSettings));
+
+            ServerSettings settings = null;
+
             if (File.Exists(path))
             {
-                using (var stream = File.OpenRead(path))
-                {
-                    var ser = new XmlSerializer(typeof(ServerSettings));
-                    var settings = (ServerSettings)ser.Deserialize(stream);
-                    return settings;
-                }
+                using (var stream = File.OpenRead(path)) settings = (ServerSettings)ser.Deserialize(stream);
+
+                using (var stream = new FileStream(path, File.Exists(path) ? FileMode.Truncate : FileMode.Create, FileAccess.ReadWrite)) ser.Serialize(stream, settings);
             }
             else
             {
-                var settings = new ServerSettings();
-                settings.Port = 4499;
-                settings.MaxPlayers = 16;
-                settings.Name = "Simple GTA Server";
-                settings.Password = "changeme";
-                settings.PasswordProtected = false;
-                settings.Gamemode = "freeroam";
-                settings.Announce = true;
-                settings.MasterServer = "http://46.101.1.92/";
-                settings.Filterscripts = new string[] { "" };
-
-                var ser = new XmlSerializer(typeof(ServerSettings));
-                using (var stream = File.OpenWrite(path))
-                {
-                    ser.Serialize(stream, settings);
-                }
-                return settings;
+                using (var stream = File.OpenWrite(path)) ser.Serialize(stream, settings = new ServerSettings());
             }
+
+            return settings;
         }
     }
 }

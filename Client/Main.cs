@@ -52,7 +52,7 @@ namespace GTACoOp
 
         public Main()
         {
-            PlayerSettings = Util.ReadSettings(Program.Location + "\\GTACOOPSettings.xml");
+            PlayerSettings = Util.ReadSettings(Program.Location + "GTACOOPSettings.xml");
             _threadJumping = new Queue<Action>();
             _emptyVehicleMods = new Dictionary<int, int>();
             for (int i = 0; i < 50; i++)
@@ -90,6 +90,7 @@ namespace GTACoOp
 
 
             #region Menu Set up
+#warning Affects performance when open, drops from 80~100 on a GTX 980 to high 30s ~ 60
             _menuPool = new MenuPool();
 
             _mainMenu = new UIMenu("Co-oP", "MAIN MENU");
@@ -132,10 +133,10 @@ namespace GTACoOp
             };
 
             var portItem = new UIMenuItem("Port");
-            portItem.SetRightLabel("4499");
+            portItem.SetRightLabel(Port.ToString());
             portItem.Activated += (menu, item) =>
             {
-                string newPort = Game.GetUserInput(10);
+                string newPort = Game.GetUserInput(5);
                 int nPort;
                 bool success = int.TryParse(newPort, out nPort);
                 if (!success)
@@ -159,6 +160,15 @@ namespace GTACoOp
             {
                 _password = Game.GetUserInput(255);
                 passItem.SetRightLabel(new String('*', _password.Length));
+            };
+
+            var nameItem = new UIMenuItem("Display Name");
+            nameItem.SetRightLabel(PlayerSettings.DisplayName);
+            nameItem.Activated += (menu, item) =>
+            {
+                PlayerSettings.DisplayName = Game.GetUserInput(32);
+                Util.SaveSettings(Program.Location + "GTACOOPSettings.xml");
+                nameItem.SetRightLabel(PlayerSettings.DisplayName);
             };
 
             var connectItem = new UIMenuItem("Connect");
@@ -225,6 +235,7 @@ namespace GTACoOp
             _mainMenu.AddItem(listenItem);
             _mainMenu.AddItem(portItem);
             _mainMenu.AddItem(passItem);
+            //_mainMenu.AddItem(nameItem); // For some reason this screws up the items below it. NOTE: Once added, this should be disabled once connected to a server.
             _mainMenu.AddItem(browserItem);
             _mainMenu.AddItem(settItem);
             _mainMenu.AddItem(connectItem);
@@ -238,13 +249,11 @@ namespace GTACoOp
             _mainMenu.RefreshIndex();
             settingsMenu.RefreshIndex();
 
-
             _menuPool.Add(_mainMenu);
             _menuPool.Add(_serverBrowserMenu);
             _menuPool.Add(settingsMenu);
             _menuPool.Add(_playersMenu);
             #endregion
-
         }
 
         // Debug stuff
@@ -691,9 +700,9 @@ namespace GTACoOp
             var msg = _client.CreateMessage();
 
             var obj = new ConnectionRequest();
-            obj.Name = string.IsNullOrEmpty(PlayerSettings.Name) ? "Player" : PlayerSettings.Name;
-            if (!string.IsNullOrEmpty(_password))
-                obj.Password = _password;
+            obj.Name = string.IsNullOrWhiteSpace(Game.Player.Name) ? "Player" : Game.Player.Name; // To be used as identifiers in server files
+            obj.DisplayName = string.IsNullOrWhiteSpace(PlayerSettings.DisplayName) ? obj.Name : PlayerSettings.DisplayName;
+            if (!string.IsNullOrEmpty(_password)) obj.Password = _password;
             var bin = SerializeBinary(obj);
 
             msg.Write((int)PacketType.ConnectionRequest);
