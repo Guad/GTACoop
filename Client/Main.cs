@@ -21,6 +21,8 @@ namespace GTACoOp
     {
         public static PlayerSettings PlayerSettings;
 
+        public static readonly ScriptVersion LocalScriptVersion = ScriptVersion.VERSION_0_6;
+
         private readonly UIMenu _mainMenu;
         private readonly UIMenu _serverBrowserMenu;
         private readonly UIMenu _playersMenu;
@@ -188,10 +190,6 @@ namespace GTACoOp
                 else
                 {
                     if (_client != null) _client.Disconnect("Connection closed by peer.");
-                    Opponents.ToList().ForEach(pair => pair.Value.Clear());
-                    Opponents.Clear();
-                    Npcs.ToList().ForEach(pair => pair.Value.Clear());
-                    Npcs.Clear();
                 }
             };
 
@@ -706,6 +704,9 @@ namespace GTACoOp
             obj.Name = string.IsNullOrWhiteSpace(Game.Player.Name) ? "Player" : Game.Player.Name; // To be used as identifiers in server files
             obj.DisplayName = string.IsNullOrWhiteSpace(PlayerSettings.DisplayName) ? obj.Name : PlayerSettings.DisplayName;
             if (!string.IsNullOrEmpty(_password)) obj.Password = _password;
+            obj.ScriptVersion = (byte)LocalScriptVersion;
+            obj.GameVersion = (int)Game.Version;
+
             var bin = SerializeBinary(obj);
 
             msg.Write((int)PacketType.ConnectionRequest);
@@ -965,7 +966,23 @@ namespace GTACoOp
                             _channel = msg.SenderConnection.RemoteHailMessage.ReadInt32();
                             break;
                         case NetConnectionStatus.Disconnected:
-                            UI.Notify("You have been disconnected from the server.");
+                            var reason = msg.ReadString();
+                            if (string.IsNullOrEmpty(reason))
+                                UI.Notify("You have been disconnected from the server.");
+                            else
+                                UI.Notify("You have been disconnected: " + reason);
+
+                            if (Opponents != null)
+                            {
+                                Opponents.ToList().ForEach(pair => pair.Value.Clear());
+                                Opponents.Clear();
+                            }
+
+                            if (Npcs != null)
+                            {
+                                Npcs.ToList().ForEach(pair => pair.Value.Clear());
+                                Npcs.Clear();
+                            }
                             break;
                     }
                 }

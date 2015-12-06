@@ -20,6 +20,8 @@ namespace GTAServer
         public string Name { get; set; }
         public string DisplayName { get; set; }
         public float Latency { get; set; }
+        public ScriptVersion RemoteScriptVersion { get; set; }
+        public int GameVersion { get; set; }
 
         public Client(NetConnection nc)
         {
@@ -256,25 +258,33 @@ namespace GTAServer
                             lock (Clients) Clients.Add(client);
                             if (string.IsNullOrWhiteSpace(client.Name)) client.Name = connReq.Name;
                             if (string.IsNullOrWhiteSpace(client.DisplayName)) client.DisplayName = AllowDisplayNames ? connReq.DisplayName : connReq.Name;
+                            if (client.RemoteScriptVersion != (ScriptVersion) connReq.ScriptVersion)
+                                client.RemoteScriptVersion = (ScriptVersion) connReq.ScriptVersion;
+                            if (client.GameVersion != connReq.GameVersion) client.GameVersion = connReq.GameVersion;
 
                             var channelHail = Server.CreateMessage();
                             channelHail.Write(GetChannelIdForConnection(client));
                             client.NetConnection.Approve(channelHail);
 
-                            var chatObj = new ChatData()
-                            {
-                                Sender = "SERVER",
-                                Message =
-                                    "Player ~h~" + client.DisplayName +
-                                    "~h~ has connected.",
-                            };
+                            bool sendMsg = true;
 
-                            SendToAll(chatObj, PacketType.ChatData, 0);
+                            if (_gamemode != null) sendMsg = sendMsg && _gamemode.OnPlayerConnect(client);
+                            if (_filterscripts != null) _filterscripts.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerConnect(client));
+
+                            if (sendMsg)
+                            {
+                                var chatObj = new ChatData()
+                                {
+                                    Sender = "SERVER",
+                                    Message =
+                                        "Player ~h~" + client.DisplayName +
+                                        "~h~ has connected.",
+                                };
+
+                                SendToAll(chatObj, PacketType.ChatData, 0);
+                            }
 
                             Console.WriteLine("New player connected: " + client.Name + " (" + client.DisplayName + ")");
-
-                            if (_gamemode != null) _gamemode.OnPlayerConnect(client);
-                            if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnPlayerConnect(client));
                         }
                         else
                         {
@@ -292,15 +302,23 @@ namespace GTAServer
                             {
                                 if (Clients.Contains(client))
                                 {
-                                    var chatObj = new ChatData()
-                                    {
-                                        Sender = "SERVER",
-                                        Message =
-                                            "Player ~h~" + client.DisplayName +
-                                            "~h~ has disconnected.",
-                                    };
+                                    var sendMsg = true;
 
-                                    SendToAll(chatObj, PacketType.ChatData, 0);
+                                    if (_gamemode != null) sendMsg = sendMsg && _gamemode.OnPlayerDisconnect(client);
+                                    if (_filterscripts != null) _filterscripts.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerDisconnect(client));
+
+                                    if (sendMsg)
+                                    {
+                                        var chatObj = new ChatData()
+                                        {
+                                            Sender = "SERVER",
+                                            Message =
+                                                "Player ~h~" + client.DisplayName +
+                                                "~h~ has disconnected.",
+                                        };
+
+                                        SendToAll(chatObj, PacketType.ChatData, 0);
+                                    }
 
                                     var dcObj = new PlayerDisconnect()
                                     {
@@ -310,10 +328,7 @@ namespace GTAServer
                                     SendToAll(dcObj, PacketType.PlayerDisconnect, 0);
 
                                     Console.WriteLine("Player disconnected: " + client.Name + " (" + client.DisplayName + ")");
-
-                                    if (_gamemode != null) _gamemode.OnPlayerDisconnect(client);
-                                    if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnPlayerDisconnect(client));
-
+                                    
                                     Clients.Remove(client);
                                 }
                             }
