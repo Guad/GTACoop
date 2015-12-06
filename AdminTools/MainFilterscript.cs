@@ -47,15 +47,17 @@ namespace AdminTools
             ServerTime = new TimeSpan(12, 0, 0);
         }
 
-        public override void OnPlayerConnect(Client player)
+        public override bool OnPlayerConnect(Client player)
         {
             lock (_banned.BannedIps)
             {
                 if (_banned.BannedIps.Any(b => b.Address == player.NetConnection.RemoteEndPoint.Address.ToString()))
                 {
-                    Program.ServerInstance.SendChatMessageToPlayer(player, "BANNED", "You are banned.");
-                    Program.ServerInstance.KickPlayer(player, "You are banned.");
-                    return;
+                    Program.ServerInstance.KickPlayer(player,
+                        "You are banned: " +
+                        _banned.BannedIps.First(b => b.Address == player.NetConnection.RemoteEndPoint.Address.ToString())
+                            .Reason);
+                    return false;
                 }
             }
 
@@ -80,6 +82,8 @@ namespace AdminTools
             {
                 Program.ServerInstance.SetNativeCallOnTickForPlayer(player, "GODMODE", 0x239528EACDC3E7DE, new LocalGamePlayerArgument(), false);
             }
+
+            return true;
         }
 
         public override bool OnChatMessage(Client sender, string message)
@@ -430,9 +434,16 @@ namespace AdminTools
             return true;
         }
 
-        public override void OnPlayerDisconnect(Client player)
+        public override bool OnPlayerDisconnect(Client player)
         {
             lock (_authenticatedUsers) if (_authenticatedUsers.Contains(player.NetConnection.RemoteUniqueIdentifier)) _authenticatedUsers.Remove(player.NetConnection.RemoteUniqueIdentifier);
+            lock (_banned)
+            {
+                if (_banned.BannedIps.Any(b => b.Address == player.NetConnection.RemoteEndPoint.Address.ToString()))
+                    return false;
+            }
+
+            return true;
         }
 
         private UserList _accounts;

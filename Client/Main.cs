@@ -21,9 +21,12 @@ namespace GTACoOp
     {
         public static PlayerSettings PlayerSettings;
 
+        public static readonly ScriptVersion LocalScriptVersion = ScriptVersion.VERSION_0_6;
+
         private readonly UIMenu _mainMenu;
         private readonly UIMenu _serverBrowserMenu;
         private readonly UIMenu _playersMenu;
+        private readonly UIMenu _settingsMenu;
 
         private readonly MenuPool _menuPool;
 
@@ -94,7 +97,7 @@ namespace GTACoOp
             _menuPool = new MenuPool();
 
             _mainMenu = new UIMenu("Co-oP", "MAIN MENU");
-            var settingsMenu = new UIMenu("Co-oP", "SETTINGS");
+            _settingsMenu = new UIMenu("Co-oP", "SETTINGS");
             _serverBrowserMenu = new UIMenu("Co-oP", "SERVER BROWSER");
             _playersMenu = new UIMenu("Co-oP", "PLAYER LIST");
 
@@ -187,10 +190,6 @@ namespace GTACoOp
                 else
                 {
                     if (_client != null) _client.Disconnect("Connection closed by peer.");
-                    Opponents.ToList().ForEach(pair => pair.Value.Clear());
-                    Opponents.Clear();
-                    Npcs.ToList().ForEach(pair => pair.Value.Clear());
-                    Npcs.Clear();
                 }
             };
 
@@ -225,7 +224,7 @@ namespace GTACoOp
             browserItem.Activated += (sender, item) => RebuildServerBrowser();
 
             var settItem = new UIMenuItem("Settings");
-            _mainMenu.BindMenuToItem(settingsMenu, settItem);
+            _mainMenu.BindMenuToItem(_settingsMenu, settItem);
 
             var playersItem = new UIMenuItem("Active Players");
             _mainMenu.BindMenuToItem(_playersMenu, playersItem);
@@ -235,23 +234,23 @@ namespace GTACoOp
             _mainMenu.AddItem(listenItem);
             _mainMenu.AddItem(portItem);
             _mainMenu.AddItem(passItem);
-            _mainMenu.AddItem(nameItem);
             _mainMenu.AddItem(browserItem);
             _mainMenu.AddItem(settItem);
             _mainMenu.AddItem(connectItem);
             _mainMenu.AddItem(playersItem);
 
-            settingsMenu.AddItem(modeItem);
-            settingsMenu.AddItem(chatItem);
-            settingsMenu.AddItem(npcItem);
-            settingsMenu.AddItem(spawnItem);
+            _settingsMenu.AddItem(nameItem);
+            _settingsMenu.AddItem(modeItem);
+            _settingsMenu.AddItem(chatItem);
+            _settingsMenu.AddItem(npcItem);
+            _settingsMenu.AddItem(spawnItem);
 
             _mainMenu.RefreshIndex();
-            settingsMenu.RefreshIndex();
+            _settingsMenu.RefreshIndex();
 
             _menuPool.Add(_mainMenu);
             _menuPool.Add(_serverBrowserMenu);
-            _menuPool.Add(settingsMenu);
+            _menuPool.Add(_settingsMenu);
             _menuPool.Add(_playersMenu);
             #endregion
         }
@@ -570,13 +569,15 @@ namespace GTACoOp
 
             if (IsOnServer())
             {
-                _mainMenu.MenuItems[6].Text = "Disconnect";
-                _mainMenu.MenuItems[7].Enabled = true;
+                _mainMenu.MenuItems[5].Text = "Disconnect";
+                _mainMenu.MenuItems[6].Enabled = true;
+                _settingsMenu.MenuItems[0].Enabled = false;
             }
             else
             {
-                _mainMenu.MenuItems[6].Text = "Connect";
-                _mainMenu.MenuItems[7].Enabled = false;
+                _mainMenu.MenuItems[5].Text = "Connect";
+                _mainMenu.MenuItems[6].Enabled = false;
+                _settingsMenu.MenuItems[0].Enabled = true;
             }
 
             if (display)
@@ -703,6 +704,9 @@ namespace GTACoOp
             obj.Name = string.IsNullOrWhiteSpace(Game.Player.Name) ? "Player" : Game.Player.Name; // To be used as identifiers in server files
             obj.DisplayName = string.IsNullOrWhiteSpace(PlayerSettings.DisplayName) ? obj.Name : PlayerSettings.DisplayName;
             if (!string.IsNullOrEmpty(_password)) obj.Password = _password;
+            obj.ScriptVersion = (byte)LocalScriptVersion;
+            obj.GameVersion = (int)Game.Version;
+
             var bin = SerializeBinary(obj);
 
             msg.Write((int)PacketType.ConnectionRequest);
@@ -962,7 +966,23 @@ namespace GTACoOp
                             _channel = msg.SenderConnection.RemoteHailMessage.ReadInt32();
                             break;
                         case NetConnectionStatus.Disconnected:
-                            UI.Notify("You have been disconnected from the server.");
+                            var reason = msg.ReadString();
+                            if (string.IsNullOrEmpty(reason))
+                                UI.Notify("You have been disconnected from the server.");
+                            else
+                                UI.Notify("You have been disconnected: " + reason);
+
+                            if (Opponents != null)
+                            {
+                                Opponents.ToList().ForEach(pair => pair.Value.Clear());
+                                Opponents.Clear();
+                            }
+
+                            if (Npcs != null)
+                            {
+                                Npcs.ToList().ForEach(pair => pair.Value.Clear());
+                                Npcs.Clear();
+                            }
                             break;
                     }
                 }

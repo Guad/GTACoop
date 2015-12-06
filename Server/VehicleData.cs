@@ -22,6 +22,12 @@ namespace GTAServer
         NativeTickRecall = 13,
     }
 
+    public enum ScriptVersion
+    {
+        Unknown = 0,
+        VERSION_0_6 = 1,
+    }
+
     [ProtoContract]
     public class DiscoveryResponse
     {
@@ -48,6 +54,12 @@ namespace GTAServer
 
         [ProtoMember(3)]
         public string DisplayName { get; set; }
+
+        [ProtoMember(4)]
+        public int GameVersion { get; set; }
+
+        [ProtoMember(5)]
+        public byte ScriptVersion { get; set; }
     }
 
     [ProtoContract]

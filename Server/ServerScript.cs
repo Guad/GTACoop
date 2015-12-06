@@ -16,13 +16,15 @@ namespace GTAServer
             return true;
         }
 
-        public virtual void OnPlayerConnect(Client player)
+        public virtual bool OnPlayerConnect(Client player)
         {
+            return true;
         }
 
 
-        public virtual void OnPlayerDisconnect(Client player)
+        public virtual bool OnPlayerDisconnect(Client player)
         {
+            return true;
         }
 
 
