@@ -27,10 +27,10 @@ def checkThread():
 	print 'cleaning list...'
 	for server in servers:
 		date = servers[server]
-		if (datetime.now() - date).total_seconds() > 30:
+		if (datetime.now() - date).total_seconds() > 10*60:
 			del servers[server]
 
-	sleep(60)
+	sleep(10*60)
 	checkThread()
 
 
