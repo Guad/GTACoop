@@ -68,10 +68,11 @@ namespace GTAServer
 
         public bool AllowDisplayNames { get; set; }
 
-        public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_6;
+        public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_6_1;
 
         private ServerScript _gamemode { get; set; }
         private List<ServerScript> _filterscripts;
+        private DateTime _lastAnnounceDateTime;
 
         public void Start(string[] filterscripts)
         {
@@ -79,6 +80,7 @@ namespace GTAServer
 
             if (AnnounceSelf)
             {
+                _lastAnnounceDateTime = DateTime.Now;
                 Console.WriteLine("Announcing to master server...");
                 AnnounceSelfToMaster();
             }
@@ -195,15 +197,12 @@ namespace GTAServer
             }
         }
 
-        private int _lastDay = DateTime.UtcNow.Day;
-
-
         public void Tick()
         {
-            if (DateTime.UtcNow.Day != _lastDay)
+            if (AnnounceSelf && DateTime.Now.Subtract(_lastAnnounceDateTime).TotalMinutes >= 5)
             {
-                _lastDay = DateTime.UtcNow.Day;
-                if (AnnounceSelf) AnnounceSelfToMaster();
+                _lastAnnounceDateTime = DateTime.Now;
+                AnnounceSelfToMaster();
             }
 
             NetIncomingMessage msg;
