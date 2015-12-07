@@ -55,7 +55,7 @@ namespace GTACoOp
 
         public Main()
         {
-            PlayerSettings = Util.ReadSettings(Program.Location + "GTACOOPSettings.xml");
+            PlayerSettings = Util.ReadSettings(Program.Location + Path.DirectorySeparatorChar + "GTACOOPSettings.xml");
             _threadJumping = new Queue<Action>();
             _emptyVehicleMods = new Dictionary<int, int>();
             for (int i = 0; i < 50; i++)
