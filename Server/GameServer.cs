@@ -93,13 +93,13 @@ namespace GTAServer
 
                     try
                     {
-                        Program.DeleteFile(Program.Location + "gamemodes\\" + GamemodeName + ".dll:Zone.Identifier");
+                        Program.DeleteFile(Program.Location + "gamemodes" + Path.DirectorySeparatorChar + GamemodeName + ".dll:Zone.Identifier");
                     }
                     catch
                     {
                     }
 
-                    var asm = Assembly.LoadFrom(Program.Location + "gamemodes\\" + GamemodeName + ".dll");
+                    var asm = Assembly.LoadFrom(Program.Location + "gamemodes" + Path.DirectorySeparatorChar + GamemodeName + ".dll");
                     var types = asm.GetExportedTypes();
                     var validTypes = types.Where(t =>
                         !t.IsInterface &&
@@ -107,7 +107,7 @@ namespace GTAServer
                         .Where(t => typeof(ServerScript).IsAssignableFrom(t));
                     if (!validTypes.Any())
                     {
-                        Console.WriteLine("ERROR: No classes that inherit from {nameof(_gamemode)} have been found in the assembly. Starting freeroam.");
+                        Console.WriteLine("ERROR: No classes that inherit from ServerScript have been found in the assembly. Starting freeroam.");
                         return;
                     }
 
@@ -139,13 +139,13 @@ namespace GTAServer
                 {
                     try
                     {
-                        Program.DeleteFile(Program.Location + "filterscripts\\" + GamemodeName + ".dll:Zone.Identifier");
+                        Program.DeleteFile(Program.Location + "filterscripts" + Path.DirectorySeparatorChar + GamemodeName + ".dll:Zone.Identifier");
                     }
                     catch
                     {
                     }
 
-                    var fsAsm = Assembly.LoadFrom(Program.Location + "filterscripts\\" + path + ".dll");
+                    var fsAsm = Assembly.LoadFrom(Program.Location + "filterscripts" + Path.DirectorySeparatorChar + path + ".dll");
                     var fsObj = InstantiateScripts(fsAsm);
                     list.AddRange(fsObj);
                 }
