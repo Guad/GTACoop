@@ -285,16 +285,6 @@ namespace GTAServer
                                 string displayname = connReq.DisplayName;
                                 while (AllowDisplayNames && Clients.Any(c => c.DisplayName == connReq.DisplayName))
                                 {
-                                    /*client.NetConnection.Deny("Display name taken.");
-                                    Console.WriteLine("Player connection refused: display name taken.");
-
-                                    if (_gamemode != null) _gamemode.OnConnectionRefused(client, "Display name taken");
-                                    if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(client, "Display name taken"));
-
-                                    Server.Recycle(msg);
-
-                                    continue;*/
-
                                     duplicate++;
 
                                     connReq.DisplayName = displayname + " (" + duplicate + ")";
@@ -440,7 +430,7 @@ namespace GTAServer
                                         if (data != null)
                                         {
                                             data.Id = client.NetConnection.RemoteUniqueIdentifier;
-                                            data.Name = client.Name;
+                                            data.Name = client.DisplayName;
                                             data.Latency = client.Latency;
 
                                             client.Health = data.PlayerHealth;
@@ -464,7 +454,7 @@ namespace GTAServer
                                         if (data != null)
                                         {
                                             data.Id = client.NetConnection.RemoteUniqueIdentifier;
-                                            data.Name = client.Name;
+                                            data.Name = client.DisplayName;
                                             data.Latency = client.Latency;
 
                                             client.Health = data.PlayerHealth;
