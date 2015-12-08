@@ -103,6 +103,8 @@ namespace GTACoOp
             _serverBrowserMenu = new UIMenu("Co-oP", "SERVER BROWSER");
             _playersMenu = new UIMenu("Co-oP", "PLAYER LIST");
 
+            _serverBrowserMenu.SetMenuWidthOffset(300);
+
             _playersMenu.OnIndexChange += (sender, index) =>
             {
                 var newPlayer = Opponents.FirstOrDefault(ops => ops.Value.Name == _playersMenu.MenuItems[index].Text);
@@ -1010,7 +1012,11 @@ namespace GTACoOp
                     var data = DeserializeBinary<DiscoveryResponse>(bin) as DiscoveryResponse;
                     if (data == null) return;
                     var item = new UIMenuItem(data.ServerName);
-                    item.SetRightLabel(data.PlayerCount + "/" + data.MaxPlayers);
+
+                    var gamemode = data.Gamemode == null ? "Unknown" : data.Gamemode;
+
+                    item.SetRightLabel(gamemode + " | " + data.PlayerCount + "/" + data.MaxPlayers);
+
                     if (data.PasswordProtected)
                         item.SetLeftBadge(UIMenuItem.BadgeStyle.Lock);
 

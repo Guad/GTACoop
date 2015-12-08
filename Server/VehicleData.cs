@@ -42,6 +42,8 @@ namespace GTAServer
         public bool PasswordProtected { get; set; }
         [ProtoMember(5)]
         public int Port { get; set; }
+        [ProtoMember(6)]
+        public string Gamemode { get; set; }
     }
 
     [ProtoContract]

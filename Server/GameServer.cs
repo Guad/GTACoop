@@ -383,6 +383,7 @@ namespace GTAServer
                         obj.ServerName = Name;
                         obj.MaxPlayers = MaxPlayers;
                         obj.PasswordProtected = PasswordProtected;
+                        obj.Gamemode = GamemodeName;
                         lock (Clients) obj.PlayerCount = Clients.Count;
                         obj.Port = Port;
 
