@@ -148,7 +148,7 @@ namespace GTACoOp
                     _mainBlip = World.CreateBlip(gPos);
                     _mainBlip.Color = BlipColor.White;
                     _mainBlip.Scale = 0.8f;
-                    SetBlipNameFromTextFile(_mainBlip, Name);
+                    SetBlipNameFromTextFile(_mainBlip, Name == null ? "<nameless>" : Name);
                 }
                 if(_blip && _mainBlip != null)
                     _mainBlip.Position = gPos;
@@ -188,7 +188,7 @@ namespace GTACoOp
                         (int)((oldPos.Y / (float)UI.HEIGHT) * res.Height));
 
 
-                    new UIResText(Name, pos, 0.3f, Color.WhiteSmoke, Font.ChaletLondon, UIResText.Alignment.Centered)
+                    new UIResText(Name == null ? "<nameless>" : Name, pos, 0.3f, Color.WhiteSmoke, Font.ChaletLondon, UIResText.Alignment.Centered)
                     {
                         Outline = true,
                     }.Draw();
@@ -282,13 +282,6 @@ namespace GTACoOp
                     if (_modSwitch >= 2500)
                         _modSwitch = 0;
                         
-
-                    /*if (IsHornPressed && DateTime.Now.Subtract(_lastHornPress).TotalMilliseconds > 1500)
-                    {
-                        _mainVehicle.SoundHorn(1500);
-                        _lastHornPress = DateTime.Now;
-                    }*/
-
                     if (IsHornPressed && !_lastHorn)
                     {
                         _lastHorn = true;
@@ -312,7 +305,7 @@ namespace GTACoOp
                     var range = Math.Max(20f, Speed*Math.Ceiling(DateTime.Now.Subtract(LastUpdateReceived).TotalSeconds));
 
                     if (!_mainVehicle.IsInRangeOf(VehiclePosition, 0.08f))
-                        _mainVehicle.ApplyForce(dir);
+                        _mainVehicle.ApplyForce(dir*(Speed - _mainVehicle.Speed));
                     if (Main.GlobalSyncMode == SynchronizationMode.Teleport && !_mainVehicle.IsInRangeOf(VehiclePosition, 0.8f))
                         _mainVehicle.Position = VehiclePosition;
                     if (Main.GlobalSyncMode == SynchronizationMode.Tasks && !_mainVehicle.IsInRangeOf(VehiclePosition, (float)range))

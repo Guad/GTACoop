@@ -1012,6 +1012,25 @@ namespace GTACoOp
                     var gMsg = msg;
                     item.Activated += (sender, selectedItem) =>
                     {
+                        if (IsOnServer())
+                        {
+                            _client.Disconnect("Switching servers.");
+
+                            if (Opponents != null)
+                            {
+                                Opponents.ToList().ForEach(pair => pair.Value.Clear());
+                                Opponents.Clear();
+                            }
+
+                            if (Npcs != null)
+                            {
+                                Npcs.ToList().ForEach(pair => pair.Value.Clear());
+                                Npcs.Clear();
+                            }
+
+                            while (IsOnServer()) Script.Yield();
+                        }
+
                         if (data.PasswordProtected)
                         {
                             _password = Game.GetUserInput(256);
