@@ -12,48 +12,43 @@ namespace GTACoOp
             Tick += OnTick;
         }
 
-        public void CheckExpiredNpcs()
-        {
-            const int threshold = 5000; // 5 second timeout
-
-            for (int i = Main.Npcs.Count - 1; i >= 0; i--)
-            {
-                if (DateTime.Now.Subtract(Main.Npcs.ElementAt(i).Value.LastUpdateReceived).TotalMilliseconds > threshold)
-                {
-                    var key = Main.Npcs.ElementAt(i).Key;
-                    Main.Npcs[key].Clear();
-                    Main.Npcs.Remove(key);
-                }
-            }
-
-            for (int i = Main.Opponents.Count - 1; i >= 0; i--)
-            {
-                if (DateTime.Now.Subtract(Main.Opponents.ElementAt(i).Value.LastUpdateReceived).TotalMilliseconds > threshold)
-                {
-                    var key = Main.Opponents.ElementAt(i).Key;
-                    Main.Opponents[key].Clear();
-                    Main.Opponents.Remove(key);
-                }
-            }
-        }
-
         public void OnTick(object sender, EventArgs e)
         {
             if (!Main.IsOnServer()) return;
 
-            CheckExpiredNpcs();
+            const int threshold = 5000; // 5 second timeout
 
-            var localOpps = new Dictionary<long, SyncPed>(Main.Opponents);
-            for (int i = 0; i < localOpps.Count; i++)
+            Dictionary<long, SyncPed> localOpps = null;
+            lock (Main.Opponents) localOpps = new Dictionary<long, SyncPed>(Main.Opponents);
+            for (int i = localOpps.Count - 1; i >= 0; i--)
             {
-                localOpps.ElementAt(i).Value.DisplayLocally();
+                if (DateTime.Now.Subtract(localOpps.ElementAt(i).Value.LastUpdateReceived).TotalMilliseconds > threshold)
+                {
+                    var key = localOpps.ElementAt(i).Key;
+                    localOpps[key].Clear();
+                    localOpps.Remove(key);
+                }
             }
 
-            var localNpcs = new Dictionary<string, SyncPed>(Main.Npcs);
-            for (int i = 0; i < localNpcs.Count; i++)
+            Dictionary<string, SyncPed> localNpcs = null;
+            lock (Main.Npcs) localNpcs = new Dictionary<string, SyncPed>(Main.Npcs);
+            for (int i = localNpcs.Count - 1; i >= 0; i--)
             {
-                localNpcs.ElementAt(i).Value.DisplayLocally();
+                if (DateTime.Now.Subtract(localNpcs.ElementAt(i).Value.LastUpdateReceived).TotalMilliseconds > threshold)
+                {
+                    var key = localNpcs.ElementAt(i).Key;
+                    localNpcs[key].Clear();
+                    localNpcs.Remove(key);
+                }
             }
+
+            lock (Main.Opponents) foreach (KeyValuePair<long, SyncPed> opp in new Dictionary<long, SyncPed>(Main.Opponents)) if (!localOpps.ContainsKey(opp.Key)) Main.Opponents.Remove(opp.Key);
+
+            lock (Main.Npcs) foreach (KeyValuePair<string, SyncPed> npc in new Dictionary<string, SyncPed>(Main.Npcs)) if (!localNpcs.ContainsKey(npc.Key)) Main.Npcs.Remove(npc.Key);
+
+            for (int i = 0; i < localOpps.Count; i++) localOpps.ElementAt(i).Value.DisplayLocally();
+
+            for (int i = 0; i < localNpcs.Count; i++) localNpcs.ElementAt(i).Value.DisplayLocally();
 
             if (Main.SendNpcs)
             {
