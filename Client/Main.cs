@@ -45,6 +45,8 @@ namespace GTACoOp
         private string _password;
         private bool _lastDead;
 
+        private DebugWindow _debug;
+
         // STATS
         private static int _bytesSent = 0;
         private static int _bytesReceived = 0;
@@ -253,6 +255,8 @@ namespace GTACoOp
             _menuPool.Add(_settingsMenu);
             _menuPool.Add(_playersMenu);
             #endregion
+
+            _debug = new DebugWindow();
         }
 
         // Debug stuff
@@ -580,9 +584,14 @@ namespace GTACoOp
                 _settingsMenu.MenuItems[0].Enabled = true;
             }
 
+            #if DEBUG
             if (display)
-                Debug();
-
+            {
+                //Debug();
+                _debug.Visible = true;
+                _debug.Draw();
+            }
+            #endif
             ProcessMessages();
 
             if (_client == null || _client.ConnectionStatus == NetConnectionStatus.Disconnected ||
@@ -877,15 +886,15 @@ namespace GTACoOp
                                     {
                                         if (!string.IsNullOrEmpty(data.Sender))
                                         {
-                                            for (int i = 0; i < data.Message.Length; i += 108 - data.Sender.Length)
+                                            for (int i = 0; i < data.Message.Length; i += 97 - data.Sender.Length)
                                             {
                                                 UI.Notify(data.Sender + ": " +
                                                           data.Message.Substring(i,
-                                                              Math.Min(108 - data.Sender.Length, data.Message.Length - i)));
+                                                              Math.Min(97 - data.Sender.Length, data.Message.Length - i)));
                                             }
                                         }
-                                        else for (int i = 0; i < data.Message.Length; i += 110)
-                                                UI.Notify(data.Message.Substring(i,Math.Min(110, data.Message.Length - i)));
+                                        else for (int i = 0; i < data.Message.Length; i += 99)
+                                                UI.Notify(data.Message.Substring(i,Math.Min(99, data.Message.Length - i)));
                                     });
                                 }
                             }

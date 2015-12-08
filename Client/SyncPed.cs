@@ -160,7 +160,7 @@ namespace GTACoOp
             {
                 if (Character != null) Character.Delete();
 
-                Character = World.CreatePed(new Model(ModelHash), Position, Rotation.Z);
+                Character = World.CreatePed(new Model(ModelHash), gPos, Rotation.Z);
                 if (Character == null) return;
 
                 Character.BlockPermanentEvents = true;
@@ -213,7 +213,7 @@ namespace GTACoOp
                 }
                 else
                 {
-                    _mainVehicle = World.CreateVehicle(new Model(VehicleHash), VehiclePosition, 0);
+                    _mainVehicle = World.CreateVehicle(new Model(VehicleHash), gPos, 0);
                 }
 
                 if (_mainVehicle != null)
