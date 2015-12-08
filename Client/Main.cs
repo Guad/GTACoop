@@ -643,9 +643,9 @@ namespace GTACoOp
             _chat.OnKeyDown(e.KeyCode);
             if (e.KeyCode == PlayerSettings.ActivationKey && !_chat.IsFocused)
             {
-                if (_mainMenu.Visible || _settingsMenu.Visible || _serverBrowserMenu.Visible || _playersMenu.Visible)
+                if (_menuPool.IsAnyMenuOpen())
                 {
-                    _mainMenu.Visible = _settingsMenu.Visible = _serverBrowserMenu.Visible = _playersMenu.Visible = false;
+                    _menuPool.CloseAllMenus();
                 }
                 else
                 {

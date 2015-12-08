@@ -16,13 +16,14 @@ namespace GTACoOp
         {
             if (!Main.IsOnServer()) return;
 
-            const int threshold = 5000; // 5 second timeout
+            const int npcThreshold = 5000; // 5 second timeout
+            const int playerThreshold = 60000; // 60 second timeout
 
             Dictionary<long, SyncPed> localOpps = null;
             lock (Main.Opponents) localOpps = new Dictionary<long, SyncPed>(Main.Opponents);
             for (int i = localOpps.Count - 1; i >= 0; i--)
             {
-                if (DateTime.Now.Subtract(localOpps.ElementAt(i).Value.LastUpdateReceived).TotalMilliseconds > threshold)
+                if (DateTime.Now.Subtract(localOpps.ElementAt(i).Value.LastUpdateReceived).TotalMilliseconds > playerThreshold)
                 {
                     var key = localOpps.ElementAt(i).Key;
                     localOpps[key].Clear();
@@ -34,7 +35,7 @@ namespace GTACoOp
             lock (Main.Npcs) localNpcs = new Dictionary<string, SyncPed>(Main.Npcs);
             for (int i = localNpcs.Count - 1; i >= 0; i--)
             {
-                if (DateTime.Now.Subtract(localNpcs.ElementAt(i).Value.LastUpdateReceived).TotalMilliseconds > threshold)
+                if (DateTime.Now.Subtract(localNpcs.ElementAt(i).Value.LastUpdateReceived).TotalMilliseconds > npcThreshold)
                 {
                     var key = localNpcs.ElementAt(i).Key;
                     localNpcs[key].Clear();
