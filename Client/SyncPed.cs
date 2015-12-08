@@ -96,7 +96,6 @@ namespace GTACoOp
         private bool _isStreamedIn;
         private Blip _mainBlip;
         private bool _lastHorn;
-        private bool _lastParachute;
         private Prop _parachuteProp;
 
         public SyncPed(int hash, Vector3 pos, Quaternion rot, bool blip = true)
