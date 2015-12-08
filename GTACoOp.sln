@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GTAServer", "Server\GTAServ
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminTools", "AdminTools\AdminTools.csproj", "{158CCEB2-E6EC-457B-BA61-E448BD6B0F40}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Race", "Race\Race.csproj", "{988CD1D8-48ED-4C19-8953-79FAFDBB34DD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{158CCEB2-E6EC-457B-BA61-E448BD6B0F40}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{158CCEB2-E6EC-457B-BA61-E448BD6B0F40}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{158CCEB2-E6EC-457B-BA61-E448BD6B0F40}.Release|Any CPU.Build.0 = Release|Any CPU
+		{988CD1D8-48ED-4C19-8953-79FAFDBB34DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{988CD1D8-48ED-4C19-8953-79FAFDBB34DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{988CD1D8-48ED-4C19-8953-79FAFDBB34DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{988CD1D8-48ED-4C19-8953-79FAFDBB34DD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -21,7 +21,7 @@ namespace GTACoOp
     {
         public static PlayerSettings PlayerSettings;
 
-        public static readonly ScriptVersion LocalScriptVersion = ScriptVersion.VERSION_0_6;
+        public static readonly ScriptVersion LocalScriptVersion = ScriptVersion.VERSION_0_6_1;
 
         private readonly UIMenu _mainMenu;
         private readonly UIMenu _serverBrowserMenu;
@@ -55,7 +55,7 @@ namespace GTACoOp
 
         public Main()
         {
-            PlayerSettings = Util.ReadSettings(Program.Location + "GTACOOPSettings.xml");
+            PlayerSettings = Util.ReadSettings(Program.Location + Path.DirectorySeparatorChar + "GTACOOPSettings.xml");
             _threadJumping = new Queue<Action>();
             _emptyVehicleMods = new Dictionary<int, int>();
             for (int i = 0; i < 50; i++)
@@ -876,9 +876,16 @@ namespace GTACoOp
                                     _threadJumping.Enqueue(() =>
                                     {
                                         if (!string.IsNullOrEmpty(data.Sender))
-                                            UI.Notify(data.Sender + ": " + data.Message);
-                                        else
-                                            UI.Notify(data.Message);
+                                        {
+                                            for (int i = 0; i < data.Message.Length; i += 108 - data.Sender.Length)
+                                            {
+                                                UI.Notify(data.Sender + ": " +
+                                                          data.Message.Substring(i,
+                                                              Math.Min(108 - data.Sender.Length, data.Message.Length - i)));
+                                            }
+                                        }
+                                        else for (int i = 0; i < data.Message.Length; i += 110)
+                                                UI.Notify(data.Message.Substring(i,Math.Min(110, data.Message.Length - i)));
                                     });
                                 }
                             }

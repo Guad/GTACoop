@@ -68,10 +68,11 @@ namespace GTAServer
 
         public bool AllowDisplayNames { get; set; }
 
-        public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_6;
+        public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_6_1;
 
         private ServerScript _gamemode { get; set; }
         private List<ServerScript> _filterscripts;
+        private DateTime _lastAnnounceDateTime;
 
         public void Start(string[] filterscripts)
         {
@@ -79,6 +80,7 @@ namespace GTAServer
 
             if (AnnounceSelf)
             {
+                _lastAnnounceDateTime = DateTime.Now;
                 Console.WriteLine("Announcing to master server...");
                 AnnounceSelfToMaster();
             }
@@ -91,13 +93,13 @@ namespace GTAServer
 
                     try
                     {
-                        Program.DeleteFile(Program.Location + "gamemodes\\" + GamemodeName + ".dll:Zone.Identifier");
+                        Program.DeleteFile(Program.Location + "gamemodes" + Path.DirectorySeparatorChar + GamemodeName + ".dll:Zone.Identifier");
                     }
                     catch
                     {
                     }
 
-                    var asm = Assembly.LoadFrom(Program.Location + "gamemodes\\" + GamemodeName + ".dll");
+                    var asm = Assembly.LoadFrom(Program.Location + "gamemodes" + Path.DirectorySeparatorChar + GamemodeName + ".dll");
                     var types = asm.GetExportedTypes();
                     var validTypes = types.Where(t =>
                         !t.IsInterface &&
@@ -105,7 +107,7 @@ namespace GTAServer
                         .Where(t => typeof(ServerScript).IsAssignableFrom(t));
                     if (!validTypes.Any())
                     {
-                        Console.WriteLine("ERROR: No classes that inherit from {nameof(_gamemode)} have been found in the assembly. Starting freeroam.");
+                        Console.WriteLine("ERROR: No classes that inherit from ServerScript have been found in the assembly. Starting freeroam.");
                         return;
                     }
 
@@ -137,13 +139,13 @@ namespace GTAServer
                 {
                     try
                     {
-                        Program.DeleteFile(Program.Location + "filterscripts\\" + GamemodeName + ".dll:Zone.Identifier");
+                        Program.DeleteFile(Program.Location + "filterscripts" + Path.DirectorySeparatorChar + GamemodeName + ".dll:Zone.Identifier");
                     }
                     catch
                     {
                     }
 
-                    var fsAsm = Assembly.LoadFrom(Program.Location + "filterscripts\\" + path + ".dll");
+                    var fsAsm = Assembly.LoadFrom(Program.Location + "filterscripts" + Path.DirectorySeparatorChar + path + ".dll");
                     var fsObj = InstantiateScripts(fsAsm);
                     list.AddRange(fsObj);
                 }
@@ -195,15 +197,12 @@ namespace GTAServer
             }
         }
 
-        private int _lastDay = DateTime.UtcNow.Day;
-
-
         public void Tick()
         {
-            if (DateTime.UtcNow.Day != _lastDay)
+            if (AnnounceSelf && DateTime.Now.Subtract(_lastAnnounceDateTime).TotalMinutes >= 5)
             {
-                _lastDay = DateTime.UtcNow.Day;
-                if (AnnounceSelf) AnnounceSelfToMaster();
+                _lastAnnounceDateTime = DateTime.Now;
+                AnnounceSelfToMaster();
             }
 
             NetIncomingMessage msg;
@@ -285,16 +284,6 @@ namespace GTAServer
                                 string displayname = connReq.DisplayName;
                                 while (AllowDisplayNames && Clients.Any(c => c.DisplayName == connReq.DisplayName))
                                 {
-                                    /*client.NetConnection.Deny("Display name taken.");
-                                    Console.WriteLine("Player connection refused: display name taken.");
-
-                                    if (_gamemode != null) _gamemode.OnConnectionRefused(client, "Display name taken");
-                                    if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(client, "Display name taken"));
-
-                                    Server.Recycle(msg);
-
-                                    continue;*/
-
                                     duplicate++;
 
                                     connReq.DisplayName = displayname + " (" + duplicate + ")";
@@ -440,7 +429,7 @@ namespace GTAServer
                                         if (data != null)
                                         {
                                             data.Id = client.NetConnection.RemoteUniqueIdentifier;
-                                            data.Name = client.Name;
+                                            data.Name = client.DisplayName;
                                             data.Latency = client.Latency;
 
                                             client.Health = data.PlayerHealth;
@@ -464,7 +453,7 @@ namespace GTAServer
                                         if (data != null)
                                         {
                                             data.Id = client.NetConnection.RemoteUniqueIdentifier;
-                                            data.Name = client.Name;
+                                            data.Name = client.DisplayName;
                                             data.Latency = client.Latency;
 
                                             client.Health = data.PlayerHealth;
