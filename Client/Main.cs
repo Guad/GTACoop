@@ -325,7 +325,7 @@ namespace GTACoOp
 
             foreach (var ped in list)
             {
-                var newItem = new UIMenuItem(ped.Name);
+                var newItem = new UIMenuItem(ped.Name == null ? "" : ped.Name);
                 newItem.SetRightLabel(((int)(ped.Latency * 1000)) + "ms");
                 newItem.Activated += (sender, item) =>
                 {

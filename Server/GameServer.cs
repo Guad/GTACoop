@@ -258,6 +258,13 @@ namespace GTAServer
                             continue;
                         }
 
+                        if ((ScriptVersion) connReq.ScriptVersion == ScriptVersion.Unknown)
+                        {
+                            client.NetConnection.Deny("Unknown version. Please update your client.");
+                            Server.Recycle(msg);
+                            continue;
+                        }
+
                         int clients = 0;
                         lock (Clients) clients = Clients.Count;
                         if (clients < MaxPlayers)
