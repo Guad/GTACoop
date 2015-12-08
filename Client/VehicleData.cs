@@ -27,6 +27,7 @@ namespace GTACoOp
         Unknown = 0,
         VERSION_0_6 = 1,
         VERSION_0_6_1 = 2,
+        VERSION_0_7 = 3,
     }
 
     [ProtoContract]

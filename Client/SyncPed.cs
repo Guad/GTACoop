@@ -303,7 +303,7 @@ namespace GTACoOp
 
                     var range = Math.Max(20f, Speed*Math.Ceiling(DateTime.Now.Subtract(LastUpdateReceived).TotalSeconds));
 
-                    if (!_mainVehicle.IsInRangeOf(VehiclePosition, 0.08f))
+                    if (!_mainVehicle.IsInRangeOf(VehiclePosition, 0.08f) && Speed >= 1)
                         _mainVehicle.ApplyForce(dir*(Speed - _mainVehicle.Speed));
                     if (Main.GlobalSyncMode == SynchronizationMode.Teleport && !_mainVehicle.IsInRangeOf(VehiclePosition, 0.8f))
                         _mainVehicle.Position = VehiclePosition;

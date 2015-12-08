@@ -68,7 +68,7 @@ namespace GTAServer
 
         public bool AllowDisplayNames { get; set; }
 
-        public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_6_1;
+        public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_7;
 
         private ServerScript _gamemode { get; set; }
         private List<ServerScript> _filterscripts;
