@@ -94,7 +94,7 @@ namespace Race
                             Program.ServerInstance.SendChatMessageToAll("~h~" + opponent.Client.DisplayName + "~h~ has finished " + pos + suffix);
                             Program.ServerInstance.SendNativeCallToPlayer(opponent.Client, 0x45FF974EEE1C8734, opponent.Blip, 0);
                             Program.ServerInstance.RecallNativeCallOnTickForPlayer(opponent.Client, "RACE_CHECKPOINT_MARKER");
-                            Program.ServerInstance.RecallNativeCallOnTickForAllPlayers("RACE_CHECKPOINT_MARKER");
+                            Program.ServerInstance.RecallNativeCallOnTickForPlayer(opponent.Client, "RACE_CHECKPOINT_MARKER_DIR");
                             continue;
                         }
 
