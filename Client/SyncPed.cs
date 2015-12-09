@@ -206,7 +206,7 @@ namespace GTACoOp
                 }).ToList();
 
 
-                if (vehs.Any() && vehs[0].Model.Hash == VehicleHash)
+                if (vehs.Any() && vehs[0].Model.Hash == VehicleHash && vehs[0].IsInRangeOf(gPos, 10f))
                 {
                     _mainVehicle = vehs[0];
                 }
