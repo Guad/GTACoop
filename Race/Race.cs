@@ -6,8 +6,8 @@ namespace Race
     public class Race
     {
         public Vector3[] Checkpoints;
-        public Spawnpoint[] SpawnPoints;
-        public int[] AvailableVehicles;
+        public SpawnPoint[] SpawnPoints;
+        public VehicleHash[] AvailableVehicles;
         public bool LapsAvailable = true;
         public Vector3 Trigger;
 
@@ -29,7 +29,7 @@ namespace Race
         }
     }
 
-    public class Spawnpoint
+    public class SpawnPoint
     {
         public Vector3 Position { get; set; }
         public float Heading { get; set; }
