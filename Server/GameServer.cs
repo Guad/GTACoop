@@ -309,6 +309,24 @@ namespace GTAServer
                             channelHail.Write(GetChannelIdForConnection(client));
                             client.NetConnection.Approve(channelHail);
 
+                            if (_gamemode != null) _gamemode.OnIncomingConnection(client);
+                            if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnIncomingConnection(client));
+
+                            Console.WriteLine("New incoming connection: " + client.Name + " (" + client.DisplayName + ")");
+                        }
+                        else
+                        {
+                            client.NetConnection.Deny("No available player slots.");
+                            Console.WriteLine("Player connection refused: server full.");
+                            if (_gamemode != null) _gamemode.OnConnectionRefused(client, "Server is full");
+                            if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(client, "Server is full"));
+                        }
+                        break;
+                    case NetIncomingMessageType.StatusChanged:
+                        var newStatus = (NetConnectionStatus)msg.ReadByte();
+
+                        if (newStatus == NetConnectionStatus.Connected)
+                        {
                             bool sendMsg = true;
 
                             if (_gamemode != null) sendMsg = sendMsg && _gamemode.OnPlayerConnect(client);
@@ -329,17 +347,7 @@ namespace GTAServer
 
                             Console.WriteLine("New player connected: " + client.Name + " (" + client.DisplayName + ")");
                         }
-                        else
-                        {
-                            client.NetConnection.Deny("No available player slots.");
-                            Console.WriteLine("Player connection refused: server full.");
-                            if (_gamemode != null) _gamemode.OnConnectionRefused(client, "Server is full");
-                            if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(client, "Server is full"));
-                        }
-                        break;
-                    case NetIncomingMessageType.StatusChanged:
-                        var newStatus = (NetConnectionStatus)msg.ReadByte();
-                        if (newStatus == NetConnectionStatus.Disconnected)
+                        else if (newStatus == NetConnectionStatus.Disconnected)
                         {
                             lock (Clients)
                             {

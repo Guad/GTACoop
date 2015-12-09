@@ -21,6 +21,9 @@ namespace GTAServer
             return true;
         }
 
+        public virtual void OnIncomingConnection(Client player)
+        {
+        }
 
         public virtual bool OnPlayerDisconnect(Client player)
         {
