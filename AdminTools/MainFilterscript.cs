@@ -563,7 +563,7 @@ namespace AdminTools
 
         public static Account GetAccount(this Client client, bool checkauthentication = true)
         {
-            if (!checkauthentication || client.IsAuthenticated()) lock (Lists._accounts.Accounts) return Lists._accounts.Accounts.FirstOrDefault(acc => acc.Name == client.Name);
+            if (!checkauthentication || client.IsAuthenticated()) lock (Lists._accounts.Accounts) return Lists._accounts.Accounts.FirstOrDefault(acc => acc.Name == client.DisplayName);
 
             return null;
         }
@@ -606,10 +606,10 @@ namespace AdminTools
             Ban ban = new Ban()
             {
                 Address = client.NetConnection.RemoteEndPoint.Address.ToString(),
-                BannedBy = IssuedBy == null ? "Server" : IssuedBy.Name,
+                BannedBy = IssuedBy == null ? "Server" : IssuedBy.DisplayName,
                 Reason = Reason,
                 TimeIssued = DateTime.Now,
-                Name = client.Name,
+                Name = client.DisplayName,
             };
 
             lock (Lists._banned.BannedIps) Lists._banned.BannedIps.Add(ban);
@@ -622,7 +622,7 @@ namespace AdminTools
             Client client = null;
             lock (Program.ServerInstance.Clients) Program.ServerInstance.Clients.Any(c =>
             {
-                if (c.Name == account.Name)
+                if (c.DisplayName == account.Name)
                 {
                     client = c;
 
