@@ -209,6 +209,12 @@ namespace GTACoOp
                 if (vehs.Any() && vehs[0].Model.Hash == VehicleHash && vehs[0].IsInRangeOf(gPos, 10f))
                 {
                     _mainVehicle = vehs[0];
+                    if (Game.Player.Character.IsInVehicle(_mainVehicle) &&
+                        _mainVehicle.GetPedOnSeat(GTA.VehicleSeat.Driver) == Game.Player.Character)
+                    {
+                        Game.Player.Character.Task.WarpOutOfVehicle(_mainVehicle);
+                        UI.Notify("~r~Car jacked!");
+                    }
                 }
                 else
                 {
