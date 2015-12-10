@@ -112,7 +112,7 @@ namespace AdminTools
                 Program.ServerInstance.GetPlayerPosition(target, o =>
                 {
                     var newPos = (Vector3)o;
-                    Program.ServerInstance.TeleportPlayer(sender, newPos);
+                    Program.ServerInstance.SetPlayerPosition(sender, newPos);
                 });
 
                 Console.WriteLine(string.Format("ADMINTOOLS: {0} has teleported to player {1}", account.Name + " (" + sender.DisplayName + ")", target.Name + " (" + target.DisplayName + ")"));
