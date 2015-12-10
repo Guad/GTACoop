@@ -258,7 +258,7 @@ namespace GTAServer
                             continue;
                         }
 
-                        if ((ScriptVersion) connReq.ScriptVersion == ScriptVersion.Unknown)
+                        if ((ScriptVersion)connReq.ScriptVersion == ScriptVersion.Unknown)
                         {
                             client.NetConnection.Deny("Unknown version. Please update your client.");
                             Server.Recycle(msg);
@@ -379,7 +379,7 @@ namespace GTAServer
                                     SendToAll(dcObj, PacketType.PlayerDisconnect, 0);
 
                                     Console.WriteLine("Player disconnected: " + client.Name + " (" + client.DisplayName + ")");
-                                    
+
                                     Clients.Remove(client);
                                 }
                             }
@@ -1055,7 +1055,7 @@ namespace GTAServer
             player.NetConnection.Disconnect("Kicked: " + reason);
         }
 
-        public void TeleportPlayer(Client player, Vector3 newPosition)
+        public void SetPlayerPosition(Client player, Vector3 newPosition)
         {
             SendNativeCallToPlayer(player, 0x06843DA7060A026B, new LocalPlayerArgument(), newPosition.X, newPosition.Y, newPosition.Z, 0, 0, 0, 1);
         }
@@ -1076,6 +1076,24 @@ namespace GTAServer
         public void SetPlayerHealth(Client player, int health)
         {
             SendNativeCallToPlayer(player, 0x6B76DC1F3AE6E6A3, new LocalPlayerArgument(), health + 100);
+        }
+
+        public void SendPictureNotificationToPlayer(Client player, string body, string pic, int flash, int iconType, string sender, string subject)
+        {
+            //Crash with new LocalPlayerArgument()!
+            SendNativeCallToPlayer(player, 0x202709F4C58A0424, "STRING");
+            SendNativeCallToPlayer(player, 0x6C188BE134E074AA, body);
+            SendNativeCallToPlayer(player, 0x1CCD9A37359072CF, pic, pic, flash, iconType, sender, subject);
+            SendNativeCallToPlayer(player, 0xF020C96915705B3A, false, true);
+        }
+
+        public void SendPictureNotificationToAll(Client player, string body, string pic, int flash, int iconType, string sender, string subject)
+        {
+            //Crash with new LocalPlayerArgument()!
+            SendNativeCallToAllPlayers(0x202709F4C58A0424, "STRING");
+            SendNativeCallToAllPlayers(0x6C188BE134E074AA, body);
+            SendNativeCallToAllPlayers(0x1CCD9A37359072CF, pic, pic, flash, iconType, sender, subject);
+            SendNativeCallToAllPlayers(0xF020C96915705B3A, false, true);
         }
 
         public void GetPlayerHealth(Client player, Action<object> callback, string salt = "salt")
