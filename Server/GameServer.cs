@@ -1078,7 +1078,7 @@ namespace GTAServer
             SendNativeCallToPlayer(player, 0x6B76DC1F3AE6E6A3, new LocalPlayerArgument(), health + 100);
         }
 
-        public void SendChatMessagePictureToPlayer(Client player, string body, string pic, int flash, int iconType, string sender, string subject)
+        public void SendPictureNotificationToPlayer(Client player, string body, string pic, int flash, int iconType, string sender, string subject)
         {
             //Crash with new LocalPlayerArgument()!
             SendNativeCallToPlayer(player, 0x202709F4C58A0424, "STRING");
@@ -1087,7 +1087,7 @@ namespace GTAServer
             SendNativeCallToPlayer(player, 0xF020C96915705B3A, false, true);
         }
 
-        public void SendChatMessagePictureToAll(Client player, string body, string pic, int flash, int iconType, string sender, string subject)
+        public void SendPictureNotificationToAll(Client player, string body, string pic, int flash, int iconType, string sender, string subject)
         {
             //Crash with new LocalPlayerArgument()!
             SendNativeCallToAllPlayers(0x202709F4C58A0424, "STRING");
