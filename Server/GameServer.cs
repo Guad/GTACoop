@@ -1102,7 +1102,7 @@ namespace GTAServer
                 0xEEF059FAD016D209, new IntArgument(), callback, new LocalPlayerArgument());
         }
 		
-		public void ToggleNightVisionForPlayer(Client player, bool status)
+	public void ToggleNightVisionForPlayer(Client player, bool status)
         {
             SendNativeCallToPlayer(player, 0x18F621F7A5B1F85D, status);
         }
