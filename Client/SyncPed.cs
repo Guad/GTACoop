@@ -212,7 +212,7 @@ namespace GTACoOp
                 {
                     _mainVehicle = vehs[0];
                     if (Game.Player.Character.IsInVehicle(_mainVehicle) &&
-                        _mainVehicle.GetPedOnSeat(GTA.VehicleSeat.Driver) == Game.Player.Character)
+                        VehicleSeat == Util.GetPedSeat(Game.Player.Character))
                     {
                         Game.Player.Character.Task.WarpOutOfVehicle(_mainVehicle);
                         UI.Notify("~r~Car jacked!");
