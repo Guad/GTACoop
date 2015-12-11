@@ -110,13 +110,22 @@ namespace Race
 
                         if (CurrentRaceCheckpoints.Count > opponent.CheckpointsPassed+1)
                         {
-                            Vector3 dir = CurrentRaceCheckpoints[opponent.CheckpointsPassed+1].Subtract(CurrentRaceCheckpoints[opponent.CheckpointsPassed]);
-                            dir = dir.Normalize();
+                            var nextCp = CurrentRaceCheckpoints[opponent.CheckpointsPassed + 1];
+                            var curCp = CurrentRaceCheckpoints[opponent.CheckpointsPassed];
 
-                            Program.ServerInstance.SetNativeCallOnTickForPlayer(opponent.Client, "RACE_CHECKPOINT_MARKER_DIR",
-                            0x28477EC23D892089, 20, CurrentRaceCheckpoints[opponent.CheckpointsPassed].Subtract(new Vector3() { X = 0f, Y = 0f, Z = -2f }), dir, new Vector3() { X = 60f, Y = 0f, Z = 0f },
-                            new Vector3() { X = 4f, Y = 4f, Z = 4f }, 87, 193, 250, 200, false, false, 2, false, false,
-                            false, false);
+                            if (nextCp != null && curCp != null)
+                            {
+                                Vector3 dir = nextCp.Subtract(curCp);
+                                dir = dir.Normalize();
+
+                                Program.ServerInstance.SetNativeCallOnTickForPlayer(opponent.Client,
+                                    "RACE_CHECKPOINT_MARKER_DIR",
+                                    0x28477EC23D892089, 20, curCp.Subtract(new Vector3() {X = 0f, Y = 0f, Z = -2f}), dir,
+                                    new Vector3() {X = 60f, Y = 0f, Z = 0f},
+                                    new Vector3() {X = 4f, Y = 4f, Z = 4f}, 87, 193, 250, 200, false, false, 2, false,
+                                    false,
+                                    false, false);
+                            }
                         }
                         else
                         {

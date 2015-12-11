@@ -164,6 +164,20 @@ namespace GTAServer
     [ProtoContract]
     public class Vector3
     {
+        public Vector3()
+        {
+            X = 0f;
+            Y = 0f;
+            Z = 0f;
+        }
+
+        public Vector3(float x, float y, float z)
+        {
+            X = x;
+            Y = y;
+            Z = z;
+        }
+
         [ProtoMember(1)]
         public float X { get; set; }
         [ProtoMember(2)]
