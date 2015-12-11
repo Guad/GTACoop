@@ -24,6 +24,15 @@ namespace GTACoOp
             _mainScaleform.Load("multiplayer_chat");
         }
 
+        public bool HasInitialized;
+
+        public void Init()
+        {
+            _mainScaleform.CallFunction("SET_FOCUS", 2, 2, "ALL");
+            _mainScaleform.CallFunction("SET_FOCUS", 1, 2, "ALL");
+            HasInitialized = true;
+        }
+
         public bool IsFocused
         {
             get { return _isFocused; }

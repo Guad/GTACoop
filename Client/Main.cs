@@ -714,6 +714,8 @@ namespace GTACoOp
         {
             SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
 
+            _chat.Init();
+
             if (_client == null)
             {
                 var cport = GetOpenUdpPort();
