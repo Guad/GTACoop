@@ -1101,5 +1101,20 @@ namespace GTAServer
             GetNativeCallFromPlayer(player, salt,
                 0xEEF059FAD016D209, new IntArgument(), callback, new LocalPlayerArgument());
         }
+		
+		public void ToggleNightVisionForPlayer(Client player, bool status)
+        {
+            SendNativeCallToPlayer(player, 0x18F621F7A5B1F85D, status);
+        }
+		
+        public void ToggleNightVisionForAll(Client player, bool status)
+        {
+            SendNativeCallToAllPlayers(0x18F621F7A5B1F85D, status);
+        }
+
+        public void IsNightVisionActive(Client player, Action<object> callback, string salt = "salt")
+        {
+            GetNativeCallFromPlayer(player, salt, 0x2202A3F42C8E5F79, new BooleanArgument(), callback, new LocalPlayerArgument());
+        }
     }
 }
