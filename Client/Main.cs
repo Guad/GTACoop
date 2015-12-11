@@ -44,6 +44,7 @@ namespace GTACoOp
         private readonly Queue<Action> _threadJumping;
         private string _password;
         private bool _lastDead;
+        private bool _wasTyping;
 
         private DebugWindow _debug;
 
@@ -90,6 +91,14 @@ namespace GTACoOp
 
             Tick += OnTick;
             KeyDown += OnKeyDown;
+
+            KeyUp += (sender, args) =>
+            {
+                if (args.KeyCode == Keys.Escape && _wasTyping)
+                {
+                    _wasTyping = false;
+                }
+            };
 
             _config = new NetPeerConfiguration("GTAVOnlineRaces");
             _config.Port = 8888;
@@ -588,6 +597,9 @@ namespace GTACoOp
             if (_client == null || _client.ConnectionStatus == NetConnectionStatus.Disconnected ||
                 _client.ConnectionStatus == NetConnectionStatus.None) return;
 
+            if (_wasTyping)
+                Game.DisableControl(0, Control.FrontendPauseAlternate);
+
             int time = 1000;
             if ((time = Function.Call<int>(Hash.GET_TIME_SINCE_LAST_DEATH)) < 50 && !_lastDead)
             {
@@ -666,7 +678,10 @@ namespace GTACoOp
             if (e.KeyCode == Keys.T && IsOnServer())
             {
                 if (!_oldChat)
+                {
                     _chat.IsFocused = true;
+                    _wasTyping = true;
+                }
                 else
                 {
                     var message = Game.GetUserInput(255);
@@ -896,7 +911,9 @@ namespace GTACoOp
                                 var data = DeserializeBinary<ChatData>(msg.ReadBytes(len)) as ChatData;
                                 if (data != null && !string.IsNullOrEmpty(data.Message))
                                 {
-                                    lock (_threadJumping)
+                                    var sender = string.IsNullOrEmpty(data.Sender) ? "SERVER" : data.Sender;
+                                    _chat.AddMessage(sender, data.Message);
+                                    /*lock (_threadJumping)
                                     {
                                         _threadJumping.Enqueue(() =>
                                         {
@@ -913,7 +930,7 @@ namespace GTACoOp
                                                     UI.Notify(data.Message.Substring(i,
                                                         Math.Min(99, data.Message.Length - i)));
                                         });
-                                    }
+                                    }*/
                                 }
                             }
                             break;
@@ -989,9 +1006,11 @@ namespace GTACoOp
                 else if (msg.MessageType == NetIncomingMessageType.StatusChanged)
                 {
                     var newStatus = (NetConnectionStatus)msg.ReadByte();
-                    UI.Notify("STATUS: " + newStatus);
                     switch (newStatus)
                     {
+                        case NetConnectionStatus.InitiatedConnect:
+                            UI.Notify("Connecting...");
+                            break;
                         case NetConnectionStatus.Connected:
                             UI.Notify("Connection successful!");
                             _channel = msg.SenderConnection.RemoteHailMessage.ReadInt32();

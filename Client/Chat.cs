@@ -19,38 +19,70 @@ namespace GTACoOp
         public Chat()
         {
             CurrentInput = "";
+            _mainScaleform = new Scaleform(0);
+            _mainScaleform.Load("multiplayer_chat");
         }
 
-        public bool IsFocused { get; set; }
+        public bool IsFocused
+        {
+            get { return _isFocused; }
+            set
+            {
+                if (value && !_isFocused)
+                {
+                    _mainScaleform.CallFunction("SET_FOCUS", 2, 2, "ALL");
+                }
+                else if (!value && _isFocused)
+                {
+                    _mainScaleform.CallFunction("SET_FOCUS", 1, 2, "ALL");
+                }
 
+                _isFocused = value;
+                
+            }
+        }
+
+        private Scaleform _mainScaleform;
 
         public string CurrentInput;
 
         private int _switch = 1;
         private Keys _lastKey;
+        private bool _isFocused;
 
         public void Tick()
         {
+            if (!Main.IsOnServer()) return;
+
+            _mainScaleform.Render2D();
+
             if (!IsFocused) return;
-
             Function.Call(Hash.DISABLE_ALL_CONTROL_ACTIONS, 0);
-
-            var res = UIMenu.GetScreenResolutionMantainRatio();
-
-            new UIResRectangle(new Point(0, 0), new Size((int)res.Width, 40), Color.FromArgb(160, 0, 0, 0)).Draw();
-            new UIResText(CurrentInput + (_switch > 15 ? "|" : ""), new Point(5, 5), 0.35f, Color.WhiteSmoke,
-                Font.ChaletLondon, UIResText.Alignment.Left)
-            {
-                Outline = true,
-            }.Draw();
-            _switch++;
-            if (_switch >= 30) _switch = 0;
         }
 
+        public void AddMessage(string sender, string msg)
+        {
+            if (string.IsNullOrEmpty(sender))
+                _mainScaleform.CallFunction("ADD_MESSAGE", "", msg);
+            else
+                _mainScaleform.CallFunction("ADD_MESSAGE", sender + ":", msg);
+        }
         
         public void OnKeyDown(Keys key)
         {
             if (!IsFocused) return;
+
+            if (key == Keys.PageUp)
+            {
+                _mainScaleform.CallFunction("PAGE_UP");
+                return;
+            }
+
+            else if (key == Keys.PageDown)
+            {
+                _mainScaleform.CallFunction("PAGE_DOWN");
+                return;
+            }
 
             if ((key == Keys.ShiftKey && _lastKey == Keys.Menu) || (key == Keys.Menu && _lastKey == Keys.ShiftKey))
                 ActivateKeyboardLayout(1, 0);
@@ -58,7 +90,10 @@ namespace GTACoOp
             _lastKey = key;
 
             if (key == Keys.Escape)
+            {
                 IsFocused = false;
+                CurrentInput = "";
+            }
 
             var keyChar = GetCharFromKey(key, Game.IsKeyPressed(Keys.ShiftKey), false);
 
@@ -66,12 +101,19 @@ namespace GTACoOp
 
             if (keyChar[0] == (char)8)
             {
+                _mainScaleform.CallFunction("SET_FOCUS", 1, 2, "ALL");
+                _mainScaleform.CallFunction("SET_FOCUS", 2, 2, "ALL");
+
                 if (CurrentInput.Length > 0)
+                {
                     CurrentInput = CurrentInput.Substring(0, CurrentInput.Length - 1);
+                    _mainScaleform.CallFunction("ADD_TEXT", CurrentInput);
+                }
                 return;
             }
             if (keyChar[0] == (char)13)
             {
+                _mainScaleform.CallFunction("ADD_TEXT", "ENTER");
                 if (OnComplete != null) OnComplete.Invoke(this, EventArgs.Empty);
                 CurrentInput = "";
                 return;
@@ -79,6 +121,7 @@ namespace GTACoOp
             var str = keyChar;
 
             CurrentInput += str;
+            _mainScaleform.CallFunction("ADD_TEXT", str);
         }
 
 

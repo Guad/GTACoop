@@ -370,7 +370,7 @@ namespace GTACoOp
                     _parachuteProp.Position = Character.Position + new Vector3(0, 0, 3.7f);
                     _parachuteProp.Quaternion = Character.Quaternion;
 
-                    Character.Task.PlayAnimation("skydive@parachute@first_person", "chute_idle_right", 8f, -1, false, 8f);
+                    Character.Task.PlayAnimation("skydive@parachute@first_person", "chute_idle_right", 8f, 5000, false, 8f);
                 }
                 else
                 {
