@@ -333,17 +333,7 @@ namespace GTAServer
                             if (_filterscripts != null) _filterscripts.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerConnect(client));
 
                             if (sendMsg)
-                            {
-                                var chatObj = new ChatData()
-                                {
-                                    Sender = "SERVER",
-                                    Message =
-                                        "Player ~h~" + client.DisplayName +
-                                        "~h~ has connected.",
-                                };
-
-                                SendToAll(chatObj, PacketType.ChatData, 0);
-                            }
+                                SendNotificationToAll("Player ~h~" + client.DisplayName + "~h~ has connected.");
 
                             Console.WriteLine("New player connected: " + client.Name + " (" + client.DisplayName + ")");
                         }
@@ -359,17 +349,7 @@ namespace GTAServer
                                     if (_filterscripts != null) _filterscripts.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerDisconnect(client));
 
                                     if (sendMsg)
-                                    {
-                                        var chatObj = new ChatData()
-                                        {
-                                            Sender = "SERVER",
-                                            Message =
-                                                "Player ~h~" + client.DisplayName +
-                                                "~h~ has disconnected.",
-                                        };
-
-                                        SendToAll(chatObj, PacketType.ChatData, 0);
-                                    }
+                                        SendNotificationToAll("Player ~h~" + client.DisplayName + "~h~ has disconnected.");
 
                                     var dcObj = new PlayerDisconnect()
                                     {
@@ -453,7 +433,7 @@ namespace GTAServer
                                             client.VehicleHealth = data.VehicleHealth;
                                             client.IsInVehicle = true;
 
-                                            SendToAll(data, PacketType.VehiclePositionData, GetChannelIdForConnection(client), client.NetConnection.RemoteUniqueIdentifier);
+                                            SendToAll(data, PacketType.VehiclePositionData, client.NetConnection.RemoteUniqueIdentifier);
                                         }
                                     }
                                     catch (IndexOutOfRangeException)
@@ -476,7 +456,7 @@ namespace GTAServer
                                             client.LastKnownPosition = data.Position;
                                             client.IsInVehicle = false;
 
-                                            SendToAll(data, PacketType.PedPositionData, GetChannelIdForConnection(client), client.NetConnection.RemoteUniqueIdentifier);
+                                            SendToAll(data, PacketType.PedPositionData, client.NetConnection.RemoteUniqueIdentifier);
                                         }
                                     }
                                     catch (IndexOutOfRangeException)
@@ -494,7 +474,7 @@ namespace GTAServer
                                         if (data != null)
                                         {
                                             data.Id = client.NetConnection.RemoteUniqueIdentifier;
-                                            SendToAll(data, PacketType.NpcVehPositionData, GetChannelIdForConnection(client), client.NetConnection.RemoteUniqueIdentifier);
+                                            SendToAll(data, PacketType.NpcVehPositionData, client.NetConnection.RemoteUniqueIdentifier);
                                         }
                                     }
                                     catch (IndexOutOfRangeException)
@@ -511,7 +491,7 @@ namespace GTAServer
                                         if (data != null)
                                         {
                                             data.Id = msg.SenderConnection.RemoteUniqueIdentifier;
-                                            SendToAll(data, PacketType.NpcPedPositionData, GetChannelIdForConnection(client), client.NetConnection.RemoteUniqueIdentifier);
+                                            SendToAll(data, PacketType.NpcPedPositionData, client.NetConnection.RemoteUniqueIdentifier);
                                         }
                                     }
                                     catch (IndexOutOfRangeException)
@@ -586,7 +566,7 @@ namespace GTAServer
             if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnTick());
         }
 
-        public void SendToAll(object newData, PacketType packetType, int channel, long exclude = 0)
+        public void SendToAll(object newData, PacketType packetType, long exclude = 0)
         {
             var data = SerializeBinary(newData);
             lock (Clients)
@@ -598,7 +578,7 @@ namespace GTAServer
                     msg.Write((int)packetType);
                     msg.Write(data.Length);
                     msg.Write(data);
-                    client.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, channel);
+                    client.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(client));
                 }
             }
         }
@@ -633,13 +613,10 @@ namespace GTAServer
             lock (Clients) return (Clients.IndexOf(conn) % 31) + 1;
         }
 
-        public void SendNativeCallToPlayer(Client player, ulong hash, params object[] arguments)
+        private List<NativeArgument> ParseNativeArguments(params object[] args)
         {
-            var obj = new NativeData();
-            obj.Hash = hash;
-
             var list = new List<NativeArgument>();
-            foreach (var o in arguments)
+            foreach (var o in args)
             {
                 if (o is int)
                 {
@@ -685,7 +662,14 @@ namespace GTAServer
                 }
             }
 
-            obj.Arguments = list.ToList();
+            return list;
+        }
+
+        public void SendNativeCallToPlayer(Client player, ulong hash, params object[] arguments)
+        {
+            var obj = new NativeData();
+            obj.Hash = hash;
+            obj.Arguments = ParseNativeArguments(arguments);
 
             var bin = SerializeBinary(obj);
 
@@ -702,55 +686,7 @@ namespace GTAServer
         {
             var obj = new NativeData();
             obj.Hash = hash;
-
-            var list = new List<NativeArgument>();
-            foreach (var o in arguments)
-            {
-                if (o is int)
-                {
-                    list.Add(new IntArgument() { Data = ((int)o) });
-                }
-                else if (o is uint)
-                {
-                    list.Add(new UIntArgument() { Data = ((uint)o) });
-                }
-                else if (o is string)
-                {
-                    list.Add(new StringArgument() { Data = ((string)o) });
-                }
-                else if (o is float)
-                {
-                    list.Add(new FloatArgument() { Data = ((float)o) });
-                }
-                else if (o is bool)
-                {
-                    list.Add(new BooleanArgument() { Data = ((bool)o) });
-                }
-                else if (o is LocalPlayerArgument)
-                {
-                    list.Add((LocalPlayerArgument)o);
-                }
-                else if (o is Vector3)
-                {
-                    var tmp = (Vector3)o;
-                    list.Add(new Vector3Argument()
-                    {
-                        X = tmp.X,
-                        Y = tmp.Y,
-                        Z = tmp.Z,
-                    });
-                }
-                else if (o is OpponentPedHandleArgument)
-                {
-                    list.Add((OpponentPedHandleArgument)o);
-                }
-                else if (o is LocalGamePlayerArgument)
-                {
-                    list.Add((LocalGamePlayerArgument)o);
-                }
-            }
-
-            obj.Arguments = list.ToList();
+            obj.Arguments = ParseNativeArguments(arguments);
             obj.ReturnType = null;
             obj.Id = null;
 
@@ -770,53 +706,7 @@ namespace GTAServer
             var obj = new NativeData();
             obj.Hash = hash;
 
-            var list = new List<NativeArgument>();
-            foreach (var o in arguments)
-            {
-                if (o is int)
-                {
-                    list.Add(new IntArgument() { Data = ((int)o) });
-                }
-                else if (o is uint)
-                {
-                    list.Add(new UIntArgument() { Data = ((uint)o) });
-                }
-                else if (o is string)
-                {
-                    list.Add(new StringArgument() { Data = ((string)o) });
-                }
-                else if (o is float)
-                {
-                    list.Add(new FloatArgument() { Data = ((float)o) });
-                }
-                else if (o is bool)
-                {
-                    list.Add(new BooleanArgument() { Data = ((bool)o) });
-                }
-                else if (o is Vector3)
-                {
-                    var tmp = (Vector3)o;
-                    list.Add(new Vector3Argument()
-                    {
-                        X = tmp.X,
-                        Y = tmp.Y,
-                        Z = tmp.Z,
-                    });
-                }
-                else if (o is LocalPlayerArgument)
-                {
-                    list.Add((LocalPlayerArgument)o);
-                }
-                else if (o is OpponentPedHandleArgument)
-                {
-                    list.Add((OpponentPedHandleArgument)o);
-                }
-                else if (o is LocalGamePlayerArgument)
-                {
-                    list.Add((LocalGamePlayerArgument)o);
-                }
-            }
-            obj.Arguments = list.ToList();
+            obj.Arguments = ParseNativeArguments(arguments);
 
             var wrapper = new NativeTickCall();
             wrapper.Identifier = identifier;
@@ -838,53 +728,7 @@ namespace GTAServer
             var obj = new NativeData();
             obj.Hash = hash;
 
-            var list = new List<NativeArgument>();
-            foreach (var o in arguments)
-            {
-                if (o is int)
-                {
-                    list.Add(new IntArgument() { Data = ((int)o) });
-                }
-                else if (o is uint)
-                {
-                    list.Add(new UIntArgument() { Data = ((uint)o) });
-                }
-                else if (o is string)
-                {
-                    list.Add(new StringArgument() { Data = ((string)o) });
-                }
-                else if (o is float)
-                {
-                    list.Add(new FloatArgument() { Data = ((float)o) });
-                }
-                else if (o is bool)
-                {
-                    list.Add(new BooleanArgument() { Data = ((bool)o) });
-                }
-                else if (o is Vector3)
-                {
-                    var tmp = (Vector3)o;
-                    list.Add(new Vector3Argument()
-                    {
-                        X = tmp.X,
-                        Y = tmp.Y,
-                        Z = tmp.Z,
-                    });
-                }
-                else if (o is LocalPlayerArgument)
-                {
-                    list.Add((LocalPlayerArgument)o);
-                }
-                else if (o is OpponentPedHandleArgument)
-                {
-                    list.Add((OpponentPedHandleArgument)o);
-                }
-                else if (o is LocalGamePlayerArgument)
-                {
-                    list.Add((LocalGamePlayerArgument)o);
-                }
-            }
-            obj.Arguments = list.ToList();
+            obj.Arguments = ParseNativeArguments(arguments);
 
             var wrapper = new NativeTickCall();
             wrapper.Identifier = identifier;
@@ -931,6 +775,73 @@ namespace GTAServer
             Server.SendToAll(msg, NetDeliveryMethod.ReliableOrdered);
         }
 
+        public void SetNativeCallOnDisconnectForPlayer(Client player, string identifier, ulong hash, params object[] arguments)
+        {
+            var obj = new NativeData();
+            obj.Hash = hash;
+            obj.Id = identifier;
+            obj.Arguments = ParseNativeArguments(arguments);
+
+            
+            var bin = SerializeBinary(obj);
+
+            var msg = Server.CreateMessage();
+
+            msg.Write((int)PacketType.NativeOnDisconnect);
+            msg.Write(bin.Length);
+            msg.Write(bin);
+
+            player.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(player));
+        }
+
+        public void SetNativeCallOnDisconnectForAllPlayers(string identifier, ulong hash, params object[] arguments)
+        {
+            var obj = new NativeData();
+            obj.Hash = hash;
+            obj.Id = identifier;
+            obj.Arguments = ParseNativeArguments(arguments);
+
+            var bin = SerializeBinary(obj);
+
+            var msg = Server.CreateMessage();
+
+            msg.Write((int)PacketType.NativeOnDisconnect);
+            msg.Write(bin.Length);
+            msg.Write(bin);
+
+            Server.SendToAll(msg, NetDeliveryMethod.ReliableOrdered);
+        }
+
+        public void RecallNativeCallOnDisconnectForPlayer(Client player, string identifier)
+        {
+            var obj = new NativeData();
+            obj.Id = identifier;
+
+            var bin = SerializeBinary(obj);
+
+            var msg = Server.CreateMessage();
+            msg.Write((int)PacketType.NativeOnDisconnectRecall);
+            msg.Write(bin.Length);
+            msg.Write(bin);
+
+            player.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(player));
+        }
+
+        public void RecallNativeCallOnDisconnectForAllPlayers(string identifier)
+        {
+            var obj = new NativeData();
+            obj.Id = identifier;
+
+            var bin = SerializeBinary(obj);
+
+            var msg = Server.CreateMessage();
+            msg.Write((int)PacketType.NativeOnDisconnectRecall);
+            msg.Write(bin.Length);
+            msg.Write(bin);
+
+            Server.SendToAll(msg, NetDeliveryMethod.ReliableOrdered);
+        }
+
         private Dictionary<string, Action<object>> _callbacks = new Dictionary<string, Action<object>>();
         public void GetNativeCallFromPlayer(Client player, string salt, ulong hash, NativeArgument returnType, Action<object> callback,
             params object[] arguments)
@@ -943,55 +854,7 @@ namespace GTAServer
                    player.NetConnection.RemoteUniqueIdentifier.ToString() +
                    DateTime.Now.Subtract(new DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds.ToString();
             obj.Id = salt;
-
-            var list = new List<NativeArgument>();
-            foreach (var o in arguments)
-            {
-                if (o is int)
-                {
-                    list.Add(new IntArgument() { Data = ((int)o) });
-                }
-                else if (o is uint)
-                {
-                    list.Add(new UIntArgument() { Data = ((uint)o) });
-                }
-                else if (o is string)
-                {
-                    list.Add(new StringArgument() { Data = ((string)o) });
-                }
-                else if (o is float)
-                {
-                    list.Add(new FloatArgument() { Data = ((float)o) });
-                }
-                else if (o is bool)
-                {
-                    list.Add(new BooleanArgument() { Data = ((bool)o) });
-                }
-                else if (o is Vector3)
-                {
-                    var tmp = (Vector3)o;
-                    list.Add(new Vector3Argument()
-                    {
-                        X = tmp.X,
-                        Y = tmp.Y,
-                        Z = tmp.Z,
-                    });
-                }
-                else if (o is LocalPlayerArgument)
-                {
-                    list.Add(new LocalPlayerArgument());
-                }
-                else if (o is OpponentPedHandleArgument)
-                {
-                    list.Add((OpponentPedHandleArgument)o);
-                }
-                else if (o is LocalGamePlayerArgument)
-                {
-                    list.Add((LocalGamePlayerArgument)o);
-                }
-            }
-
-            obj.Arguments = list.ToList();
+            obj.Arguments = ParseNativeArguments(arguments);
 
             var bin = SerializeBinary(obj);
 
@@ -1078,6 +941,26 @@ namespace GTAServer
             SendNativeCallToPlayer(player, 0x6B76DC1F3AE6E6A3, new LocalPlayerArgument(), health + 100);
         }
 
+        public void SendNotificationToPlayer(Client player, string message, bool flashing = false)
+        {
+            for (int i = 0; i < message.Length; i += 99)
+            {
+                SendNativeCallToPlayer(player, 0x202709F4C58A0424, "STRING");
+                SendNativeCallToPlayer(player, 0x6C188BE134E074AA, message.Substring(i, Math.Min(99, message.Length - i)));
+                SendNativeCallToPlayer(player, 0xF020C96915705B3A, flashing, true);
+            }
+        }
+
+        public void SendNotificationToAll(string message, bool flashing = false)
+        {
+            for (int i = 0; i < message.Length; i += 99)
+            {
+                SendNativeCallToAllPlayers(0x202709F4C58A0424, "STRING");
+                SendNativeCallToAllPlayers(0x6C188BE134E074AA, message.Substring(i, Math.Min(99, message.Length - i)));
+                SendNativeCallToAllPlayers(0xF020C96915705B3A, flashing, true);
+            }
+        }
+
         public void SendPictureNotificationToPlayer(Client player, string body, string pic, int flash, int iconType, string sender, string subject)
         {
             //Crash with new LocalPlayerArgument()!
@@ -1102,7 +985,7 @@ namespace GTAServer
                 0xEEF059FAD016D209, new IntArgument(), callback, new LocalPlayerArgument());
         }
 		
-	public void ToggleNightVisionForPlayer(Client player, bool status)
+	    public void ToggleNightVisionForPlayer(Client player, bool status)
         {
             SendNativeCallToPlayer(player, 0x18F621F7A5B1F85D, status);
         }

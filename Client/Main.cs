@@ -64,6 +64,10 @@ namespace GTACoOp
             Opponents = new Dictionary<long, SyncPed>();
             Npcs = new Dictionary<string, SyncPed>();
             _tickNatives = new Dictionary<string, NativeData>();
+            _dcNatives = new Dictionary<string, NativeData>();
+
+            _entityCleanup = new List<int>();
+            _blipCleanup = new List<int>();
 
             _emptyVehicleMods = new Dictionary<int, int>();
             for (int i = 0; i < 50; i++) _emptyVehicleMods.Add(i, 0);
@@ -362,6 +366,9 @@ namespace GTACoOp
 
         private static Dictionary<int, int> _emptyVehicleMods;
         private Dictionary<string, NativeData> _tickNatives;
+        private Dictionary<string, NativeData> _dcNatives;
+        private List<int> _entityCleanup;
+        private List<int> _blipCleanup;
 
         private static int _modSwitch = 0;
         private static int _pedSwitch = 0;
@@ -1001,6 +1008,26 @@ namespace GTACoOp
                                 lock (_tickNatives) if (_tickNatives.ContainsKey(data.Identifier)) _tickNatives.Remove(data.Identifier);
                             }
                             break;
+                        case PacketType.NativeOnDisconnect:
+                            {
+                                var len = msg.ReadInt32();
+                                var data = (NativeData)DeserializeBinary<NativeData>(msg.ReadBytes(len));
+                                if (data == null) return;
+                                lock (_dcNatives)
+                                {
+                                    if (!_dcNatives.ContainsKey(data.Id)) _dcNatives.Add(data.Id, data);
+                                    _dcNatives[data.Id] = data;
+                                }
+                            }
+                            break;
+                        case PacketType.NativeOnDisconnectRecall:
+                            {
+                                var len = msg.ReadInt32();
+                                var data = (NativeData)DeserializeBinary<NativeData>(msg.ReadBytes(len));
+                                if (data == null) return;
+                                lock (_dcNatives) if (_dcNatives.ContainsKey(data.Id)) _dcNatives.Remove(data.Id);
+                            }
+                            break;
                     }
                 }
                 else if (msg.MessageType == NetIncomingMessageType.StatusChanged)
@@ -1036,8 +1063,26 @@ namespace GTACoOp
                                     Npcs.Clear();
                                 }
                             }
+                            
+                            lock (_dcNatives)
+                                if (_dcNatives != null && _dcNatives.Any())
+                                {
+                                    _dcNatives.ToList().ForEach(pair => DecodeNativeCall(pair.Value));
+                                    _dcNatives.Clear();
+                                }
 
                             lock (_tickNatives) if (_tickNatives != null) _tickNatives.Clear();
+
+                            lock (_entityCleanup)
+                            {
+                                _entityCleanup.ForEach(ent => new Prop(ent).Delete());
+                                _entityCleanup.Clear();
+                            }
+                            lock (_blipCleanup)
+                            {
+                                _blipCleanup.ForEach(blip => new Blip(blip).Remove());
+                                _blipCleanup.Clear();
+                            }
                             break;
                     }
                 }
@@ -1385,6 +1430,30 @@ namespace GTACoOp
                 }
             }
 
+            var nativeType = CheckNativeHash(obj.Hash);
+
+            if (nativeType == NativeType.ReturnsEntity)
+            {
+                var entId = Function.Call<int>((Hash) obj.Hash, list.ToArray());
+                lock(_entityCleanup) _entityCleanup.Add(entId);
+                if (obj.ReturnType is IntArgument)
+                {
+                    SendNativeCallResponse(obj.Id, entId);
+                }
+                return;
+            }
+
+            if (nativeType == NativeType.ReturnsBlip)
+            {
+                var blipId = Function.Call<int>((Hash)obj.Hash, list.ToArray());
+                lock (_blipCleanup) _blipCleanup.Add(blipId);
+                if (obj.ReturnType is IntArgument)
+                {
+                    SendNativeCallResponse(obj.Id, blipId);
+                }
+                return;
+            }
+
             if (obj.ReturnType == null)
             {
                 Function.Call((Hash)obj.Hash, list.ToArray());
@@ -1460,6 +1529,40 @@ namespace GTACoOp
             msg.Write(bin.Length);
             msg.Write(bin);
             _client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, 0);
+        }
+        
+        private enum NativeType
+        {
+            Unknown = 0,
+            ReturnsEntity = 1,
+            ReturnsBlip = 2,
+        }
+
+        private NativeType CheckNativeHash(ulong hash)
+        {
+            switch (hash)
+            {
+                default:
+                    return NativeType.Unknown;
+                    break;
+                case 0xD49F9B0955C367DE:
+                case 0xEF29A16337FACADB:
+                case 0x7DD959874C1FD534:
+                case 0xB4AC7D0CF06BFE8F:
+                case 0x9B62392B474F44A0:
+                case 0xAF35D0D2583051B0:
+                case 0x63C6CCA8E68AE8C8:
+                case 0x509D5878EB39E842:
+                case 0x9A294B2138ABB884:
+                    return NativeType.ReturnsEntity;
+                    break;
+                case 0x46818D79B1F7499A:
+                case 0x5CDE92C702A8FCE7:
+                case 0xBE339365C863BD36:
+                case 0x5A039BB0BCA604B6:
+                    return NativeType.ReturnsBlip;
+                    break;
+            }
         }
 
         public static int GetPedSpeed(Vector3 firstVector, Vector3 secondVector)

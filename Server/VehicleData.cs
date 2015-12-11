@@ -20,6 +20,8 @@ namespace GTAServer
         PlayerKilled = 11,
         NativeTick = 12,
         NativeTickRecall = 13,
+        NativeOnDisconnect = 14,
+        NativeOnDisconnectRecall = 15,
     }
 
     public enum ScriptVersion

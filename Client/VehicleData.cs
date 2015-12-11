@@ -20,6 +20,8 @@ namespace GTACoOp
         PlayerKilled = 11,
         NativeTick = 12,
         NativeTickRecall = 13,
+        NativeOnDisconnect = 14,
+        NativeOnDisconnectRecall = 15,
     }
 
     public enum ScriptVersion
@@ -159,7 +161,7 @@ namespace GTACoOp
         [ProtoMember(1)]
         public long Id { get; set; }
     }
-
+    
     [ProtoContract]
     public class LVector3
     {

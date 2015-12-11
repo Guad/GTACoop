@@ -56,6 +56,7 @@ namespace GTACoOp
 
             _mainScaleform.Render2D();
 
+            
             if (!IsFocused) return;
             Function.Call(Hash.DISABLE_ALL_CONTROL_ACTIONS, 0);
         }
@@ -70,19 +71,13 @@ namespace GTACoOp
         
         public void OnKeyDown(Keys key)
         {
-            if (!IsFocused) return;
-
-            if (key == Keys.PageUp)
-            {
+            if (key == Keys.PageUp && Main.IsOnServer())
                 _mainScaleform.CallFunction("PAGE_UP");
-                return;
-            }
 
-            else if (key == Keys.PageDown)
-            {
+            else if (key == Keys.PageDown && Main.IsOnServer())
                 _mainScaleform.CallFunction("PAGE_DOWN");
-                return;
-            }
+
+            if (!IsFocused) return;
 
             if ((key == Keys.ShiftKey && _lastKey == Keys.Menu) || (key == Keys.Menu && _lastKey == Keys.ShiftKey))
                 ActivateKeyboardLayout(1, 0);

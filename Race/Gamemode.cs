@@ -56,6 +56,11 @@ namespace Race
             StartVote();
         }
 
+        public bool IsVoteActive()
+        {
+            return DateTime.Now.Subtract(VoteStart).TotalSeconds < 60;
+        }
+
         public override void OnTick()
         {
             if (!IsRaceOngoing) return;
@@ -66,7 +71,7 @@ namespace Race
                 foreach (var opponent in Opponents)
                 {
                     if (opponent.HasFinished || !opponent.HasStarted) continue;
-                    if (opponent.Client.LastKnownPosition.IsInRangeOf(CurrentRaceCheckpoints[opponent.CheckpointsPassed], 10f))
+                    if (CurrentRaceCheckpoints.Any() && opponent.Client.LastKnownPosition.IsInRangeOf(CurrentRaceCheckpoints[opponent.CheckpointsPassed], 10f))
                     {
                         opponent.CheckpointsPassed++;
                         if (opponent.CheckpointsPassed >= CurrentRaceCheckpoints.Count)
@@ -80,7 +85,7 @@ namespace Race
                                     Thread.Sleep(30000);
                                     Program.ServerInstance.SendChatMessageToAll("Vote for next map will start in 30 seconds!");
                                     Thread.Sleep(30000);
-                                    if (DateTime.UtcNow.Subtract(VoteStart).TotalSeconds > 60)
+                                    if (!IsVoteActive())
                                         StartVote();
                                 });
                                 t.Start();
@@ -91,7 +96,7 @@ namespace Race
                             var suffix = pos.ToString().EndsWith("1")
                                 ? "st"
                                 : pos.ToString().EndsWith("2") ? "nd" : pos.ToString().EndsWith("3") ? "rd" : "th";
-                            Program.ServerInstance.SendChatMessageToAll("~h~" + opponent.Client.DisplayName + "~h~ has finished " + pos + suffix);
+                            Program.ServerInstance.SendNotificationToAll("~h~" + opponent.Client.DisplayName + "~h~ has finished " + pos + suffix);
                             Program.ServerInstance.SendNativeCallToPlayer(opponent.Client, 0x45FF974EEE1C8734, opponent.Blip, 0);
                             Program.ServerInstance.RecallNativeCallOnTickForPlayer(opponent.Client, "RACE_CHECKPOINT_MARKER");
                             Program.ServerInstance.RecallNativeCallOnTickForPlayer(opponent.Client, "RACE_CHECKPOINT_MARKER_DIR");
@@ -164,7 +169,7 @@ namespace Race
 
         public override bool OnChatMessage(Client sender, string message)
         {
-            if (message == "/votemap" && DateTime.Now.Subtract(VoteStart).TotalSeconds > 60 && (!IsRaceOngoing || DateTime.UtcNow.Subtract(RaceStart).TotalSeconds > 60))
+            if (message == "/votemap" && !IsVoteActive() && (!IsRaceOngoing || DateTime.UtcNow.Subtract(RaceStart).TotalSeconds > 60))
             {
                 StartVote();
                 return false;
@@ -206,23 +211,20 @@ namespace Race
             else if (message == "/q")
             {
                 Opponent curOp = Opponents.FirstOrDefault(op => op.Client == sender);
-
-                if (curOp == null)
-                {
-                    
-                }
-
+                
                 if (curOp != null)
                 {
                     if (curOp.Blip != 0)
                     {
                         Program.ServerInstance.SendNativeCallToPlayer(sender, 0x45FF974EEE1C8734, curOp.Blip, 0);
+                        //Program.ServerInstance.SendNativeCallToPlayer(sender, 0x86A652570E5F25DD, new PointerArgumentInt() {Data = curOp.Blip});
                     }
 
                     lock (Opponents) Opponents.Remove(curOp);
                 }
 
                 Program.ServerInstance.KickPlayer(sender, "requested");
+                return false;
             }
             return true;
         }
@@ -230,7 +232,7 @@ namespace Race
         public override bool OnPlayerConnect(Client player)
         {
             Program.ServerInstance.SetNativeCallOnTickForPlayer(player, "RACE_DISABLE_VEHICLE_EXIT", 0xFE99B66D079CF6BC, 0, 75, true);
-            Program.ServerInstance.SendChatMessageToPlayer(player, "~r~IMPORTANT~w~", "Quit the server using the ~h~/q~h~ command to remove the blip.");
+            Program.ServerInstance.SendNotificationToPlayer(player, "~r~IMPORTANT~w~~n~" + "Quit the server using the ~h~/q~h~ command to remove the blip.");
 
             if (IsRaceOngoing)
             {
@@ -239,14 +241,13 @@ namespace Race
 
             if (DateTime.Now.Subtract(VoteStart).TotalSeconds < 60)
             {
-                Program.ServerInstance.SendChatMessageToPlayer(player, GetVoteHelpString());
+                Program.ServerInstance.SendNotificationToPlayer(player, GetVoteHelpString());
             }
 
             if (RememberedBlips.ContainsKey(player.NetConnection.RemoteUniqueIdentifier))
             {
-                Opponents.Add(new Opponent(player) {Blip = RememberedBlips[player.NetConnection.RemoteUniqueIdentifier] });
+                Opponents.Add(new Opponent(player) {Blip = RememberedBlips[player.NetConnection.RemoteUniqueIdentifier]});
             }
-
             return true;
         }
 
@@ -305,13 +306,13 @@ namespace Race
             var t = new Thread((ThreadStart) delegate
             {
                 Thread.Sleep(10000);
-                Program.ServerInstance.SendChatMessageToAll("3"); // I should probably automate this
+                Program.ServerInstance.SendNotificationToAll("3"); // I should probably automate this
                 Thread.Sleep(1000);
-                Program.ServerInstance.SendChatMessageToAll("2");
+                Program.ServerInstance.SendNotificationToAll("2");
                 Thread.Sleep(1000);
-                Program.ServerInstance.SendChatMessageToAll("1");
+                Program.ServerInstance.SendNotificationToAll("1");
                 Thread.Sleep(1000);
-                Program.ServerInstance.SendChatMessageToAll("Go!");
+                Program.ServerInstance.SendNotificationToAll("Go!");
                 IsRaceOngoing = true;
 
 
@@ -332,6 +333,10 @@ namespace Race
 
             foreach (var opponent in Opponents)
             {
+                opponent.CheckpointsPassed = 0;
+                opponent.HasFinished = true;
+                opponent.HasStarted = false;
+
                 if (opponent.Blip != 0)
                 {
                     Program.ServerInstance.SendNativeCallToPlayer(opponent.Client, 0x45FF974EEE1C8734, opponent.Blip, 0);
@@ -397,7 +402,6 @@ namespace Race
                             else
                                 Opponents.Add(new Opponent(client) { Blip = (int)o });
                         }
-
                     }, race.Checkpoints[0].X, race.Checkpoints[0].Y, race.Checkpoints[0].Z);
             }
             else
@@ -485,14 +489,14 @@ namespace Race
             }
 
             VoteStart = DateTime.Now;
-            Program.ServerInstance.SendChatMessageToAll(build.ToString());
+            Program.ServerInstance.SendNotificationToAll(build.ToString());
 
             var t = new Thread((ThreadStart)delegate
             {
                 Thread.Sleep(60*1000);
                 EndRace();
                 var raceWon = AvailableChoices[Votes.OrderByDescending(pair => pair.Value).ToList()[0].Key];
-                Program.ServerInstance.SendChatMessageToAll(raceWon.Name + " has won the vote!");
+                Program.ServerInstance.SendNotificationToAll(raceWon.Name + " has won the vote!");
 
                 Thread.Sleep(1000);
                 StartRace(raceWon);
