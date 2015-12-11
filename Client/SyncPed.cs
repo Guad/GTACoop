@@ -93,6 +93,7 @@ namespace GTACoOp
         private Dictionary<int, int> _vehicleMods;
         private Dictionary<int, int> _pedProps;
 
+        private int _playerSeat;
         private bool _isStreamedIn;
         private Blip _mainBlip;
         private bool _lastHorn;
@@ -229,6 +230,11 @@ namespace GTACoOp
                     _mainVehicle.Quaternion = VehicleRotation;
                     _mainVehicle.IsInvincible = true;
                     Character.Task.WarpIntoVehicle(_mainVehicle, (VehicleSeat)VehicleSeat);
+
+                    /*if (_playerSeat != -2 && !Game.Player.Character.IsInVehicle(_mainVehicle))
+                    { // TODO: Fix me.
+                        Game.Player.Character.Task.WarpIntoVehicle(_mainVehicle, (VehicleSeat)_playerSeat);
+                    }*/
                 }
 
                 _lastVehicle = true;
@@ -436,6 +442,15 @@ namespace GTACoOp
 
         public void Clear()
         {
+            /*if (_mainVehicle != null && Character.IsInVehicle(_mainVehicle) && Game.Player.Character.IsInVehicle(_mainVehicle))
+            {
+                _playerSeat = Util.GetPedSeat(Game.Player.Character);
+            }
+            else
+            {
+                _playerSeat = -2;
+            }*/
+
             if (Character != null)
             {
                 Character.Model.MarkAsNoLongerNeeded();
