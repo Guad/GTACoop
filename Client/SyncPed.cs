@@ -119,6 +119,7 @@ namespace GTACoOp
 
         private int _modSwitch = 0;
         private int _clothSwitch = 0;
+
         public void DisplayLocally()
         {
             const float hRange = 200f;
@@ -310,7 +311,10 @@ namespace GTACoOp
                     var range = Math.Max(20f, Speed*Math.Ceiling(DateTime.Now.Subtract(LastUpdateReceived).TotalSeconds));
 
                     if (!_mainVehicle.IsInRangeOf(VehiclePosition, 0.08f) && Speed >= 1)
-                        _mainVehicle.ApplyForce(dir*(Speed - _mainVehicle.Speed));
+                    {
+                        var vect = dir*Math.Abs(Speed - _mainVehicle.Speed);
+                        _mainVehicle.ApplyForce(vect);
+                    }
                     if (Main.GlobalSyncMode == SynchronizationMode.Teleport && !_mainVehicle.IsInRangeOf(VehiclePosition, 0.8f))
                         _mainVehicle.Position = VehiclePosition;
                     if (Main.GlobalSyncMode == SynchronizationMode.Tasks && !_mainVehicle.IsInRangeOf(VehiclePosition, (float)range))
