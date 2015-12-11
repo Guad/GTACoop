@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using GTA;
 using GTA.Native;
@@ -64,9 +65,15 @@ namespace GTACoOp
         public void AddMessage(string sender, string msg)
         {
             if (string.IsNullOrEmpty(sender))
-                _mainScaleform.CallFunction("ADD_MESSAGE", "", msg);
+                _mainScaleform.CallFunction("ADD_MESSAGE", "", SanitizeString(msg));
             else
-                _mainScaleform.CallFunction("ADD_MESSAGE", sender + ":", msg);
+                _mainScaleform.CallFunction("ADD_MESSAGE", SanitizeString(sender) + ":", SanitizeString(msg));
+        }
+
+        public string SanitizeString(string input)
+        {
+            input = Regex.Replace(input, "~.~", "", RegexOptions.IgnoreCase);
+            return input;
         }
         
         public void OnKeyDown(Keys key)
