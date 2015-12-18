@@ -45,6 +45,7 @@ namespace GTACoOp
         private string _password;
         private bool _lastDead;
         private bool _wasTyping;
+        private bool _isTrafficEnabled;
 
         private DebugWindow _debug;
 
@@ -238,6 +239,12 @@ namespace GTACoOp
                 }
             };
 
+            var trafficItem = new UIMenuCheckboxItem("Enable Traffic When Sharing", false);
+            trafficItem.CheckboxEvent += (item, check) =>
+            {
+                _isTrafficEnabled = check;
+            };
+
 
             var browserItem = new UIMenuItem("Server Browser");
             _mainMenu.BindMenuToItem(_serverBrowserMenu, browserItem);
@@ -263,6 +270,7 @@ namespace GTACoOp
             _settingsMenu.AddItem(modeItem);
             _settingsMenu.AddItem(chatItem);
             _settingsMenu.AddItem(npcItem);
+            _settingsMenu.AddItem(trafficItem);
             _settingsMenu.AddItem(spawnItem);
 
             _mainMenu.RefreshIndex();
@@ -619,16 +627,18 @@ namespace GTACoOp
             if (time > 50 && _lastDead)
                 _lastDead = false;
 
+            if ((!_isTrafficEnabled && SendNpcs) || !SendNpcs)
+            {
+                Function.Call(Hash.SET_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
+                Function.Call(Hash.SET_RANDOM_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
+                Function.Call(Hash.SET_PARKED_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
 
-            Function.Call(Hash.SET_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
-            Function.Call(Hash.SET_RANDOM_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
-            Function.Call(Hash.SET_PARKED_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
+                Function.Call(Hash.SET_PED_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
+                Function.Call(Hash.SET_SCENARIO_PED_DENSITY_MULTIPLIER_THIS_FRAME, 0f, 0f);
 
-            Function.Call(Hash.SET_PED_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
-            Function.Call(Hash.SET_SCENARIO_PED_DENSITY_MULTIPLIER_THIS_FRAME, 0f, 0f);
-
-            Function.Call((Hash)0x2F9A292AD0A3BD89);
-            Function.Call((Hash)0x5F3B7749C112D552);
+                Function.Call((Hash) 0x2F9A292AD0A3BD89);
+                Function.Call((Hash) 0x5F3B7749C112D552);
+            }
 
             Function.Call(Hash.SET_TIME_SCALE, 1f);
 
