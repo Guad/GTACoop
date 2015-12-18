@@ -21,7 +21,7 @@ namespace GTACoOp
     {
         public static PlayerSettings PlayerSettings;
 
-        public static readonly ScriptVersion LocalScriptVersion = ScriptVersion.VERSION_0_7_1;
+        public static readonly ScriptVersion LocalScriptVersion = ScriptVersion.VERSION_0_8_1;
 
         private readonly UIMenu _mainMenu;
         private readonly UIMenu _serverBrowserMenu;
@@ -312,9 +312,27 @@ namespace GTACoOp
             if (string.IsNullOrEmpty(PlayerSettings.MasterServerAddress))
                 return;
             string response = String.Empty;
-            using (var wc = new WebClient())
+            try
             {
-                response = wc.DownloadString(PlayerSettings.MasterServerAddress);
+                using (var wc = new WebClient())
+                {
+                    response = wc.DownloadString(PlayerSettings.MasterServerAddress);
+                }
+            }
+            catch (Exception e)
+            {
+                UI.Notify("~r~~h~ERROR~h~~w~~n~Could not contact master server. Try again later.");
+                var logOutput = "===== EXCEPTION CONTACTING MASTER SERVER @ " + DateTime.UtcNow + " ======\n";
+                logOutput += "Message: " + e.Message;
+                logOutput += "\nData: " + e.Data;
+                logOutput += "\nStack: " + e.StackTrace;
+                logOutput += "\nSource: " + e.Source;
+                logOutput += "\nTarget: " + e.TargetSite;
+                if (e.InnerException != null)
+                    logOutput += "\nInnerException: " + e.InnerException.Message;
+                logOutput += "\n";
+                File.AppendAllText("scripts\\GTACOOP.log", logOutput);
+                return;
             }
 
             if (string.IsNullOrWhiteSpace(response))
@@ -341,7 +359,10 @@ namespace GTACoOp
             {
                 var split = server.Split(':');
                 if (split.Length != 2) continue;
-                _client.DiscoverKnownPeer(split[0], int.Parse(split[1]));
+                int port;
+                if (!int.TryParse(split[1], out port))
+                    continue;
+                _client.DiscoverKnownPeer(split[0], port);
             }
         }
 
