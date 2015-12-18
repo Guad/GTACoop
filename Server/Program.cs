@@ -42,6 +42,7 @@ namespace GTAServer
             while (true)
             {
                 ServerInstance.Tick();
+                System.Threading.Thread.Sleep(10); // Reducing CPU Usage (Win7 from average 15 % to 0-1 %, Linux from 100 % to 0-2 %)
             }
         }
 
