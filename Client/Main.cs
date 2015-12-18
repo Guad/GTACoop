@@ -239,7 +239,7 @@ namespace GTACoOp
                 }
             };
 
-            var trafficItem = new UIMenuCheckboxItem("Enable Traffic When Sharing", false);
+            var trafficItem = new UIMenuCheckboxItem("Enable Traffic When Sharing", false, "May affect performance.");
             trafficItem.CheckboxEvent += (item, check) =>
             {
                 _isTrafficEnabled = check;
@@ -302,7 +302,7 @@ namespace GTACoOp
 
         public static Dictionary<long, SyncPed> Opponents;
         public static Dictionary<string, SyncPed> Npcs;
-
+        public static float Latency;
         private int Port = 4499;
 
         private void RebuildServerBrowser()
@@ -348,7 +348,6 @@ namespace GTACoOp
         private void RebuildPlayersList()
         {
             _playersMenu.Clear();
-
             List<SyncPed> list = null;
             lock (Opponents)
             {
@@ -356,6 +355,10 @@ namespace GTACoOp
 
                 list = new List<SyncPed>(Opponents.Select(pair => pair.Value));
             }
+
+            var meItem = new UIMenuItem(PlayerSettings.DisplayName);
+            meItem.SetRightLabel(((int)(Latency * 1000)) + "ms");
+            _playersMenu.AddItem(meItem);
 
             foreach (var ped in list)
             {
@@ -1041,6 +1044,10 @@ namespace GTACoOp
                             }
                             break;
                     }
+                }
+                else if (msg.MessageType == NetIncomingMessageType.ConnectionLatencyUpdated)
+                {
+                    Latency = msg.ReadFloat();
                 }
                 else if (msg.MessageType == NetIncomingMessageType.StatusChanged)
                 {
