@@ -34,6 +34,24 @@ namespace GTAServer
         }
     }
 
+    public enum NotificationIconType
+    {
+        Chatbox = 1,
+        Email = 2,
+        AddFriendRequest = 3,
+        Nothing = 4,
+        RightJumpingArrow = 7,
+        RP_Icon = 8,
+        DollarIcon = 9,
+    }
+
+    public enum NotificationPicType
+    {
+        CHAR_DEFAULT,
+        CHAR_FACEBOOK,
+        CHAR_SOCIAL_CLUB
+    }
+
     public class GameServer
     {
         public GameServer(int port, string name, string gamemodeName)
@@ -961,21 +979,21 @@ namespace GTAServer
             }
         }
 
-        public void SendPictureNotificationToPlayer(Client player, string body, string pic, int flash, int iconType, string sender, string subject)
+        public void SendPictureNotificationToPlayer(Client player, string body, NotificationPicType pic, int flash, NotificationIconType iconType, string sender, string subject)
         {
             //Crash with new LocalPlayerArgument()!
             SendNativeCallToPlayer(player, 0x202709F4C58A0424, "STRING");
             SendNativeCallToPlayer(player, 0x6C188BE134E074AA, body);
-            SendNativeCallToPlayer(player, 0x1CCD9A37359072CF, pic, pic, flash, iconType, sender, subject);
+            SendNativeCallToPlayer(player, 0x1CCD9A37359072CF, pic.ToString(), pic.ToString(), flash, (int)iconType, sender, subject);
             SendNativeCallToPlayer(player, 0xF020C96915705B3A, false, true);
         }
 
-        public void SendPictureNotificationToAll(Client player, string body, string pic, int flash, int iconType, string sender, string subject)
+        public void SendPictureNotificationToAll(Client player, string body, NotificationPicType pic, int flash, NotificationIconType iconType, string sender, string subject)
         {
             //Crash with new LocalPlayerArgument()!
             SendNativeCallToAllPlayers(0x202709F4C58A0424, "STRING");
             SendNativeCallToAllPlayers(0x6C188BE134E074AA, body);
-            SendNativeCallToAllPlayers(0x1CCD9A37359072CF, pic, pic, flash, iconType, sender, subject);
+            SendNativeCallToAllPlayers(0x1CCD9A37359072CF, pic.ToString(), pic.ToString(), flash, (int)iconType, sender, subject);
             SendNativeCallToAllPlayers(0xF020C96915705B3A, false, true);
         }
 
