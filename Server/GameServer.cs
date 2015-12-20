@@ -237,6 +237,15 @@ namespace GTAServer
                             pong.Write("pong");
                             Server.SendMessage(pong, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
                         }
+                        if (isPing == "query")
+                        {
+                            int playersonline = 0;
+                            lock (Clients) playersonline = Clients.Count;
+                            Console.WriteLine("INFO: query received from " + msg.SenderEndPoint.Address.ToString());
+                            var pong = Server.CreateMessage();
+                            pong.Write(Name + "%" + PasswordProtected + "%" + playersonline + "%" + MaxPlayers + "%" + GamemodeName);
+                            Server.SendMessage(pong, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
+                        }
                         break;
                     case NetIncomingMessageType.VerboseDebugMessage:
                     case NetIncomingMessageType.DebugMessage:
