@@ -4,7 +4,7 @@ using System.Linq;
 using GTA;
 using NativeUI;
 
-namespace GTACoOp
+namespace GTAServer
 {
     public class DebugWindow
     {

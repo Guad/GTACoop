@@ -9,6 +9,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Xml.Serialization;
+using System.Windows.Forms;
 using Lidgren.Network;
 using ProtoBuf;
 
@@ -32,53 +33,6 @@ namespace GTAServer
         {
             NetConnection = nc;
         }
-    }
-
-    public enum NotificationIconType
-    {
-        Chatbox = 1,
-        Email = 2,
-        AddFriendRequest = 3,
-        Nothing = 4,
-        RightJumpingArrow = 7,
-        RP_Icon = 8,
-        DollarIcon = 9,
-    }
-
-    public enum NotificationPicType
-    {
-        CHAR_DEFAULT, // : Default profile pic
-        CHAR_FACEBOOK, // Facebook
-        CHAR_SOCIAL_CLUB, // Social Club Star
-        CHAR_CARSITE2, // Super Auto San Andreas Car Site
-        CHAR_BOATSITE, // Boat Site Anchor
-        CHAR_BANK_MAZE, // Maze Bank Logo
-        CHAR_BANK_FLEECA, // Fleeca Bank
-        CHAR_BANK_BOL, // Bank Bell Icon
-        CHAR_MINOTAUR, // Minotaur Icon
-        CHAR_EPSILON, // Epsilon E
-        CHAR_MILSITE, // Warstock W
-        CHAR_CARSITE, // Legendary Motorsports Icon
-        CHAR_DR_FRIEDLANDER, // Dr Freidlander Face
-        CHAR_BIKESITE, // P&M Logo
-        CHAR_LIFEINVADER, // Liveinvader
-        CHAR_PLANESITE, // Plane Site E
-        CHAR_MICHAEL, // Michael's Face
-        CHAR_FRANKLIN, // Franklin's Face
-        CHAR_TREVOR, // Trevor's Face
-        CHAR_SIMEON, // Simeon's Face
-        CHAR_RON, // Ron's Face
-        CHAR_JIMMY, // Jimmy's Face
-        CHAR_LESTER, // Lester's Shadowed Face
-        CHAR_DAVE, // Dave Norton's Face
-        CHAR_LAMAR, // Chop's Face
-        CHAR_DEVIN, // Devin Weston's Face
-        CHAR_AMANDA, // Amanda's Face
-        CHAR_TRACEY, // Tracey's Face
-        CHAR_STRETCH, // Stretch's Face
-        CHAR_WADE, // Wade's Face
-        CHAR_MARTIN, // Martin Madrazo's Face
-
     }
 
     public class GameServer
@@ -284,15 +238,6 @@ namespace GTAServer
                             pong.Write("pong");
                             Server.SendMessage(pong, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
                         }
-                        if (isPing == "query")
-                        {
-                            int playersonline = 0;
-                            lock (Clients) playersonline = Clients.Count;
-                            Console.WriteLine("INFO: query received from " + msg.SenderEndPoint.Address.ToString());
-                            var pong = Server.CreateMessage();
-                            pong.Write(Name + "%" + PasswordProtected + "%" + playersonline + "%" + MaxPlayers + "%" + GamemodeName);
-                            Server.SendMessage(pong, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
-                        }
                         break;
                     case NetIncomingMessageType.VerboseDebugMessage:
                     case NetIncomingMessageType.DebugMessage:
@@ -450,7 +395,10 @@ namespace GTAServer
                                     {
                                         var len = msg.ReadInt32();
                                         var data = DeserializeBinary<ChatData>(msg.ReadBytes(len)) as ChatData;
-                                        if (data != null)
+                                        if(data.Message.Equals("/q") || data.Message.Equals("/quit")){
+                                            msg.SenderConnection.Disconnect("Connection closed by peer");
+                                        }
+                                        else if (data != null)
                                         {
                                             var pass = true;
                                             if (_gamemode != null) pass = _gamemode.OnChatMessage(client, data.Message);
@@ -610,6 +558,14 @@ namespace GTAServer
                                     if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnPlayerKilled(client));
                                 }
                                 break;
+                            case PacketType.KeySendData:
+                                {
+                                    var len = msg.ReadInt32();
+                                    var data = DeserializeBinary<KeySendData>(msg.ReadBytes(len)) as KeySendData;
+                                    if (_gamemode != null) _gamemode.OnClientKeyPressed(client, data.key);
+                                    if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnClientKeyPressed(client, data.key));
+                                    break;
+                                }
                         }
                         break;
                     default:
@@ -1017,16 +973,6 @@ namespace GTAServer
             }
         }
 
-        public void SendPictureNotificationToPlayer(Client player, string body, NotificationPicType pic, int flash, NotificationIconType iconType, string sender, string subject)
-        {
-            //Crash with new LocalPlayerArgument()!
-            SendNativeCallToPlayer(player, 0x202709F4C58A0424, "STRING");
-            SendNativeCallToPlayer(player, 0x6C188BE134E074AA, body);
-            SendNativeCallToPlayer(player, 0x1CCD9A37359072CF, pic.ToString(), pic.ToString(), flash, (int)iconType, sender, subject);
-            SendNativeCallToPlayer(player, 0xF020C96915705B3A, false, true);
-        }
-
-
         public void SendPictureNotificationToPlayer(Client player, string body, string pic, int flash, int iconType, string sender, string subject)
         {
             //Crash with new LocalPlayerArgument()!
@@ -1034,15 +980,6 @@ namespace GTAServer
             SendNativeCallToPlayer(player, 0x6C188BE134E074AA, body);
             SendNativeCallToPlayer(player, 0x1CCD9A37359072CF, pic, pic, flash, iconType, sender, subject);
             SendNativeCallToPlayer(player, 0xF020C96915705B3A, false, true);
-        }
-
-        public void SendPictureNotificationToAll(Client player, string body, NotificationPicType pic, int flash, NotificationIconType iconType, string sender, string subject)
-        {
-            //Crash with new LocalPlayerArgument()!
-            SendNativeCallToAllPlayers(0x202709F4C58A0424, "STRING");
-            SendNativeCallToAllPlayers(0x6C188BE134E074AA, body);
-            SendNativeCallToAllPlayers(0x1CCD9A37359072CF, pic.ToString(), pic.ToString(), flash, (int)iconType, sender, subject);
-            SendNativeCallToAllPlayers(0xF020C96915705B3A, false, true);
         }
 
         public void SendPictureNotificationToAll(Client player, string body, string pic, int flash, int iconType, string sender, string subject)

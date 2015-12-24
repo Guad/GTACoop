@@ -67,6 +67,7 @@
   <ItemGroup>
     <Compile Include="Chat.cs" />
     <Compile Include="ChatData.cs" />
+    <Compile Include="KeySendData.cs" />
     <Compile Include="DebugWindow.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="NativeData.cs" />

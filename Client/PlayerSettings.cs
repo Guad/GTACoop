@@ -1,6 +1,6 @@
 ﻿using System.Windows.Forms;
 
-namespace GTACoOp
+namespace GTAServer
 {
     public class PlayerSettings
     {

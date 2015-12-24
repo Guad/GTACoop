@@ -68,6 +68,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -77,6 +78,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ChatData.cs" />
+    <Compile Include="KeySendData.cs" />
     <Compile Include="GameServer.cs" />
     <Compile Include="ServerScript.cs" />
     <Compile Include="NativeData.cs" />
