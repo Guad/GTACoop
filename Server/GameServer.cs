@@ -9,8 +9,10 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Xml.Serialization;
+using System.Windows.Forms;
 using Lidgren.Network;
 using ProtoBuf;
+using GTA;
 
 namespace GTAServer
 {
@@ -27,6 +29,7 @@ namespace GTAServer
         public int Health { get; internal set; }
         public int VehicleHealth { get; internal set; }
         public bool IsInVehicle { get; internal set; }
+
 
         public Client(NetConnection nc)
         {
@@ -450,7 +453,10 @@ namespace GTAServer
                                     {
                                         var len = msg.ReadInt32();
                                         var data = DeserializeBinary<ChatData>(msg.ReadBytes(len)) as ChatData;
-                                        if (data != null)
+                                        if(data.Message.Equals("/q") || data.Message.Equals("/quit")){
+                                            msg.SenderConnection.Disconnect("Connection closed by peer");
+                                        }
+                                        else if (data != null)
                                         {
                                             var pass = true;
                                             if (_gamemode != null) pass = _gamemode.OnChatMessage(client, data.Message);
@@ -610,6 +616,14 @@ namespace GTAServer
                                     if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnPlayerKilled(client));
                                 }
                                 break;
+                            case PacketType.KeySendData:
+                                {
+                                    var len = msg.ReadInt32();
+                                    var data = DeserializeBinary<KeySendData>(msg.ReadBytes(len)) as KeySendData;
+                                    if (_gamemode != null) _gamemode.OnClientKeyPressed(client, data.key);
+                                    if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnClientKeyPressed(client, data.key));
+                                    break;
+                                }
                         }
                         break;
                     default:
@@ -620,6 +634,23 @@ namespace GTAServer
             }
             if (_gamemode != null) _gamemode.OnTick();
             if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnTick());
+        }
+
+        public void CreateClientMenu(Client client, _UIMenu uiMenu, List<_UIMenuItem> menuItem = null, List<_UIMenuCheckboxItem> checkboxItem = null, List<_UIMenuListItem> listItem = null)
+        {
+            NetOutgoingMessage msg = Server.CreateMessage();
+            var obj = new RemoteMenuData()
+            {
+                _uiMenu = uiMenu,
+                _uiMenuItem = (menuItem == null) ? null : menuItem,
+                _uiMenuCheckboxItem = (checkboxItem == null) ? null: checkboxItem,
+                _uiMenuListItem = (listItem == null) ? null : listItem
+            };
+            var data = SerializeBinary(obj);
+            msg.Write((int)PacketType.RemoteMenuData);
+            msg.Write(data.Length);
+            msg.Write(data);
+            client.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(client));
         }
 
         public void SendToAll(object newData, PacketType packetType, long exclude = 0)

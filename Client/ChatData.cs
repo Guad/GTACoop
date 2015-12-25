@@ -1,6 +1,6 @@
 ﻿using ProtoBuf;
 
-namespace GTACoOp
+namespace GTAServer
 {
     [ProtoContract]
     public class ChatData

@@ -8,7 +8,7 @@ using GTA.Native;
 using NativeUI;
 using Font = GTA.Font;
 
-namespace GTACoOp
+namespace GTAServer
 {
     public enum SynchronizationMode
     {

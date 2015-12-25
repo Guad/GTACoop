@@ -2,7 +2,7 @@
 using GTA.Math;
 using ProtoBuf;
 
-namespace GTACoOp
+namespace GTAServer
 {
     public enum PacketType
     {
@@ -22,6 +22,8 @@ namespace GTACoOp
         NativeTickRecall = 13,
         NativeOnDisconnect = 14,
         NativeOnDisconnectRecall = 15,
+        KeySendData = 16,
+        RemoteMenuData = 17
     }
 
     public enum ScriptVersion

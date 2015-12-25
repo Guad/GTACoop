@@ -8,7 +8,7 @@ using GTA.Native;
 using Lidgren.Network;
 using ProtoBuf;
 
-namespace GTACoOp
+namespace GTAServer
 {
     public static class Program
     {

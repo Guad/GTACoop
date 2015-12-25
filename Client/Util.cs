@@ -7,7 +7,7 @@ using GTA;
 using GTA.Math;
 using GTA.Native;
 
-namespace GTACoOp
+namespace GTAServer
 {
     public static class Util
     {

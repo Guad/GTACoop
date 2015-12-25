@@ -15,7 +15,7 @@ using Newtonsoft.Json;
 using ProtoBuf;
 using Control = GTA.Control;
 
-namespace GTACoOp
+namespace GTAServer
 {
     public class Main : Script
     {
@@ -29,6 +29,7 @@ namespace GTACoOp
         private readonly UIMenu _settingsMenu;
 
         private readonly MenuPool _menuPool;
+        private MenuPool _remoteMenuPool = new MenuPool();
 
         private string _clientIp;
         private readonly Chat _chat;
@@ -55,6 +56,9 @@ namespace GTACoOp
 
         private static int _messagesSent = 0;
         private static int _messagesReceived = 0;
+
+        private MenuPool RemoteMenuPool = new MenuPool();
+
         //
 
         public Main()
@@ -156,7 +160,7 @@ namespace GTACoOp
                 }
             };
 
-            var portItem = new UIMenuItem("Port");
+            var portItem = new NativeUI.UIMenuItem("Port");
             portItem.SetRightLabel(Port.ToString());
             portItem.Activated += (menu, item) =>
             {
@@ -172,21 +176,21 @@ namespace GTACoOp
                 portItem.SetRightLabel(nPort.ToString());
             };
 
-            var listenItem = new UIMenuItem("Server IP");
+            var listenItem = new NativeUI.UIMenuItem("Server IP");
             listenItem.Activated += (menu, item) =>
             {
                 _clientIp = Game.GetUserInput(255);
                 listenItem.SetRightLabel(_clientIp);
             };
 
-            var passItem = new UIMenuItem("Password");
+            var passItem = new NativeUI.UIMenuItem("Password");
             passItem.Activated += (menu, item) =>
             {
                 _password = Game.GetUserInput(255);
                 passItem.SetRightLabel(new String('*', _password.Length));
             };
 
-            var nameItem = new UIMenuItem("Display Name");
+            var nameItem = new NativeUI.UIMenuItem("Display Name");
             nameItem.SetRightLabel(PlayerSettings.DisplayName);
             nameItem.Activated += (menu, item) =>
             {
@@ -195,7 +199,7 @@ namespace GTACoOp
                 nameItem.SetRightLabel(PlayerSettings.DisplayName);
             };
 
-            var connectItem = new UIMenuItem("Connect");
+            var connectItem = new NativeUI.UIMenuItem("Connect");
             connectItem.Activated += (sender, item) =>
             {
                 if (!IsOnServer())
@@ -246,14 +250,14 @@ namespace GTACoOp
             };
 
 
-            var browserItem = new UIMenuItem("Server Browser");
+            var browserItem = new NativeUI.UIMenuItem("Server Browser");
             _mainMenu.BindMenuToItem(_serverBrowserMenu, browserItem);
             browserItem.Activated += (sender, item) => RebuildServerBrowser();
 
-            var settItem = new UIMenuItem("Settings");
+            var settItem = new NativeUI.UIMenuItem("Settings");
             _mainMenu.BindMenuToItem(_settingsMenu, settItem);
 
-            var playersItem = new UIMenuItem("Active Players");
+            var playersItem = new NativeUI.UIMenuItem("Active Players");
             _mainMenu.BindMenuToItem(_playersMenu, playersItem);
             playersItem.Activated += (sender, item) => RebuildPlayersList();
 
@@ -377,13 +381,13 @@ namespace GTACoOp
                 list = new List<SyncPed>(Opponents.Select(pair => pair.Value));
             }
 
-            var meItem = new UIMenuItem(PlayerSettings.DisplayName);
+            var meItem = new NativeUI.UIMenuItem(PlayerSettings.DisplayName);
             meItem.SetRightLabel(((int)(Latency * 1000)) + "ms");
             _playersMenu.AddItem(meItem);
 
             foreach (var ped in list)
             {
-                var newItem = new UIMenuItem(ped.Name == null ? "" : ped.Name);
+                var newItem = new NativeUI.UIMenuItem(ped.Name == null ? "" : ped.Name);
                 newItem.SetRightLabel(((int)(ped.Latency * 1000)) + "ms");
                 newItem.Activated += (sender, item) =>
                 {
@@ -693,6 +697,19 @@ namespace GTACoOp
 
         public void OnKeyDown(object sender, KeyEventArgs e)
         {
+            if (IsOnServer() && !_menuPool.IsAnyMenuOpen() && !_chat.IsFocused)
+            {
+                var obj_ = new KeySendData()
+                {
+                    key = e.KeyCode
+                };
+                var data_ = SerializeBinary(obj_);
+                var msg_ = _client.CreateMessage();
+                msg_.Write((int)PacketType.KeySendData);
+                msg_.Write(data_.Length);
+                msg_.Write(data_);
+                _client.SendMessage(msg_, NetDeliveryMethod.ReliableOrdered, 0);
+            }
             _chat.OnKeyDown(e.KeyCode);
             if (e.KeyCode == PlayerSettings.ActivationKey && !_chat.IsFocused)
             {
@@ -743,6 +760,7 @@ namespace GTACoOp
                 }
             }
         }
+
 
         public void ConnectToServer(string ip, int port = 0)
         {
@@ -1064,6 +1082,77 @@ namespace GTACoOp
                                 lock (_dcNatives) if (_dcNatives.ContainsKey(data.Id)) _dcNatives.Remove(data.Id);
                             }
                             break;
+                        case PacketType.RemoteMenuData:
+                            {
+                                var len = msg.ReadInt32();
+                                var data = DeserializeBinary<RemoteMenuData>(msg.ReadBytes(len)) as RemoteMenuData;
+                                
+                                UIMenu menu = new UIMenu(data._uiMenu.title, data._uiMenu.subtitle);
+                                List<UIMenuItem> _menuItem = new List<UIMenuItem>();
+                                List<UIMenuCheckboxItem> _menuCheckboxItem = new List<UIMenuCheckboxItem>();
+                                List<UIMenuListItem> _menuListItem = new List<UIMenuListItem>();
+                                if (data._uiMenuItem != null)
+                                {
+                                    foreach (_UIMenuItem _uiMenuItem in data._uiMenuItem)
+                                    {
+                                        if (_uiMenuItem.description != null)
+                                            _menuItem.Add(new UIMenuItem(_uiMenuItem.name, _uiMenuItem.description));
+                                        else
+                                            _menuItem.Add(new UIMenuItem(_uiMenuItem.name));
+                                    };
+                                    foreach (UIMenuItem menuItem in _menuItem)
+                                    {
+                                        menu.AddItem(menuItem);
+                                    }
+                                }
+                                if (data._uiMenuCheckboxItem != null)
+                                {
+                                    foreach(_UIMenuCheckboxItem _uiCheckboxItem in data._uiMenuCheckboxItem)
+                                    {
+                                        if (_uiCheckboxItem.description == null)
+                                            _menuCheckboxItem.Add(new UIMenuCheckboxItem(_uiCheckboxItem.name, _uiCheckboxItem.check));
+                                        else
+                                            _menuCheckboxItem.Add(new UIMenuCheckboxItem(_uiCheckboxItem.name, _uiCheckboxItem.check, _uiCheckboxItem.description));
+                                    }
+                                    foreach (UIMenuCheckboxItem checboxItem in _menuCheckboxItem) {
+                                        menu.AddItem(checboxItem);
+                                    }
+                                }
+                                if(data._uiMenuListItem != null)
+                                {                                   
+                                    foreach (_UIMenuListItem _uiListItem in data._uiMenuListItem)
+                                    {
+                                        List<dynamic> tmpList = new List<dynamic>();
+                                        tmpList = new List<dynamic>(_uiListItem.list);
+                                        if (_uiListItem.description == null)
+                                            _menuListItem.Add(new UIMenuListItem(_uiListItem.name, tmpList, _uiListItem.index));
+                                        else
+                                            _menuListItem.Add(new UIMenuListItem(_uiListItem.name, tmpList, _uiListItem.index, _uiListItem.description));
+                                    }
+                                    foreach(UIMenuListItem listItem in _menuListItem)
+                                    {
+                                        menu.AddItem(listItem);
+                                    }
+                                }
+                                menu.RefreshIndex();
+                                _remoteMenuPool = new MenuPool();
+                                _remoteMenuPool.Add(menu);
+                                Tick += (o, e) =>
+                                {
+                                    _remoteMenuPool.ProcessMenus();
+                                };
+                                menu.Visible = true;
+                                menu.OnMenuClose += (UIMenu sender) =>
+                                {
+                                    sender.Visible = false;
+                                    menu.Clear();
+                                };
+                                menu.OnItemSelect += (UIMenu sender, UIMenuItem selectedItem, int index) =>
+                                {
+                                    
+                                };
+                                break;
+                            }
                     }
                 }
                 else if (msg.MessageType == NetIncomingMessageType.ConnectionLatencyUpdated)
@@ -1133,14 +1222,14 @@ namespace GTACoOp
                     var bin = msg.ReadBytes(len);
                     var data = DeserializeBinary<DiscoveryResponse>(bin) as DiscoveryResponse;
                     if (data == null) return;
-                    var item = new UIMenuItem(data.ServerName);
+                    var item = new NativeUI.UIMenuItem(data.ServerName);
 
                     var gamemode = data.Gamemode == null ? "Unknown" : data.Gamemode;
 
                     item.SetRightLabel(gamemode + " | " + data.PlayerCount + "/" + data.MaxPlayers);
 
                     if (data.PasswordProtected)
-                        item.SetLeftBadge(UIMenuItem.BadgeStyle.Lock);
+                        item.SetLeftBadge(NativeUI.UIMenuItem.BadgeStyle.Lock);
 
                     int lastIndx = 0;
                     if (_serverBrowserMenu.Size > 0)
@@ -1165,7 +1254,7 @@ namespace GTACoOp
                                 Npcs.Clear();
                             }
 
-                            while (IsOnServer()) Script.Yield();
+                            while (IsOnServer()) Yield();
                         }
 
                         if (data.PasswordProtected)
