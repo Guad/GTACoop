@@ -15,13 +15,6 @@ namespace GTAServer
     }
 
     [ProtoContract]
-    public class MenuOpen
-    {
-        [ProtoMember(1)]
-        public bool Open;
-    }
-
-    [ProtoContract]
     public class NativeTickCall
     {
         [ProtoMember(1)]

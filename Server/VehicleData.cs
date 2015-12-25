@@ -22,7 +22,8 @@ namespace GTAServer
         NativeTickRecall = 13,
         NativeOnDisconnect = 14,
         NativeOnDisconnectRecall = 15,
-        KeySendData = 16
+        KeySendData = 16,
+        RemoteMenuData = 17
     }
 
     public enum ScriptVersion
