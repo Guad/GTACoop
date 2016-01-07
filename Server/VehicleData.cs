@@ -31,6 +31,7 @@ namespace GTAServer
         VERSION_0_6_1 = 2,
         VERSION_0_7 = 3,
         VERSION_0_8_1 = 4,
+        VERSION_0_9 = 5,
     }
 
     [ProtoContract]
