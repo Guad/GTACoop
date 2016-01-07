@@ -153,6 +153,11 @@ namespace GTACoOp
                 {
                     if (mainPed != null) mainPed.Delete();
                     if (mainVehicle != null) mainVehicle.Delete();
+                    if (_debugSyncPed != null)
+                    {
+                        _debugSyncPed.Clear();
+                        _debugSyncPed = null;
+                    }
                 }
             };
 
@@ -267,11 +272,14 @@ namespace GTACoOp
             _mainMenu.AddItem(playersItem);
 
             _settingsMenu.AddItem(nameItem);
-            _settingsMenu.AddItem(modeItem);
-            _settingsMenu.AddItem(chatItem);
             _settingsMenu.AddItem(npcItem);
             _settingsMenu.AddItem(trafficItem);
+            _settingsMenu.AddItem(chatItem);
+
+            #if DEBUG
+            _settingsMenu.AddItem(modeItem);
             _settingsMenu.AddItem(spawnItem);
+            #endif
 
             _mainMenu.RefreshIndex();
             _settingsMenu.RefreshIndex();
@@ -385,6 +393,11 @@ namespace GTACoOp
             {
                 var newItem = new UIMenuItem(ped.Name == null ? "" : ped.Name);
                 newItem.SetRightLabel(((int)(ped.Latency * 1000)) + "ms");
+
+                #if DEBUG
+                newItem.Description = "Real latency: " + ped.AverageLatency;
+                #endif
+
                 newItem.Activated += (sender, item) =>
                 {
                     var pos = ped.IsInVehicle ? ped.VehiclePosition : ped.Position;
@@ -626,7 +639,7 @@ namespace GTACoOp
             #if DEBUG
             if (display)
             {
-                //Debug();
+                Debug();
                 _debug.Visible = true;
                 _debug.Draw();
             }
@@ -1182,245 +1195,99 @@ namespace GTACoOp
             }
         }
 
-        public void Debug()
+
+        #region debug stuff
+
+        private DateTime _artificialLagCounter = DateTime.MinValue;
+        private bool _debugStarted;
+        private SyncPed _debugSyncPed;
+
+        private void Debug()
         {
-            Ped player = Game.Player.Character;
-            if (display)
+            var player = Game.Player.Character;
+
+            var debugText = "";
+
+            debugText +=
+                $"{player.CurrentVehicle.Rotation.X}, {player.CurrentVehicle.Rotation.Y}, {player.CurrentVehicle.Rotation.Z}\n";
+            var converted = Util.QuaternionToEuler(player.CurrentVehicle.Quaternion);
+            debugText += $"{converted.X}, {converted.Y}, {converted.Z}";
+
+            new UIResText(debugText, new Point(10, 10), 0.5f).Draw();
+
+
+            if (_debugSyncPed == null)
             {
-                if (mainPed == null || !mainPed.Exists())
+                _debugSyncPed = new SyncPed(player.Model.Hash, player.Position, player.Quaternion, false);
+            }
+
+            if (DateTime.Now.Subtract(_artificialLagCounter).TotalMilliseconds >= 300)
+            {
+                _artificialLagCounter = DateTime.Now;
+                if (player.IsInVehicle())
                 {
-                    Vector3 pos = player.Position;
-                    mainPed = World.CreatePed(player.Model, pos, player.Heading);
-                    Function.Call(Hash.SET_ENTITY_NO_COLLISION_ENTITY, mainPed.Handle, player.Handle, false);
-                    Function.Call(Hash.SET_ENTITY_NO_COLLISION_ENTITY, player.Handle, mainPed.Handle, false);
-                    mainPed.Alpha = 125;
+                    var veh = player.CurrentVehicle;
+
+                    _debugSyncPed.VehiclePosition = veh.Position;
+                    _debugSyncPed.VehicleRotation = veh.Quaternion;
+                    _debugSyncPed.ModelHash = player.Model.Hash;
+                    _debugSyncPed.VehicleHash = veh.Model.Hash;
+                    _debugSyncPed.VehiclePrimaryColor = (int)veh.PrimaryColor;
+                    _debugSyncPed.VehicleSecondaryColor = (int)veh.SecondaryColor;
+                    _debugSyncPed.PedHealth = player.Health;
+                    _debugSyncPed.VehicleHealth = veh.Health;
+                    _debugSyncPed.VehicleSeat = Util.GetPedSeat(player);
+                    _debugSyncPed.IsHornPressed = Game.Player.IsPressingHorn;
+                    _debugSyncPed.Siren = veh.SirenActive;
+                    _debugSyncPed.VehicleMods = CheckPlayerVehicleMods();
+                    _debugSyncPed.Speed = veh.Speed;
+                    _debugSyncPed.IsInVehicle = true;
+                    _debugSyncPed.LastUpdateReceived = DateTime.Now;
                 }
                 else
                 {
-                    //Vector3 offset = player.Position - oldplayerpos;
-                    //Vector3 dest = mainPed.Position + offset + player.ForwardVector*2f;
-                    Vector3 dest = player.Position; // + new Vector3(5f, 0f, 0f);
+                    bool aiming = Game.IsControlPressed(0, GTA.Control.Aim);
+                    bool shooting = Function.Call<bool>(Hash.IS_PED_SHOOTING, player.Handle);
 
+                    Vector3 aimCoord = new Vector3();
+                    if (aiming || shooting)
+                        aimCoord = ScreenRelToWorld(GameplayCamera.Position, GameplayCamera.Rotation,
+                            new Vector2(0, 0));
 
-                    new UIText(
-                        (player.Position - oldplayerpos).Length().ToString() + "\n" +
-                        GetPedSpeed(player.Position, oldplayerpos).ToString(), new Point(20, 20), 0.5f, Color.White,
-                        GTA.Font.ChaletLondon, false).Draw();
-                    /*
-                    int speed = GetPedSpeed(player.Position, oldplayerpos);
-                    if (speed == 0)
-                    {
-                        //mainPed.Task.ClearAllImmediately();
-                        //mainPed.Task.StandStill(-1);
-                        if(!mainPed.IsInRangeOf(player.Position + new Vector3(5f, 0f, 0f), 1f))
-                            mainPed.Task.GoTo(player.Position + new Vector3(5f, 0f, 0f), true, 100);
-                    }
-                    else
-                    {
-                        Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, mainPed.Handle, dest.X, dest.Y, dest.Z, (float)speed, 100, player.Heading, 0.0f);
-                        //mainPed.Task.GoTo(dest, true, 100);
-                    }*/
-
-                    if (!_lastVehicle && player.IsInVehicle())
-                    {
-                        if (mainVehicle != null) mainVehicle.Delete();
-                        mainVehicle = World.CreateVehicle(player.CurrentVehicle.Model,
-                            player.CurrentVehicle.Position + player.ForwardVector * 10f, player.CurrentVehicle.Heading);
-                        Function.Call(Hash.SET_ENTITY_NO_COLLISION_ENTITY, mainVehicle.Handle,
-                            player.CurrentVehicle.Handle, false);
-                        Function.Call(Hash.SET_ENTITY_NO_COLLISION_ENTITY, player.CurrentVehicle.Handle,
-                            mainVehicle.Handle, false);
-                        mainVehicle.Position = player.CurrentVehicle.Position;
-                        mainVehicle.Heading = player.CurrentVehicle.Heading;
-                        mainVehicle.Alpha = 125;
-                        Function.Call(Hash.SET_PED_INTO_VEHICLE, mainPed.Handle, mainVehicle.Handle,
-                            (int)VehicleSeat.Driver);
-                        _lastVehicle = true;
-                    }
-
-                    if (_lastVehicle && !player.IsInVehicle())
-                    {
-                        mainPed.Task.LeaveVehicle();
-                        while (mainPed.IsInVehicle()) Yield();
-                        if (mainVehicle != null) mainVehicle.Delete();
-                        Function.Call(Hash.SET_ENTITY_NO_COLLISION_ENTITY, mainPed.Handle, player.Handle, false);
-                        Function.Call(Hash.SET_ENTITY_NO_COLLISION_ENTITY, player.Handle, mainPed.Handle, false);
-                    }
-                    _switch++;
-                    if (player.IsInVehicle())
-                    {
-                        {
-                            var STATIONID = Function.Call<int>(Hash.GET_PLAYER_RADIO_STATION_INDEX);
-                            var STATIONNAME = Function.Call<string>(Hash.GET_RADIO_STATION_NAME, STATIONID);
-                            var TRACKID = Function.Call<int>(Hash.GET_AUDIBLE_MUSIC_TRACK_TEXT_ID);
-                            //var debugThing = Function.Call<string>((Hash) 0x5F43D83FD6738741);
-                            UI.ShowSubtitle("{STATIONNAME}({STATIONID}) - {TRACKID}");
-                        }
-
-
-
-                        if (!mainPed.IsInVehicle() || mainVehicle == null)
-                        {
-                            if (mainVehicle != null) mainVehicle.Delete();
-                            mainVehicle = World.CreateVehicle(player.CurrentVehicle.Model,
-                                player.CurrentVehicle.Position + player.ForwardVector * 10f, player.CurrentVehicle.Heading);
-                            Function.Call(Hash.SET_ENTITY_NO_COLLISION_ENTITY, mainVehicle.Handle,
-                                player.CurrentVehicle.Handle, false);
-                            Function.Call(Hash.SET_ENTITY_NO_COLLISION_ENTITY, player.CurrentVehicle.Handle,
-                                mainVehicle.Handle, false);
-                            mainVehicle.Position = player.CurrentVehicle.Position;
-                            mainVehicle.Heading = player.CurrentVehicle.Heading;
-                            mainVehicle.Alpha = 125;
-                            Function.Call(Hash.SET_PED_INTO_VEHICLE, mainPed.Handle, mainVehicle.Handle,
-                                (int)VehicleSeat.Driver);
-                            return;
-                        }
-                        //Function.Call(Hash.TASK_VEHICLE_MISSION_COORS_TARGET, riv.Character.Handle, riv.Vehicle.Handle, race.Checkpoints[0].X, race.Checkpoints[0].Y, race.Checkpoints[0].Z, Mode, 200f, (int)DrivingStyle.AvoidTraffic, 5f, 10f, 0);
-                        /*
-                        if(!mainPed.IsInRangeOf(player.Position, 3f) && _switch % 100 == 0)
-                            Function.Call(Hash.TASK_VEHICLE_MISSION_COORS_TARGET, mainPed.Handle, mainVehicle?.Handle, dest.X, dest.Y, dest.Z, 4, player.CurrentVehicle.Speed < 10f ? 10f : player.CurrentVehicle.Speed, (int)DrivingStyle.AvoidTraffic, 0f, 1f, 0);
-                        else if (mainPed.IsInRangeOf(player.Position, 3f))
-                        {
-                            mainPed.Task.ClearAll();
-                        }*/
-
-                        //mainVehicle.Position = player.CurrentVehicle.Position;
-                        var dir = player.CurrentVehicle.Position - mainVehicle.Position;
-                        dir.Normalize();
-
-                        mainVehicle.ApplyForce(dir);
-                        if (!player.CurrentVehicle.IsInRangeOf(mainVehicle.Position, 0.8f))
-                            mainVehicle.Position = player.CurrentVehicle.Position;
-
-                        mainVehicle.Quaternion = player.CurrentVehicle.Quaternion;
-                    }
-                    else
-                    {
-                        if (mainPed.Weapons.Current != player.Weapons.Current)
-                        {
-                            mainPed.Weapons.Give(player.Weapons.Current.Hash, player.Weapons.Current.Ammo, true, true);
-                            mainPed.Weapons.Select(player.Weapons.Current);
-                        }
-
-                        bool jumping = Function.Call<bool>(Hash.IS_PED_JUMPING, player.Handle);
-
-                        oldplayerpos = player.Position;
-
-                        if (!_lastJumping && jumping)
-                        {
-                            mainPed.Task.Jump();
-                        }
-
-                        bool aiming = Game.IsControlPressed(0, GTA.Control.Aim);
-                        bool shooting = Function.Call<bool>(Hash.IS_PED_SHOOTING, player.Handle);
-
-                        Vector3 aimCoord = new Vector3();
-                        if (aiming || shooting)
-                            aimCoord = RaycastEverything(new Vector2(0, 0));
-                        //aimCoord = ScreenRelToWorld(GameplayCamera.Position, GameplayCamera.Rotation, new Vector2(0, 0));
-
-
-                        //mainPed.Heading = player.Heading;
-                        if (_lastShooting && !shooting && Game.IsControlPressed(0, GTA.Control.Attack))
-                            shooting = true;
-
-                        int threshold = 50;
-                        if (aiming && !shooting && !mainPed.IsInRangeOf(player.Position, 0.5f) && _switch % threshold == 0)
-                        {
-                            Function.Call(Hash.TASK_GO_TO_COORD_WHILE_AIMING_AT_COORD, mainPed.Handle, dest.X, dest.Y,
-                                dest.Z, aimCoord.X, aimCoord.Y, aimCoord.Z, 2f, 0, 0x3F000000, 0x40800000, 1, 512, 0,
-                                (uint)FiringPattern.FullAuto);
-                        }
-                        else if (aiming && !shooting && mainPed.IsInRangeOf(player.Position, 0.5f))
-                        {
-                            mainPed.Task.AimAt(aimCoord, 100);
-                        }
-
-                        if (!mainPed.IsInRangeOf(player.Position, 0.5f) &&
-                            ((shooting && !_lastShooting) || (shooting && _lastShooting && _switch % (threshold * 2) == 0)))
-                        {
-                            Function.Call(Hash.TASK_GO_TO_COORD_WHILE_AIMING_AT_COORD, mainPed.Handle, dest.X, dest.Y,
-                                dest.Z, aimCoord.X, aimCoord.Y, aimCoord.Z, 2f, 1, 0x3F000000, 0x40800000, 1, 0, 0,
-                                (uint)FiringPattern.FullAuto);
-                        }
-                        else if ((shooting && !_lastShooting) ||
-                                 (shooting && _lastShooting && _switch % (threshold / 2) == 0))
-                        {
-                            Function.Call(Hash.TASK_SHOOT_AT_COORD, mainPed.Handle, aimCoord.X, aimCoord.Y,
-                                aimCoord.Z, 1500, (uint)FiringPattern.FullAuto);
-                        }
-
-                        if (!aiming && !shooting && !jumping)
-                        {
-                            if (GlobalSyncMode == SynchronizationMode.Teleport)
-                            {
-                                mainPed.Position = dest - new Vector3(0, 0, 1f);
-                                mainPed.Heading = player.Heading;
-                            }
-                            else if (!mainPed.IsInRangeOf(player.Position, 0.5f))
-                            {
-                                mainPed.Task.RunTo(player.Position, true, 500);
-                            }
-                        }
-
-                        UI.ShowSubtitle(Function.Call<int>(Hash.GET_PED_PARACHUTE_STATE, Game.Player.Character.Handle).ToString());
-
-                        if (Function.Call<int>(Hash.GET_PED_PARACHUTE_STATE, Game.Player.Character.Handle) == 0)
-                        {
-                            mainPed.Weapons.Give((WeaponHash)4222310262, 1, true, true);
-                        }
-
-                        //if (Function.Call<int>(Hash.GET_PED_PARACHUTE_STATE, Game.Player.Character.Handle) == 2)
-                            //&& !_debugLastPar)
-                        {
-                            //Function.Call((Hash) 0x16E42E800B472221, mainPed.Handle);
-                            //mainPed.CanRagdoll = false;
-                            //var dir = Game.Player.Character.Position - mainPed.Position;
-                            //dir.Normalize();
-                            //mainPed.ApplyForce(dir);
-                            /*if (_parachuteProp == null)
-                            {
-                                _parachuteProp = World.CreateProp(new Model(1740193300), mainPed.Position, mainPed.Rotation, false, false);
-                                _parachuteProp.FreezePosition = true;
-                                Function.Call(Hash.SET_ENTITY_COLLISION, _parachuteProp.Handle, false, 0);
-                            }
-                            mainPed.FreezePosition = true;
-                            mainPed.Position = Game.Player.Character.Position - new Vector3(0,0,1);
-                            mainPed.Quaternion = Game.Player.Character.Quaternion;
-                            _parachuteProp.Position = mainPed.Position + mainPed.UpVector*3.7f;
-                            _parachuteProp.Quaternion = mainPed.Quaternion;
-
-                            mainPed.Task.PlayAnimation("skydive@parachute@first_person", "chute_idle_right", 8f, -1, false, 8f);
-                        }
-                        else
-                        {
-                            _parachuteProp?.Delete();
-                            _parachuteProp = null;*/
-                            mainPed.FreezePosition = false;
-                            int speed = GetPedSpeed(player.Position, oldplayerpos);
-                            switch (speed)
-                            {
-                                case 1:
-                                    Function.Call(Hash.TASK_PLAY_ANIM, mainPed.Handle, "move_m@casual@e", "walk", 8f,
-                                        -8f,
-                                        -1, 1, 8f, 1, 1, 1);
-                                    break;
-                                case 2:
-                                    Function.Call(Hash.TASK_PLAY_ANIM, mainPed.Handle, "move_m@casual@e", "run", 8f, -8f,
-                                        -1,
-                                        1, 8f, 1, 1, 1);
-                                    break;
-                            }
-                        }
-                        _lastJumping = jumping;
-                        _lastShooting = shooting;
-                        _lastAiming = aiming;
-                    }
-                    oldplayerpos = player.Position;
-                    _lastVehicle = player.IsInVehicle();
+                    _debugSyncPed.AimCoords = aimCoord;
+                    _debugSyncPed.Position = player.Position;
+                    _debugSyncPed.Rotation = player.Quaternion;
+                    _debugSyncPed.ModelHash = player.Model.Hash;
+                    _debugSyncPed.CurrentWeapon = (int)player.Weapons.Current.Hash;
+                    _debugSyncPed.PedHealth = player.Health;
+                    _debugSyncPed.IsAiming = aiming;
+                    _debugSyncPed.IsShooting = shooting;
+                    _debugSyncPed.IsJumping = Function.Call<bool>(Hash.IS_PED_JUMPING, player.Handle);
+                    _debugSyncPed.IsParachuteOpen = Function.Call<int>(Hash.GET_PED_PARACHUTE_STATE, Game.Player.Character.Handle) == 2;
+                    _debugSyncPed.IsInVehicle = false;
+                    _debugSyncPed.PedProps = CheckPlayerProps();
+                    _debugSyncPed.LastUpdateReceived = DateTime.Now;
                 }
             }
+
+            _debugSyncPed.DisplayLocally();
+
+            if (_debugSyncPed.Character != null)
+            {
+                Function.Call(Hash.SET_ENTITY_NO_COLLISION_ENTITY, _debugSyncPed.Character.Handle, player.Handle, false);
+                Function.Call(Hash.SET_ENTITY_NO_COLLISION_ENTITY, player.Handle, _debugSyncPed.Character.Handle, false);
+            }
+
+
+            if (_debugSyncPed.MainVehicle != null && player.IsInVehicle())
+            {
+                Function.Call(Hash.SET_ENTITY_NO_COLLISION_ENTITY, _debugSyncPed.MainVehicle.Handle, player.CurrentVehicle.Handle, false);
+                Function.Call(Hash.SET_ENTITY_NO_COLLISION_ENTITY, player.CurrentVehicle.Handle, _debugSyncPed.MainVehicle.Handle, false);
+            }
+
         }
+        
+        #endregion
 
         public void DecodeNativeCall(NativeData obj)
         {
@@ -1472,8 +1339,29 @@ namespace GTACoOp
 
             var nativeType = CheckNativeHash(obj.Hash);
 
-            if (nativeType == NativeType.ReturnsEntity)
+            if ((int)nativeType >= 2)
             {
+                if ((int) nativeType >= 3)
+                {
+                    var modelObj = obj.Arguments[(int) nativeType - 3];
+                    int modelHash = 0;
+
+                    if (modelObj is UIntArgument)
+                    {
+                        modelHash = unchecked((int) ((UIntArgument) modelObj).Data);
+                    }
+                    else if (modelObj is IntArgument)
+                    {
+                        modelHash = ((IntArgument) modelObj).Data;
+                    }
+                    var model = new Model(modelHash);
+
+                    if (model.IsValid)
+                    {
+                        model.Request(10000);
+                    }
+                }
+
                 var entId = Function.Call<int>((Hash) obj.Hash, list.ToArray());
                 lock(_entityCleanup) _entityCleanup.Add(entId);
                 if (obj.ReturnType is IntArgument)
@@ -1574,8 +1462,11 @@ namespace GTACoOp
         private enum NativeType
         {
             Unknown = 0,
-            ReturnsEntity = 1,
-            ReturnsBlip = 2,
+            ReturnsBlip = 1,
+            ReturnsEntity = 2,
+            ReturnsEntityNeedsModel1 = 3,
+            ReturnsEntityNeedsModel2 = 4,
+            ReturnsEntityNeedsModel3 = 5,
         }
 
         private NativeType CheckNativeHash(ulong hash)
@@ -1586,14 +1477,17 @@ namespace GTACoOp
                     return NativeType.Unknown;
                     break;
                 case 0xD49F9B0955C367DE:
-                case 0xEF29A16337FACADB:
+                    return NativeType.ReturnsEntityNeedsModel2;
                 case 0x7DD959874C1FD534:
-                case 0xB4AC7D0CF06BFE8F:
-                case 0x9B62392B474F44A0:
+                    return NativeType.ReturnsEntityNeedsModel3;
                 case 0xAF35D0D2583051B0:
-                case 0x63C6CCA8E68AE8C8:
                 case 0x509D5878EB39E842:
                 case 0x9A294B2138ABB884:
+                    return NativeType.ReturnsEntityNeedsModel1;
+                case 0xEF29A16337FACADB:
+                case 0xB4AC7D0CF06BFE8F:
+                case 0x9B62392B474F44A0:
+                case 0x63C6CCA8E68AE8C8:
                     return NativeType.ReturnsEntity;
                     break;
                 case 0x46818D79B1F7499A:
