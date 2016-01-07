@@ -32,6 +32,7 @@ namespace GTACoOp
         public Vector3 AimCoords;
         public float Latency;
         public bool IsHornPressed;
+        public Vehicle MainVehicle { get; set; }
 
         public int VehicleSeat;
         public int PedHealth;
@@ -41,11 +42,42 @@ namespace GTACoOp
         public Quaternion VehicleRotation;
         public int VehiclePrimaryColor;
         public int VehicleSecondaryColor;
-        public DateTime LastUpdateReceived;
         public string Name;
         public bool Siren;
-        public float Speed;
+
+        public float Speed
+        {
+            get { return _speed; }
+            set
+            {
+                _lastSpeed = _speed;
+                _speed = value;
+            }
+        }
+
         public bool IsParachuteOpen;
+
+        public double AverageLatency
+        {
+            get { return _latencyAverager.Average(); }
+        }
+
+        public DateTime LastUpdateReceived
+        {
+            get { return _lastUpdateReceived; }
+            set
+            {
+                _secondToLastUpdateReceived = _lastUpdateReceived;
+                _lastUpdateReceived = value;
+
+                if (_secondToLastUpdateReceived != null && _lastUpdateReceived != null)
+                {
+                    _latencyAverager.Enqueue(_lastUpdateReceived.Subtract(_secondToLastUpdateReceived).TotalMilliseconds);
+                    if (_latencyAverager.Count >= 10)
+                        _latencyAverager.Dequeue();
+                }
+            }
+        }
 
         public Dictionary<int, int> VehicleMods
         {
@@ -79,9 +111,10 @@ namespace GTACoOp
         }
 
         private bool _lastVehicle;
-        private Vehicle _mainVehicle;
         private uint _switch;
         private bool _lastAiming;
+        private float _lastSpeed;
+        private DateTime _secondToLastUpdateReceived;
         private bool _lastShooting;
         private bool _lastJumping;
         private bool _blip;
@@ -92,6 +125,8 @@ namespace GTACoOp
         private Vector3 _vehiclePosition;
         private Dictionary<int, int> _vehicleMods;
         private Dictionary<int, int> _pedProps;
+
+        private Queue<double> _latencyAverager;
 
         private int _playerSeat;
         private bool _isStreamedIn;
@@ -105,6 +140,8 @@ namespace GTACoOp
             Rotation = rot;
             ModelHash = hash;
             _blip = blip;
+
+            _latencyAverager = new Queue<double>();
 
             _relGroup = World.AddRelationshipGroup("SYNCPED");
             World.SetRelationshipBetweenGroups(Relationship.Neutral, _relGroup, Game.Player.Character.RelationshipGroup);
@@ -120,6 +157,8 @@ namespace GTACoOp
 
         private int _modSwitch = 0;
         private int _clothSwitch = 0;
+        private DateTime _lastUpdateReceived;
+        private float _speed;
 
         public void DisplayLocally()
         {
@@ -196,10 +235,10 @@ namespace GTACoOp
                 }
             }
 
-            if ((!_lastVehicle && IsInVehicle && VehicleHash != 0) || (_lastVehicle && IsInVehicle && (_mainVehicle == null || !Character.IsInVehicle(_mainVehicle) || _mainVehicle.Model.Hash != VehicleHash || VehicleSeat != Util.GetPedSeat(Character))))
+            if ((!_lastVehicle && IsInVehicle && VehicleHash != 0) || (_lastVehicle && IsInVehicle && (MainVehicle == null || !Character.IsInVehicle(MainVehicle) || MainVehicle.Model.Hash != VehicleHash || VehicleSeat != Util.GetPedSeat(Character))))
             {
-                if (_mainVehicle != null && Util.IsVehicleEmpty(_mainVehicle))
-                    _mainVehicle.Delete();
+                if (MainVehicle != null && Util.IsVehicleEmpty(MainVehicle))
+                    MainVehicle.Delete();
 
                 var vehs = World.GetAllVehicles().OrderBy(v =>
                 {
@@ -210,26 +249,26 @@ namespace GTACoOp
 
                 if (vehs.Any() && vehs[0].Model.Hash == VehicleHash && vehs[0].IsInRangeOf(gPos, 3f))
                 {
-                    _mainVehicle = vehs[0];
-                    if (Game.Player.Character.IsInVehicle(_mainVehicle) &&
+                    MainVehicle = vehs[0];
+                    if (Game.Player.Character.IsInVehicle(MainVehicle) &&
                         VehicleSeat == Util.GetPedSeat(Game.Player.Character))
                     {
-                        Game.Player.Character.Task.WarpOutOfVehicle(_mainVehicle);
+                        Game.Player.Character.Task.WarpOutOfVehicle(MainVehicle);
                         UI.Notify("~r~Car jacked!");
                     }
                 }
                 else
                 {
-                    _mainVehicle = World.CreateVehicle(new Model(VehicleHash), gPos, 0);
+                    MainVehicle = World.CreateVehicle(new Model(VehicleHash), gPos, 0);
                 }
 
-                if (_mainVehicle != null)
+                if (MainVehicle != null)
                 {
-                    _mainVehicle.PrimaryColor = (VehicleColor)VehiclePrimaryColor;
-                    _mainVehicle.SecondaryColor = (VehicleColor)VehicleSecondaryColor;
-                    _mainVehicle.Quaternion = VehicleRotation;
-                    _mainVehicle.IsInvincible = true;
-                    Character.Task.WarpIntoVehicle(_mainVehicle, (VehicleSeat)VehicleSeat);
+                    MainVehicle.PrimaryColor = (VehicleColor)VehiclePrimaryColor;
+                    MainVehicle.SecondaryColor = (VehicleColor)VehicleSecondaryColor;
+                    MainVehicle.Quaternion = VehicleRotation;
+                    MainVehicle.IsInvincible = true;
+                    Character.Task.WarpIntoVehicle(MainVehicle, (VehicleSeat)VehicleSeat);
 
                     /*if (_playerSeat != -2 && !Game.Player.Character.IsInVehicle(_mainVehicle))
                     { // TODO: Fix me.
@@ -243,15 +282,15 @@ namespace GTACoOp
                 return;
             }
            
-            if (_lastVehicle && _justEnteredVeh && IsInVehicle && !Character.IsInVehicle(_mainVehicle) && DateTime.Now.Subtract(_enterVehicleStarted).TotalSeconds <= 4)
+            if (_lastVehicle && _justEnteredVeh && IsInVehicle && !Character.IsInVehicle(MainVehicle) && DateTime.Now.Subtract(_enterVehicleStarted).TotalSeconds <= 4)
             {
                 return;
             }
             _justEnteredVeh = false;
 
-            if (_lastVehicle && !IsInVehicle && _mainVehicle != null)
+            if (_lastVehicle && !IsInVehicle && MainVehicle != null)
             {
-                if (Character != null) Character.Task.LeaveVehicle(_mainVehicle, true);
+                if (Character != null) Character.Task.LeaveVehicle(MainVehicle, true);
             }
 
             Character.Health = PedHealth;
@@ -259,33 +298,34 @@ namespace GTACoOp
             _switch++;
             if (IsInVehicle)
             {
-                if (VehicleSeat == (int)GTA.VehicleSeat.Driver ||
-                    _mainVehicle.GetPedOnSeat(GTA.VehicleSeat.Driver) == null)
+                if (VehicleSeat == (int) GTA.VehicleSeat.Driver ||
+                    MainVehicle.GetPedOnSeat(GTA.VehicleSeat.Driver) == null)
                 {
-                    _mainVehicle.Health = VehicleHealth;
-                    if (_mainVehicle.Health <= 0)
+                    MainVehicle.Health = VehicleHealth;
+                    if (MainVehicle.Health <= 0)
                     {
-                        _mainVehicle.IsInvincible = false;
+                        MainVehicle.IsInvincible = false;
                         //_mainVehicle.Explode();
                     }
                     else
                     {
-                        _mainVehicle.IsInvincible = true;
-                        if (_mainVehicle.IsDead)
-                            _mainVehicle.Repair();
+                        MainVehicle.IsInvincible = true;
+                        if (MainVehicle.IsDead)
+                            MainVehicle.Repair();
                     }
-                    
-                    _mainVehicle.PrimaryColor = (VehicleColor)VehiclePrimaryColor;
-                    _mainVehicle.SecondaryColor = (VehicleColor)VehicleSecondaryColor;
-                    
-                    if (VehicleMods != null && _modSwitch % 50 == 0 && Game.Player.Character.IsInRangeOf(VehiclePosition, 30f))                   
+
+                    MainVehicle.PrimaryColor = (VehicleColor) VehiclePrimaryColor;
+                    MainVehicle.SecondaryColor = (VehicleColor) VehicleSecondaryColor;
+
+                    if (VehicleMods != null && _modSwitch%50 == 0 &&
+                        Game.Player.Character.IsInRangeOf(VehiclePosition, 30f))
                     {
                         var id = _modSwitch/50;
 
-                        if (VehicleMods.ContainsKey(id) && VehicleMods[id] != _mainVehicle.GetMod((VehicleMod) id))
+                        if (VehicleMods.ContainsKey(id) && VehicleMods[id] != MainVehicle.GetMod((VehicleMod) id))
                         {
-                            Function.Call(Hash.SET_VEHICLE_MOD_KIT, _mainVehicle.Handle, 0);
-                            _mainVehicle.SetMod((VehicleMod)id, VehicleMods[id], false);
+                            Function.Call(Hash.SET_VEHICLE_MOD_KIT, MainVehicle.Handle, 0);
+                            MainVehicle.SetMod((VehicleMod) id, VehicleMods[id], false);
                             Function.Call(Hash.RELEASE_PRELOAD_MODS, id);
                         }
                     }
@@ -293,151 +333,165 @@ namespace GTACoOp
 
                     if (_modSwitch >= 2500)
                         _modSwitch = 0;
-                        
+
                     if (IsHornPressed && !_lastHorn)
                     {
                         _lastHorn = true;
-                        _mainVehicle.SoundHorn(99999);
+                        MainVehicle.SoundHorn(99999);
                     }
 
                     if (!IsHornPressed && _lastHorn)
                     {
                         _lastHorn = false;
-                        _mainVehicle.SoundHorn(1);
+                        MainVehicle.SoundHorn(1);
                     }
 
-                    if (_mainVehicle.SirenActive && !Siren)
-                        _mainVehicle.SirenActive = Siren;
-                    else if (!_mainVehicle.SirenActive && Siren)
-                        _mainVehicle.SirenActive = Siren;
+                    if (MainVehicle.SirenActive && !Siren)
+                        MainVehicle.SirenActive = Siren;
+                    else if (!MainVehicle.SirenActive && Siren)
+                        MainVehicle.SirenActive = Siren;
 
-                    var dir = VehiclePosition - _mainVehicle.Position;
+                    var dir = VehiclePosition - _lastVehiclePos;
+
                     dir.Normalize();
 
                     var range = Math.Max(20f, Speed*Math.Ceiling(DateTime.Now.Subtract(LastUpdateReceived).TotalSeconds));
 
-                    if (!_mainVehicle.IsInRangeOf(VehiclePosition, 0.08f) && Speed >= 1)
+                    if (MainVehicle.IsInRangeOf(VehiclePosition, (float) range))
                     {
-                        var vect = dir*Math.Abs(Speed - _mainVehicle.Speed);
-                        _mainVehicle.ApplyForce(vect);
+                        var timeElapsed = (float) DateTime.Now.Subtract(LastUpdateReceived).TotalSeconds;
+                        var acceleration = Speed - _lastSpeed;
+                        MainVehicle.Position = _lastVehiclePos + dir*(Speed*timeElapsed) +
+                                               dir*(0.5f*acceleration*(float) Math.Pow(timeElapsed, 2));
                     }
-                    if (Main.GlobalSyncMode == SynchronizationMode.Teleport && !_mainVehicle.IsInRangeOf(VehiclePosition, 0.8f))
-                        _mainVehicle.Position = VehiclePosition;
-                    if (Main.GlobalSyncMode == SynchronizationMode.Tasks && !_mainVehicle.IsInRangeOf(VehiclePosition, (float)range))
-                        _mainVehicle.Position = VehiclePosition;
-                    _mainVehicle.Quaternion = VehicleRotation;
+                    else
+                    {
+                        MainVehicle.Position = VehiclePosition;
+                        _lastVehiclePos = VehiclePosition - (dir*0.5f);
+                    }
+                    #if DEBUG
+                    if (MainVehicle.Heading < 270)
+                        MainVehicle.Quaternion = Util.LerpQuaternion(MainVehicle.Quaternion, VehicleRotation, 0.1f);
+                    else if (MainVehicle.Heading >= 270)
+                        MainVehicle.Quaternion = Util.LerpQuaternion(VehicleRotation, MainVehicle.Quaternion, 0.1f);
+                    #else
+                    MainVehicle.Quaternion = VehicleRotation;
+                    #endif
                 }
-
             }
-            else
-            {
-                if (PedProps != null && _clothSwitch%50 == 0 && Game.Player.Character.IsInRangeOf(Position, 30f))
-                {
-                    var id = _clothSwitch/50;
-
-                    if (PedProps.ContainsKey(id) && PedProps[id] != Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, Character.Handle, id))
-                    {
-                        Function.Call(Hash.SET_PED_COMPONENT_VARIATION, Character.Handle, id, PedProps[id], 0, 0);
-                    }
-                }
-                
-                _clothSwitch++;
-                if (_clothSwitch >= 750)
-                    _clothSwitch = 0;
-                
-                if (Character.Weapons.Current.Hash != (WeaponHash)CurrentWeapon)
-                {
-                    var wep = Character.Weapons.Give((WeaponHash)CurrentWeapon, 9999, true, true);
-                    Character.Weapons.Select(wep);
-                }
-
-                if (!_lastJumping && IsJumping)
-                {
-                    Character.Task.Jump();
-                }
-
-                if (IsParachuteOpen)
-                {
-                    if (_parachuteProp == null)
-                    {
-                        _parachuteProp = World.CreateProp(new Model(1740193300), Character.Position, Character.Rotation, false, false);
-                        _parachuteProp.FreezePosition = true;
-                        Function.Call(Hash.SET_ENTITY_COLLISION, _parachuteProp.Handle, false, 0);
-                    }
-                    Character.FreezePosition = true;
-                    Character.Position = Position - new Vector3(0, 0, 1);
-                    Character.Quaternion = Rotation;
-                    _parachuteProp.Position = Character.Position + new Vector3(0, 0, 3.7f);
-                    _parachuteProp.Quaternion = Character.Quaternion;
-
-                    Character.Task.PlayAnimation("skydive@parachute@first_person", "chute_idle_right", 8f, 5000, false, 8f);
-                }
                 else
                 {
-                    var dest = Position;
-                    Character.FreezePosition = false;
+                    if (PedProps != null && _clothSwitch%50 == 0 && Game.Player.Character.IsInRangeOf(Position, 30f))
+                    {
+                        var id = _clothSwitch/50;
 
-                    if (_parachuteProp != null)
-                    {
-                        _parachuteProp.Delete();
-                        _parachuteProp = null;
-                    }
-
-                    const int threshold = 50;
-                    if (IsAiming && !IsShooting && !Character.IsInRangeOf(Position, 0.5f) && _switch%threshold == 0)
-                    {
-                        Function.Call(Hash.TASK_GO_TO_COORD_WHILE_AIMING_AT_COORD, Character.Handle, dest.X, dest.Y,
-                            dest.Z, AimCoords.X, AimCoords.Y, AimCoords.Z, 2f, 0, 0x3F000000, 0x40800000, 1, 512, 0,
-                            (uint) FiringPattern.FullAuto);
-                    }
-                    else if (IsAiming && !IsShooting && Character.IsInRangeOf(Position, 0.5f))
-                    {
-                        Character.Task.AimAt(AimCoords, 100);
-                    }
-
-                    if (!Character.IsInRangeOf(Position, 0.5f) &&
-                        ((IsShooting && !_lastShooting) || (IsShooting && _lastShooting && _switch%(threshold*2) == 0)))
-                    {
-                        Function.Call(Hash.TASK_GO_TO_COORD_WHILE_AIMING_AT_COORD, Character.Handle, dest.X, dest.Y,
-                            dest.Z, AimCoords.X, AimCoords.Y, AimCoords.Z, 2f, 1, 0x3F000000, 0x40800000, 1, 0, 0,
-                            (uint) FiringPattern.FullAuto);
-                    }
-                    else if ((IsShooting && !_lastShooting) ||
-                             (IsShooting && _lastShooting && _switch%(threshold/2) == 0))
-                    {
-                        Function.Call(Hash.TASK_SHOOT_AT_COORD, Character.Handle, AimCoords.X, AimCoords.Y,
-                            AimCoords.Z, 1500, (uint) FiringPattern.FullAuto);
-                    }
-
-                    if (!IsAiming && !IsShooting && !IsJumping)
-                    {
-                        switch (SyncMode)
+                        if (PedProps.ContainsKey(id) &&
+                            PedProps[id] != Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, Character.Handle, id))
                         {
-                            case SynchronizationMode.Tasks:
-                                if (!Character.IsInRangeOf(Position, 0.5f))
-                                {
-                                    Character.Task.RunTo(Position, true, 500);
-                                    //var targetAngle = Rotation.Z/Math.Sqrt(1 - Rotation.W*Rotation.W);
-                                    //Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, Character.Handle, Position.X, Position.Y, Position.Z, 5f, 3000, targetAngle, 0);
-                                }
-                                if (!Character.IsInRangeOf(Position, 5f))
-                                {
-                                    Character.Position = dest - new Vector3(0, 0, 1f);
-                                    Character.Quaternion = Rotation;
-                                }
-                                break;
-                            case SynchronizationMode.Teleport:
-                                Character.Position = dest - new Vector3(0, 0, 1f);
-                                Character.Quaternion = Rotation;
-                                break;
+                            Function.Call(Hash.SET_PED_COMPONENT_VARIATION, Character.Handle, id, PedProps[id], 0, 0);
                         }
                     }
+
+                    _clothSwitch++;
+                    if (_clothSwitch >= 750)
+                        _clothSwitch = 0;
+
+                    if (Character.Weapons.Current.Hash != (WeaponHash) CurrentWeapon)
+                    {
+                        var wep = Character.Weapons.Give((WeaponHash) CurrentWeapon, 9999, true, true);
+                        Character.Weapons.Select(wep);
+                    }
+
+                    if (!_lastJumping && IsJumping)
+                    {
+                        Character.Task.Jump();
+                    }
+
+                    if (IsParachuteOpen)
+                    {
+                        if (_parachuteProp == null)
+                        {
+                            _parachuteProp = World.CreateProp(new Model(1740193300), Character.Position,
+                                Character.Rotation, false, false);
+                            _parachuteProp.FreezePosition = true;
+                            Function.Call(Hash.SET_ENTITY_COLLISION, _parachuteProp.Handle, false, 0);
+                        }
+                        Character.FreezePosition = true;
+                        Character.Position = Position - new Vector3(0, 0, 1);
+                        Character.Quaternion = Rotation;
+                        _parachuteProp.Position = Character.Position + new Vector3(0, 0, 3.7f);
+                        _parachuteProp.Quaternion = Character.Quaternion;
+
+                        Character.Task.PlayAnimation("skydive@parachute@first_person", "chute_idle_right", 8f, 5000,
+                            false, 8f);
+                    }
+                    else
+                    {
+                        var dest = Position;
+                        Character.FreezePosition = false;
+
+                        if (_parachuteProp != null)
+                        {
+                            _parachuteProp.Delete();
+                            _parachuteProp = null;
+                        }
+
+                        const int threshold = 50;
+                        if (IsAiming && !IsShooting && !Character.IsInRangeOf(Position, 0.5f) && _switch%threshold == 0)
+                        {
+                            Function.Call(Hash.TASK_GO_TO_COORD_WHILE_AIMING_AT_COORD, Character.Handle, dest.X, dest.Y,
+                                dest.Z, AimCoords.X, AimCoords.Y, AimCoords.Z, 2f, 0, 0x3F000000, 0x40800000, 1, 512, 0,
+                                (uint) FiringPattern.FullAuto);
+                        }
+                        else if (IsAiming && !IsShooting && Character.IsInRangeOf(Position, 0.5f))
+                        {
+                            Character.Task.AimAt(AimCoords, 100);
+                        }
+
+                        if (!Character.IsInRangeOf(Position, 0.5f) &&
+                            ((IsShooting && !_lastShooting) ||
+                             (IsShooting && _lastShooting && _switch%(threshold*2) == 0)))
+                        {
+                            Function.Call(Hash.TASK_GO_TO_COORD_WHILE_AIMING_AT_COORD, Character.Handle, dest.X, dest.Y,
+                                dest.Z, AimCoords.X, AimCoords.Y, AimCoords.Z, 2f, 1, 0x3F000000, 0x40800000, 1, 0, 0,
+                                (uint) FiringPattern.FullAuto);
+                        }
+                        else if ((IsShooting && !_lastShooting) ||
+                                 (IsShooting && _lastShooting && _switch%(threshold/2) == 0))
+                        {
+                            Function.Call(Hash.TASK_SHOOT_AT_COORD, Character.Handle, AimCoords.X, AimCoords.Y,
+                                AimCoords.Z, 1500, (uint) FiringPattern.FullAuto);
+                        }
+
+                        if (!IsAiming && !IsShooting && !IsJumping)
+                        {
+                            switch (SyncMode)
+                            {
+                                case SynchronizationMode.Tasks:
+                                    if (!Character.IsInRangeOf(Position, 0.5f))
+                                    {
+                                        Character.Task.RunTo(Position, true, 500);
+                                        //var targetAngle = Rotation.Z/Math.Sqrt(1 - Rotation.W*Rotation.W);
+                                        //Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, Character.Handle, Position.X, Position.Y, Position.Z, 5f, 3000, targetAngle, 0);
+                                    }
+                                    if (!Character.IsInRangeOf(Position, 5f))
+                                    {
+                                        Character.Position = dest - new Vector3(0, 0, 1f);
+                                        Character.Quaternion = Rotation;
+                                    }
+                                    break;
+                                case SynchronizationMode.Teleport:
+                                    Character.Position = dest - new Vector3(0, 0, 1f);
+                                    Character.Quaternion = Rotation;
+                                    break;
+                            }
+                        }
+                    }
+                    _lastJumping = IsJumping;
+                    _lastShooting = IsShooting;
+                    _lastAiming = IsAiming;
                 }
-                _lastJumping = IsJumping;
-                _lastShooting = IsShooting;
-                _lastAiming = IsAiming;
-            }
-            _lastVehicle = IsInVehicle;
+                _lastVehicle = IsInVehicle;
         }
 
         public void Clear()
@@ -461,10 +515,10 @@ namespace GTACoOp
                 _mainBlip.Remove();
                 _mainBlip = null;
             }
-            if (_mainVehicle != null && Util.IsVehicleEmpty(_mainVehicle))
+            if (MainVehicle != null && Util.IsVehicleEmpty(MainVehicle))
             {
-                _mainVehicle.Model.MarkAsNoLongerNeeded();
-                _mainVehicle.Delete();
+                MainVehicle.Model.MarkAsNoLongerNeeded();
+                MainVehicle.Delete();
             }
             if (_parachuteProp != null)
             {
