@@ -356,7 +356,7 @@ namespace GTAServer
                                         Id = client.NetConnection.RemoteUniqueIdentifier,
                                     };
 
-                                    SendToAll(dcObj, PacketType.PlayerDisconnect, 0);
+                                    SendToAll(dcObj, PacketType.PlayerDisconnect, true);
 
                                     Console.WriteLine("Player disconnected: " + client.Name + " (" + client.DisplayName + ")");
 
@@ -405,7 +405,7 @@ namespace GTAServer
                                             {
                                                 data.Id = client.NetConnection.RemoteUniqueIdentifier;
                                                 data.Sender = client.DisplayName;
-                                                SendToAll(data, PacketType.ChatData, 0);
+                                                SendToAll(data, PacketType.ChatData, true);
                                                 Console.WriteLine(data.Sender + ": " + data.Message);
                                             }
                                         }
@@ -433,7 +433,7 @@ namespace GTAServer
                                             client.VehicleHealth = data.VehicleHealth;
                                             client.IsInVehicle = true;
 
-                                            SendToAll(data, PacketType.VehiclePositionData, client.NetConnection.RemoteUniqueIdentifier);
+                                            SendToAll(data, PacketType.VehiclePositionData, false, client);
                                         }
                                     }
                                     catch (IndexOutOfRangeException)
@@ -456,7 +456,7 @@ namespace GTAServer
                                             client.LastKnownPosition = data.Position;
                                             client.IsInVehicle = false;
 
-                                            SendToAll(data, PacketType.PedPositionData, client.NetConnection.RemoteUniqueIdentifier);
+                                            SendToAll(data, PacketType.PedPositionData, false, client);
                                         }
                                     }
                                     catch (IndexOutOfRangeException)
@@ -474,7 +474,7 @@ namespace GTAServer
                                         if (data != null)
                                         {
                                             data.Id = client.NetConnection.RemoteUniqueIdentifier;
-                                            SendToAll(data, PacketType.NpcVehPositionData, client.NetConnection.RemoteUniqueIdentifier);
+                                            SendToAll(data, PacketType.NpcVehPositionData, false, client);
                                         }
                                     }
                                     catch (IndexOutOfRangeException)
@@ -491,7 +491,7 @@ namespace GTAServer
                                         if (data != null)
                                         {
                                             data.Id = msg.SenderConnection.RemoteUniqueIdentifier;
-                                            SendToAll(data, PacketType.NpcPedPositionData, client.NetConnection.RemoteUniqueIdentifier);
+                                            SendToAll(data, PacketType.NpcPedPositionData, false, client);
                                         }
                                     }
                                     catch (IndexOutOfRangeException)
@@ -504,7 +504,7 @@ namespace GTAServer
                                     {
                                         Id = client.NetConnection.RemoteUniqueIdentifier,
                                     };
-                                    SendToAll(dcObj, PacketType.WorldSharingStop, 0);
+                                    SendToAll(dcObj, PacketType.WorldSharingStop, true);
                                 }
                                 break;
                             case PacketType.NativeResponse:
@@ -566,21 +566,24 @@ namespace GTAServer
             if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnTick());
         }
 
-        public void SendToAll(object newData, PacketType packetType, long exclude = 0)
+        public void SendToAll(object newData, PacketType packetType, bool important)
         {
             var data = SerializeBinary(newData);
-            lock (Clients)
-            {
-                foreach (var client in Clients)
-                {
-                    if (client.NetConnection.RemoteUniqueIdentifier == exclude) continue;
-                    NetOutgoingMessage msg = Server.CreateMessage();
-                    msg.Write((int)packetType);
-                    msg.Write(data.Length);
-                    msg.Write(data);
-                    client.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(client));
-                }
-            }
+            NetOutgoingMessage msg = Server.CreateMessage();
+            msg.Write((int)packetType);
+            msg.Write(data.Length);
+            msg.Write(data);
+            Server.SendToAll(msg, important ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced);
+        }
+
+        public void SendToAll(object newData, PacketType packetType, bool important, Client exclude)
+        {
+            var data = SerializeBinary(newData);
+            NetOutgoingMessage msg = Server.CreateMessage();
+            msg.Write((int)packetType);
+            msg.Write(data.Length);
+            msg.Write(data);
+            Server.SendToAll(msg, exclude.NetConnection, important ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced, GetChannelIdForConnection(exclude));
         }
 
         public object DeserializeBinary<T>(byte[] data)
@@ -883,7 +886,7 @@ namespace GTAServer
                 Message = message,
             };
 
-            SendToAll(chatObj, PacketType.ChatData, 0);
+            SendToAll(chatObj, PacketType.ChatData, true);
         }
 
         public void SendChatMessageToPlayer(Client player, string message)
