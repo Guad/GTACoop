@@ -338,7 +338,7 @@ namespace AdminTools
                 var accObject = new Account()
                 {
                     Level = Privilege.User,
-                    Name = sender.Name,
+                    Name = sender.DisplayName,
                     Password = password,
                     Ban = null
                 };
