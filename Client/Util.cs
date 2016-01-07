@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
@@ -119,6 +120,51 @@ namespace GTACoOp
                 return new Vector3();
             }
             return coord.GetResult<Vector3>();
+        }
+
+        public static Quaternion LerpQuaternion(Quaternion start, Quaternion end, float speed)
+        {
+            return new Quaternion()
+            {
+                X = start.X + (end.X - start.X) * speed,
+                Y = start.Y + (end.Y - start.Y) * speed,
+                Z = start.Z + (end.Z - start.Z) * speed,
+                W = start.W + (end.W - start.W) * speed,
+            };
+        }
+
+        public static Vector3 LerpVector(Vector3 start, Vector3 end, float speed)
+        {
+            return new Vector3()
+            {
+                X = start.X + (end.X - start.X) * speed,
+                Y = start.Y + (end.Y - start.Y) * speed,
+                Z = start.Z + (end.Z - start.Z) * speed,
+            };
+        }
+
+        public static Vector3 QuaternionToEuler(Quaternion quat)
+        {
+            //heading = atan2(2*qy*qw-2*qx*qz , 1 - 2*qy2 - 2*qz2) (yaw)
+            //attitude = asin(2 * qx * qy + 2 * qz * qw) (pitch)
+            //bank = atan2(2 * qx * qw - 2 * qy * qz, 1 - 2 * qx2 - 2 * qz2) (roll)
+
+            return new Vector3()
+            {
+                X = (float)Math.Asin(2 * quat.X * quat.Y + 2 *quat.Z * quat.W),
+                Y = (float)Math.Atan2(2 * quat.X * quat.W - 2 * quat.Y * quat.Z, 1 -  2 * quat.X*quat.X - 2 * quat.Z * quat.Z),
+                Z = (float)Math.Atan2(2*quat.Y*quat.W - 2*quat.X*quat.Z, 1 - 2*quat.Y*quat.Y - 2*quat.Z * quat.Z),
+            };
+
+            /*except when qx*qy + qz*qw = 0.5 (north pole)
+            which gives:
+            heading = 2 * atan2(x,w)
+            bank = 0
+
+            and when qx*qy + qz*qw = -0.5 (south pole)
+            which gives:
+            heading = -2 * atan2(x,w)
+            bank = 0 */
         }
     }
 }
