@@ -1,4 +1,5 @@
 ﻿using Lidgren.Network;
+using System.Windows.Forms;
 
 namespace GTAServer
 {
@@ -41,6 +42,10 @@ namespace GTAServer
 
         public virtual void OnTick()
         {
+        }
+        public virtual void OnClientKeyPress(Keys key)
+        {
+
         }
     }
 }
