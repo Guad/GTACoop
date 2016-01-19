@@ -22,6 +22,7 @@ namespace GTACoOp
         NativeTickRecall = 13,
         NativeOnDisconnect = 14,
         NativeOnDisconnectRecall = 15,
+        KeySendData = 16,
     }
 
     public enum ScriptVersion

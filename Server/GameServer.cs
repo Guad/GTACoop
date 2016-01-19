@@ -11,6 +11,7 @@ using System.Threading;
 using System.Xml.Serialization;
 using Lidgren.Network;
 using ProtoBuf;
+using System.Windows.Forms;
 
 namespace GTAServer
 {
@@ -610,6 +611,22 @@ namespace GTAServer
                                     if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnPlayerKilled(client));
                                 }
                                 break;
+                            case PacketType.KeySendData:
+                                {
+                                    try
+                                    {
+                                        var len = msg.ReadInt32();
+                                        var data = DeserializeBinary<KeySendData>(msg.ReadBytes(len)) as KeySendData;
+                                        if (data != null)
+                                        {
+                                            if (_gamemode != null) _gamemode.OnPlayerKeyPress(client, data.key);
+                                            if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnPlayerKeyPress(client, data.key));
+                                        }
+                                    }
+                                    catch (IndexOutOfRangeException)
+                                    { }
+                                    break;
+                                }
                         }
                         break;
                     default:
