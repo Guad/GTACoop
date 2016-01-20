@@ -658,6 +658,24 @@ namespace GTAServer
             msg.Write(data);
             Server.SendToAll(msg, exclude.NetConnection, important ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced, GetChannelIdForConnection(exclude));
         }
+        public void SpawnCarAtPlayer(Client player, VehicleHash model, Vector3 pos, float heading)
+        {
+            var obj = new VehicleSpawnData();
+            obj.modelHash = (uint)model;
+            obj.x = pos.X;
+            obj.y = pos.Y;
+            pos.Z = pos.Z;
+
+            var bin = SerializeBinary(obj);
+
+            var msg = Server.CreateMessage();
+
+            msg.Write((int)PacketType.VehicleSpawnData);
+            msg.Write(bin.Length);
+            msg.Write(bin);
+
+            player.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(player));
+        }
 
         public object DeserializeBinary<T>(byte[] data)
         {

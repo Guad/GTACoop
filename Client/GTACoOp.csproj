@@ -68,6 +68,7 @@
     <Compile Include="Chat.cs" />
     <Compile Include="ChatData.cs" />
     <Compile Include="DebugWindow.cs" />
+    <Compile Include="VehicleSpawnData.cs" />
     <Compile Include="KeySendData.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="NativeData.cs" />

@@ -1091,6 +1091,13 @@ namespace GTACoOp
                                 lock (_dcNatives) if (_dcNatives.ContainsKey(data.Id)) _dcNatives.Remove(data.Id);
                             }
                             break;
+                        case PacketType.VehicleSpawnData:
+                            {
+                                var len = msg.ReadInt32();
+                                var data = (VehicleSpawnData)DeserializeBinary<VehicleSpawnData>(msg.ReadBytes(len));
+                                Vehicle tempcar = World.CreateVehicle((VehicleHash)data.modelHash, new Vector3(data.x, data.y, data.z), data.heading);
+                                break;
+                            }
                     }
                 }
                 else if (msg.MessageType == NetIncomingMessageType.ConnectionLatencyUpdated)
