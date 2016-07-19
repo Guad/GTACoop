@@ -27,6 +27,7 @@ namespace GTAServer
         public int Health { get; internal set; }
         public int VehicleHealth { get; internal set; }
         public bool IsInVehicle { get; internal set; }
+        public bool afk { get; set; }
 
         public Client(NetConnection nc)
         {
