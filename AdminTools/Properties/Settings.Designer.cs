@@ -85,7 +85,7 @@ namespace AdminTools.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool AntiClones {
             get {
                 return ((bool)(this["AntiClones"]));
@@ -109,7 +109,7 @@ namespace AdminTools.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool KickOnOutdatedGame {
             get {
                 return ((bool)(this["KickOnOutdatedGame"]));
@@ -164,6 +164,42 @@ namespace AdminTools.Properties {
             }
             set {
                 this["ServerName"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool OnlyAsciiNickName {
+            get {
+                return ((bool)(this["OnlyAsciiNickName"]));
+            }
+            set {
+                this["OnlyAsciiNickName"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool OnlyAsciiUserName {
+            get {
+                return ((bool)(this["OnlyAsciiUserName"]));
+            }
+            set {
+                this["OnlyAsciiUserName"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool LimitNickNames {
+            get {
+                return ((bool)(this["LimitNickNames"]));
+            }
+            set {
+                this["LimitNickNames"] = value;
             }
         }
     }

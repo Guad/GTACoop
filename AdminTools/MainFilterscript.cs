@@ -106,25 +106,45 @@ namespace AdminTools
         {
             try
             {
-                Console.WriteLine(string.Format("" +
-                "Nickname: {0} | " +
-                "Realname: {1} |" +
-                "Ping: {2}ms | " +
-                "IP: {3} | " +
-                "Game Version: {4} | " +
-                "Script Version: {5} | " +
-                "Vehicle Health: {6} | " +
-                "Last Position: {7} | ",
-                player.DisplayName.ToString(),
-                player.Name.ToString(),
-                Math.Round(player.Latency * 1000, MidpointRounding.AwayFromZero).ToString(),
-                player.NetConnection.RemoteEndPoint.Address.ToString(),
-                player.GameVersion.ToString(),
-                player.RemoteScriptVersion.ToString(),
-                player.VehicleHealth.ToString(),
-                player.LastKnownPosition.ToString()));
+                Console.Write("Nickname: " + player.DisplayName.ToString() + " | ");
+                Console.Write("Realname: " + player.Name.ToString() + " | ");
+                Console.Write("Ping: " + Math.Round(player.Latency * 1000, MidpointRounding.AwayFromZero).ToString() + "ms | ");
+                Console.Write("IP: " + player.NetConnection.RemoteEndPoint.Address.ToString() + " | ");
+                Console.Write("Game Version: " + player.GameVersion.ToString() + " | ");
+                Console.Write("Script Version: " + player.RemoteScriptVersion.ToString() + " | ");
+                Console.Write("Vehicle Health: " + player.VehicleHealth.ToString() + " | ");
+                Console.Write("Last Position: " + player.LastKnownPosition.ToString() + " | ");
+                Console.Write("\n");
             }
-            catch { }
+            catch (Exception e) { }
+            string response = String.Empty;
+            try
+            {
+                using (var webClient = new System.Net.WebClient())
+                {
+                    response = webClient.DownloadString("http://ip-api.com/json/"+player.NetConnection.RemoteEndPoint.Address);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Could not contact IP API.");
+            }
+            if (!string.IsNullOrWhiteSpace(response)) {
+                IPInfo dejson = JsonConvert.DeserializeObject<IPInfo>(response);
+                if (dejson.list != null)
+                {
+                    if (dejson.status.Equals("success"))
+                    {
+                        string country = dejson.countryCode;
+                        Console.WriteLine("Country Code: "+country);
+                    }else
+                    {
+                        Console.WriteLine("Could not query IP infos from API.");
+                    }
+                }
+
+            }
+
             if (!Properties.Settings.Default.ColoredNicknames) {
                 player.DisplayName = Regex.Replace(player.DisplayName, "~.~", "", RegexOptions.IgnoreCase);
             }
@@ -134,7 +154,7 @@ namespace AdminTools
                 Program.ServerInstance.KickPlayer(player, "Change your nickname to a proper one."); return false;
             }
             if (Properties.Settings.Default.KickOnDefaultName) {
-                if (player.DisplayName.StartsWith("RLD!"))
+                if (player.DisplayName.StartsWith("RLD!") || player.DisplayName.StartsWith("Player") || player.DisplayName.StartsWith("nosTEAM"))
                 {
                     //Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for default nickname.", player.DisplayName.ToString()));
                     Program.ServerInstance.KickPlayer(player, "Change your nickname to a proper one. (F9 -> Settings -> Nickname)"); return false;
@@ -142,7 +162,7 @@ namespace AdminTools
             }
             if (Properties.Settings.Default.SocialClubOnly) {
                 Console.WriteLine(player.Name);
-                if (player.Name.ToString() == "RLD!" || player.Name.ToString() == "nosTEAM")
+                if (player.Name.ToString() == "RLD!" || player.Name.ToString() == "nosTEAM" || player.Name.ToString() == "Player")
                 {
                     Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for cracked game.", player.DisplayName.ToString()));
                     Program.ServerInstance.KickPlayer(player, "Buy the game and sign in through social club!"); return false; }
@@ -175,9 +195,30 @@ namespace AdminTools
             if (player.IsBanned() || player.IsIPBanned())
             {
                 Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("{0} is banned for {1}", player.DisplayName.ToString(), player.GetBan().Reason));
-                Program.ServerInstance.KickPlayer(player, "You are banned: " + player.GetBan().Reason);
-
-                return false;
+                Program.ServerInstance.KickPlayer(player, "You are banned: " + player.GetBan().Reason); return false;
+            }
+            if (Properties.Settings.Default.OnlyAsciiNickName)
+            {
+                if(Encoding.UTF8.GetByteCount(player.DisplayName) != player.DisplayName.Length)
+                {
+                    //Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("{0} was kicked for non-ascii chars in his nickname.", player.DisplayName.ToString()));
+                    Program.ServerInstance.KickPlayer(player, "Remove all non-ascii characters from your nickname."); return false;
+                }
+            }
+            if (Properties.Settings.Default.OnlyAsciiUserName)
+            {
+                if (Encoding.UTF8.GetByteCount(player.Name) != player.Name.Length)
+                {
+                    //Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("{0} was kicked for non-ascii chars in his username.", player.DisplayName.ToString()));
+                    Program.ServerInstance.KickPlayer(player, "Remove all non-ascii characters from your Social Club username.");return false;
+                }
+            }
+            if (Properties.Settings.Default.LimitNickNames)
+            {
+                if (player.DisplayName.Length < 3 || player.DisplayName.Length > 33)
+                {
+                    Program.ServerInstance.KickPlayer(player, "Your nickname has to be between 3 and 33 chars long."); return false;
+                }
             }
             /*if (Properties.Settings.Default.AntiClones) // TODO: FixIt
             {
@@ -812,6 +853,13 @@ namespace AdminTools
             }
             return hashString.ToString();
         }
+    }
+
+    public class IPInfo
+    {
+        public string countryCode { get; internal set; }
+        public List<string> list { get; set; }
+        public object status { get; internal set; }
     }
 
     public enum Privilege
