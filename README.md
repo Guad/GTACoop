@@ -1,4 +1,4 @@
-# [GTA Co-Op](http://www.gtampco-op.cf/) [![Github All Releases](https://img.shields.io/github/downloads/Guad/GTACoop/total.svg?maxAge=2592000)]()
+# [GTA Co-Op](http://www.gtampco-op.cf/) [![Github All Releases](https://img.shields.io/github/downloads/Guad/GTACoop/total.svg)]()
 
 An abandoned (still works) online co-op modification for GTA5. Does not use Rockstar's Online code.
 
