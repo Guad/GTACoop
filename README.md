@@ -8,3 +8,4 @@ If you have questions be sure to check the [wiki](https://github.com/Guad/GTACoo
 Copyright (C) 2016  Guad
 
 [![GitHub contributors](https://img.shields.io/github/contributors/Guad/GTACoop.svg)]()
+[![Join the chat at https://gitter.im/Bluscream/GTACoop](https://badges.gitter.im/Bluscream/GTACoop.svg)](https://gitter.im/Bluscream/GTACoop?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) 
