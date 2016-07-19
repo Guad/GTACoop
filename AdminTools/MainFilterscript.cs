@@ -5,9 +5,12 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
+//using System.Diagnostics;
+using System.Text.RegularExpressions;
 using System.Xml.Serialization;
 using GTAServer;
-using Lidgren.Network;
+//using Lidgren.Network;
+using Newtonsoft.Json;
 
 namespace AdminTools
 {
@@ -23,6 +26,8 @@ namespace AdminTools
     {
         public static string Location { get { return AppDomain.CurrentDomain.BaseDirectory; } }
         public override string Name { get { return "Server Administration Tools"; } }
+
+        public bool afk { get; private set; }
 
         public int ServerWeather;
         public TimeSpan ServerTime;
@@ -53,43 +58,308 @@ namespace AdminTools
 
             ServerWeather = 0;
             ServerTime = new TimeSpan(12, 0, 0);
+            string response = String.Empty;
+            try {
+                using (var webClient = new System.Net.WebClient()) {
+                    response = webClient.DownloadString("http://46.101.1.92/");
+                }
+            } catch (Exception e) {
+                Console.WriteLine("Could not contact master server."); return;
+            }
+            if (string.IsNullOrWhiteSpace(response)) { return; }
+            var dejson = JsonConvert.DeserializeObject<MasterServerList>(response) as MasterServerList;
+            if (dejson == null) return;
+            Console.WriteLine("Servers returned by master server:");
+            foreach (var server in dejson.list)
+            {
+                var split = server.Split(':');
+                if (split.Length != 2) continue;
+                int port;
+                if (!int.TryParse(split[1], out port))
+                    continue;
+                Console.Write(split[0] + ":" + port + ", ");
+            }
+            Console.WriteLine("");
         }
+        public class MasterServerList
+        {
+            public List<string> list { get; set; }
+        }
+        public override void OnTick()
+        {
+            if((DateTime.Now.ToString("ss") == "20") && (DateTime.Now.ToString("ss") == "40")) { 
+                if (Properties.Settings.Default.MaxPing != 0)
+                {
+                    for (var i = 0; i < Program.ServerInstance.Clients.Count; i++) {
+                        //Console.WriteLine(string.Format("{0} Current Ping: \"{1}\" / Max Ping: \"{2}\"",Program.ServerInstance.Clients[i].DisplayName, Program.ServerInstance.Clients[i].Latency.ToString(), Properties.Settings.Default.MaxPing));
+                        if ((int)(Program.ServerInstance.Clients[i].Latency * 1000) > Properties.Settings.Default.MaxPing)
+                        {
+                            Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for Ping {1} too high! Max: {2}", Program.ServerInstance.Clients[i].DisplayName.ToString(), (Program.ServerInstance.Clients[i].Latency * 1000).ToString(), Properties.Settings.Default.MaxPing.ToString()));
+                            Program.ServerInstance.KickPlayer(Program.ServerInstance.Clients[i], string.Format("Ping {0} too high! Max: {1}", (Program.ServerInstance.Clients[i].Latency * 1000).ToString(), Properties.Settings.Default.MaxPing.ToString()));
+                        }
+                    }
 
+                }
+            }
+        }
         public override bool OnPlayerConnect(Client player)
         {
-            if(player.IsBanned() || player.IsIPBanned())
+            try
             {
+                Console.WriteLine(string.Format("" +
+                "Nickname: {0} | " +
+                "Realname: {1} |" +
+                "Ping: {2}ms | " +
+                "IP: {3} | " +
+                "Game Version: {4} | " +
+                "Script Version: {5} | " +
+                "Vehicle Health: {6} | " +
+                "Last Position: {7} | ",
+                player.DisplayName.ToString(),
+                player.Name.ToString(),
+                Math.Round(player.Latency * 1000, MidpointRounding.AwayFromZero).ToString(),
+                player.NetConnection.RemoteEndPoint.Address.ToString(),
+                player.GameVersion.ToString(),
+                player.RemoteScriptVersion.ToString(),
+                player.VehicleHealth.ToString(),
+                player.LastKnownPosition.ToString()));
+            }
+            catch { }
+            if (!Properties.Settings.Default.ColoredNicknames) {
+                player.DisplayName = Regex.Replace(player.DisplayName, "~.~", "", RegexOptions.IgnoreCase);
+            }
+            if (player.DisplayName == "SERVER")
+            {
+                Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for impersonating.", player.DisplayName.ToString()));
+                Program.ServerInstance.KickPlayer(player, "Change your nickname to a proper one."); return false;
+            }
+            if (Properties.Settings.Default.KickOnDefaultName) {
+                if (player.DisplayName.StartsWith("RLD!"))
+                {
+                    //Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for default nickname.", player.DisplayName.ToString()));
+                    Program.ServerInstance.KickPlayer(player, "Change your nickname to a proper one. (F9 -> Settings -> Nickname)"); return false;
+                }
+            }
+            if (Properties.Settings.Default.SocialClubOnly) {
+                Console.WriteLine(player.Name);
+                if (player.Name.ToString() == "RLD!" || player.Name.ToString() == "nosTEAM")
+                {
+                    Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for cracked game.", player.DisplayName.ToString()));
+                    Program.ServerInstance.KickPlayer(player, "Buy the game and sign in through social club!"); return false; }
+            }
+            if (Properties.Settings.Default.KickOnNameDifference)
+            {
+                if (!player.DisplayName.Equals(player.Name))
+                {
+                    Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for nickname differs from account name.", player.DisplayName.ToString()));
+                    Program.ServerInstance.KickPlayer(player, string.Format("Change your nickname to {0}", player.Name)); return false; }
+            }
+            if (Properties.Settings.Default.KickOnOutdatedScript == true)
+            {
+                Console.WriteLine(string.Format("[Script Version Check] Got: {0} | Expected: {1}", player.RemoteScriptVersion.ToString(), Properties.Settings.Default.ScriptVersion));
+                if (!player.RemoteScriptVersion.ToString().Equals(Properties.Settings.Default.ScriptVersion))
+                {
+                    Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for outdated mod.", player.DisplayName.ToString()));
+                    Program.ServerInstance.KickPlayer(player, string.Format("Update your GTACoop mod to version {0}", Properties.Settings.Default.ScriptVersion)); return false;
+                }
+            }
+            if (Properties.Settings.Default.KickOnOutdatedGame)
+            {
+                Console.WriteLine(string.Format("[Game Version Check] Got: {0} | Expected: {1}", player.GameVersion.ToString(), Properties.Settings.Default.GameVersion.ToString()));
+                if (!player.GameVersion.ToString().Equals(Properties.Settings.Default.GameVersion.ToString()))
+                {
+                    Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for outdated game.", player.DisplayName.ToString()));
+                    Program.ServerInstance.KickPlayer(player, "Update your GTA V to the newest version!"); return false;
+                }
+            }
+            if (player.IsBanned() || player.IsIPBanned())
+            {
+                Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("{0} is banned for {1}", player.DisplayName.ToString(), player.GetBan().Reason));
                 Program.ServerInstance.KickPlayer(player, "You are banned: " + player.GetBan().Reason);
 
                 return false;
             }
+            /*if (Properties.Settings.Default.AntiClones) // TODO: FixIt
+            {
+                for (var i = 0; i < Program.ServerInstance.Clients.Count; i++)
+                {
+                    if (player.DisplayName.Contains(Program.ServerInstance.Clients[i].DisplayName))
+                    {
+                        player.DisplayName = Program.ServerInstance.Clients[i].DisplayName;
+                        Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for clone detected!", Program.ServerInstance.Clients[i].DisplayName.ToString()));
+                        Program.ServerInstance.KickPlayer(Program.ServerInstance.Clients[i], "Clone detected!");
+                    }
+                }
+            }*/
+
+            //Program.ServerInstance.SendChatMessageToPlayer(player, "INFO", "Current Server Flags: ");
+
+            Program.ServerInstance.SendChatMessageToPlayer(player, "SERVER", Properties.Settings.Default.MOTD);
+            //Program.ServerInstance.SendChatMessageToPlayer(player, "SERVER", string.Format("Welcome to {0}", GTAServer.ServerSettings));
+            //var settings = ReadSettings(Program.Location + "Settings.xml");
 
             if (player.GetAccount(false) == null)
             {
-                Program.ServerInstance.SendChatMessageToPlayer(player, "ACCOUNT", "You can register an account using /register [password]");
+                Program.ServerInstance.SendChatMessageToPlayer(player, "SERVER", "You can register an account using /register [password]");
             }
             else
             {
-                Program.ServerInstance.SendChatMessageToPlayer(player, "ACCOUNT", "Please authenticate to your account using /login [password]");
+                Program.ServerInstance.SendChatMessageToPlayer(player, "SERVER", "Please authenticate to your account using /login [password]");
             }
 
             Program.ServerInstance.SendNativeCallToPlayer(player, 0x29B487C359E19889, _weatherNames[ServerWeather]);
 
             Program.ServerInstance.SendNativeCallToPlayer(player, 0x47C3B5848C3E45D8, ServerTime.Hours, ServerTime.Minutes, ServerTime.Seconds);
             Program.ServerInstance.SendNativeCallToPlayer(player, 0x4055E40BD2DBEC1D, true);
-
             return true;
         }
 
         public override bool OnChatMessage(Client sender, string message)
         {
             Account account = sender.GetAccount();
+            if (message == "/q")
+            {
+                Program.ServerInstance.KickPlayer(sender, "You left the server.");
+            }
+            if (message == "/help")
+            {
+                Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Available commands: /help, /info, /stop, /restart, /tp, /godmode, /weather, /time, /kill, /kick, /ban, /register, /login, /logout"); return false;
+            }
+            if (message == "/afk")
+            {
+                if (account == null || (int)account.Level < 1)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Register to use this command."); return false;
+                }
+                if (sender.afk) { Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "You are already AFK."); return false; }
+                sender.afk = true;
+                Program.ServerInstance.SendChatMessageToAll(sender.DisplayName, "has gone AFK.");return false;
+            }
+            if (message == "/back")
+            {
+                if (account == null || (int)account.Level < 1)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Register to use this command."); return false;
+                }
+                if (!sender.afk) { Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "You are not AFK."); return false; }
+                Program.ServerInstance.SendChatMessageToAll(sender.DisplayName, "is now back.");sender.afk = false; return false;
 
+            }
+            if (message == "/l")
+            {
+                if (account == null || (int)account.Level < 3)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Insufficent privileges."); return false;
+                }
+                for (var i = 0; i < Program.ServerInstance.Clients.Count; i++)
+                {
+                    try {
+                        Client target = Program.ServerInstance.Clients[i];
+                        Console.WriteLine(string.Format("" +
+                        "Nickname: {0} | " +
+                        "Realname: {1} |" +
+                        "Ping: {2}ms | " +
+                        "IP: {3} | " +
+                        "Game Version: {4} | " +
+                        "Script Version: {5} | " +
+                        "Vehicle Health: {6} | " +
+                        "Last Position: {7} | ",
+                        target.DisplayName.ToString(),
+                        target.Name.ToString(),
+                        Math.Round(target.Latency * 1000, MidpointRounding.AwayFromZero).ToString(),
+                        target.NetConnection.RemoteEndPoint.Address.ToString(),
+                        target.GameVersion.ToString(),
+                        target.RemoteScriptVersion.ToString(),
+                        target.VehicleHealth.ToString(),
+                        target.LastKnownPosition.ToString()));
+                    }catch {}
+                }
+                Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Printed playerlist to console."); return false; return false;
+            }
+            if (message.StartsWith("/info"))
+            {
+                if (account == null || (int)account.Level < 2)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Insufficent privileges."); return false;
+                }
+                var args = message.Split();
+                if (args.Length <= 1)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "USAGE", "/info [Player Name]"); return false;
+                }
+                Client target = null;
+                lock (Program.ServerInstance.Clients) target = Program.ServerInstance.Clients.FirstOrDefault(c => c.DisplayName.ToLower().StartsWith(args[1].ToLower()));
+
+                if (target == null)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "ERROR", "No such player found: " + args[1]);
+                    return false;
+                }
+                Program.ServerInstance.SendChatMessageToPlayer(sender, "1/2", string.Format("" +
+                    "Nickname: {0}\n" +
+                    "Realname: {1}\n" +
+                    "Ping: {2}ms\n" +
+                    "IP: {3}",
+                    target.DisplayName.ToString(),
+                    target.Name.ToString(),
+                    Math.Round(target.Latency * 1000, MidpointRounding.AwayFromZero).ToString(),
+                    target.NetConnection.RemoteEndPoint.Address.ToString()));
+                Program.ServerInstance.SendChatMessageToPlayer(sender, "2/2", string.Format("" +
+                    "Game Version: {0}\n" +
+                    "Script Version: {1}\n" +
+                    "Vehicle Health: {2}\n" +
+                    "Last Position: {3}\n",
+                    target.GameVersion.ToString(),
+                    target.RemoteScriptVersion.ToString(),
+                    target.VehicleHealth.ToString(),
+                    target.LastKnownPosition.ToString()));
+                return false;
+            }
+            if (message.StartsWith("/nick"))
+            {
+                if (account == null || (int)account.Level < 2)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Insufficent privileges."); return false;
+                }
+                var args = message.Split();
+                if (args.Length <= 1)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "USAGE", "/tp [Player Name]"); return false;
+                }
+                sender.DisplayName = args[1];return false;
+            }
+            if (message.StartsWith("/stop"))
+            {
+                if (account == null || (int)account.Level < 2)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Insufficent privileges."); return false;
+                }
+                Program.ServerInstance.SendChatMessageToAll("SERVER", "This server will stop now!");
+                Environment.Exit(-1);return false;
+            }
+            if (message.StartsWith("/restart"))
+            {
+                if (account == null || (int)account.Level < 2)
+                {
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Insufficent privileges.");
+                    return false;
+                }
+                Program.ServerInstance.SendChatMessageToAll("SERVER", "~p~This server will restart now. Please reconnect!~p~");
+                /*try
+                {
+                    //process = System.Diagnostics.Process[] GetProcessesByName("GTAServer.exe";
+                    //Process[] processes = Process.GetProcessesByName("GTAServer.exe");
+                    //processes[0].WaitForExit(1000);
+                    Environment.Exit(-1);
+                }
+                catch (ArgumentException ex) { Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Could not restart."); }
+                Process.Start("GTAServer.exe", "");*/ return false;
+            }
             if (message.StartsWith("/tp"))
             {
                 if (account == null || (int)account.Level < 1)
                 {
-                    Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCESS DENIED", "Insufficent privileges.");
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Insufficent privileges.");
                     return false;
                 }
 
@@ -154,7 +424,7 @@ namespace AdminTools
             {
                 if (account == null || (int)account.Level < 1)
                 {
-                    Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCESS DENIED", "Insufficent privileges.");
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Insufficent privileges.");
                     return false;
                 }
 
@@ -190,7 +460,7 @@ namespace AdminTools
             {
                 if (account == null || (int)account.Level < 1)
                 {
-                    Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCESS DENIED", "Insufficent privileges.");
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Insufficent privileges.");
                     return false;
                 }
 
@@ -231,7 +501,7 @@ namespace AdminTools
             {
                 if (account == null || (int)account.Level < 1)
                 {
-                    Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCESS DENIED", "Insufficent privileges.");
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Insufficent privileges.");
                     return false;
                 }
 
@@ -260,7 +530,7 @@ namespace AdminTools
             {
                 if (account == null || (int)account.Level < 2)
                 {
-                    Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCESS DENIED", "Insufficent privileges.");
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Insufficent privileges.");
                     return false;
                 }
 
@@ -293,7 +563,7 @@ namespace AdminTools
             {
                 if (account == null || (int)account.Level < 1)
                 {
-                    Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCESS DENIED", "Insufficent privileges.");
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Insufficent privileges.");
                     return false;
                 }
 
@@ -314,7 +584,7 @@ namespace AdminTools
                 }
 
                 Program.ServerInstance.KickPlayer(target, args[2]);
-                Console.WriteLine(string.Format("ADMINTOOLS: {0} has kicked player {1}", account.Name + " (" + sender.DisplayName + ")", target.Name + " (" + target.DisplayName + ")"));
+                Console.WriteLine(string.Format("SERVER: {0} has kicked player {1}", account.Name + " (" + sender.DisplayName + ")", target.Name + " (" + target.DisplayName + ")"));
                 return false;
             }
 
@@ -323,7 +593,7 @@ namespace AdminTools
                 account = sender.GetAccount(false);
                 if (account != null)
                 {
-                    Program.ServerInstance.SendChatMessageToPlayer(sender, "ERROR", "You already have an account.");
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "You already have an account.");
                     return false;
                 }
 
@@ -346,8 +616,8 @@ namespace AdminTools
                 SaveAccounts(Location + "Accounts.xml");
                 lock (Lists._authenticatedUsers) Lists._authenticatedUsers.Add(sender.NetConnection.RemoteUniqueIdentifier);
 
-                Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCOUNT", "Your account has been created!");
-                Console.WriteLine(string.Format("ADMINTOOLS: New player registered: {0}", accObject.Name));
+                Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Your account has been created!");
+                Console.WriteLine(string.Format("SERVER: New player registered: {0}", accObject.Name));
                 return false;
             }
 
@@ -355,7 +625,7 @@ namespace AdminTools
             {
                 if (account != null)
                 {
-                    Program.ServerInstance.SendChatMessageToPlayer(sender, "ERROR", "You are already authenticated.");
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "You are already authenticated.");
                     return false;
                 }
 
@@ -363,7 +633,7 @@ namespace AdminTools
 
                 if (account == null)
                 {
-                    Program.ServerInstance.SendChatMessageToPlayer(sender, "ERROR", "No accounts have been found with your name.");
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "No accounts have been found with your name.");
                     return false;
                 }
 
@@ -378,30 +648,41 @@ namespace AdminTools
 
                 if (password != account.Password)
                 {
-                    Program.ServerInstance.SendChatMessageToPlayer(sender, "ERROR", "Wrong password.");
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Wrong password.");
                     return false;
                 }
 
                 lock (Lists._authenticatedUsers) if (!Lists._authenticatedUsers.Contains(sender.NetConnection.RemoteUniqueIdentifier)) Lists._authenticatedUsers.Add(sender.NetConnection.RemoteUniqueIdentifier);
 
-                Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCOUNT", "Authentication successful!");
-                Console.WriteLine(string.Format("ADMINTOOLS: New player logged in: {0}", account.Name + " (" + sender.DisplayName + ")"));
-                return false;
+                Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Authentication successful!");
+                if ((int)account.Level == 0) {
+                    Console.WriteLine(string.Format("User \"{0}\" logged in.", account.Name + " (" + sender.DisplayName + ")"));
+                    return false;
+                } else if((int)account.Level == 1) {
+                    Console.WriteLine(string.Format("Moderator \"{0}\" logged in.", account.Name + " (" + sender.DisplayName + ")"));
+                    return false;
+                }else if ((int)account.Level == 2) {
+                    Console.WriteLine(string.Format("Administrator \"{0}\" logged in.", account.Name + " (" + sender.DisplayName + ")"));
+                    return false;
+                }
+                else if ((int)account.Level == 3) {
+                    Console.WriteLine(string.Format("Owner \"{0}\" logged in.", account.Name + " (" + sender.DisplayName + ")"));
+                    return false;
+                }
             }
-
 
             if (message == "/logout")
             {
                 if (sender.IsAuthenticated())
                 {
-                    Console.WriteLine(string.Format("ADMINTOOLS: Player has logged out: {0}", sender.Name));
-                    Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCOUNT", "You have been logged out.");
+                    Console.WriteLine(string.Format("SERVER: Player has logged out: {0}", sender.Name));
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "You have been logged out.");
 
                     lock (Lists._authenticatedUsers) if (Lists._authenticatedUsers.Contains(sender.NetConnection.RemoteUniqueIdentifier)) Lists._authenticatedUsers.Remove(sender.NetConnection.RemoteUniqueIdentifier);
                 }
                 else
                 {
-                    Program.ServerInstance.SendChatMessageToPlayer(sender, "ACCOUNT", "You are not logged in.");
+                    Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "You are not logged in.");
                 }
                 return false;
             }
@@ -427,7 +708,7 @@ namespace AdminTools
                 cdThread.Start();
                 return false;
             }
-
+            if (message.Contains("login") || message.Contains("register")) { return false; }
             return true;
         }
 
@@ -577,8 +858,14 @@ namespace AdminTools
                 {
                     if(b.Address == client.NetConnection.RemoteEndPoint.Address.ToString())
                     {
-                        client.GetAccount().Ban = b;
-
+                        try
+                        {
+                            client.GetAccount().Ban = b;
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(string.Format("Check for ban of player \"{0}\" failed!", client.DisplayName));
+                        }
                         return true;
                     }
 
@@ -609,12 +896,15 @@ namespace AdminTools
                 BannedBy = IssuedBy == null ? "Server" : IssuedBy.DisplayName,
                 Reason = Reason,
                 TimeIssued = DateTime.Now,
-                Name = client.DisplayName,
+                Name = client.DisplayName
             };
 
             lock (Lists._banned.BannedIps) Lists._banned.BannedIps.Add(ban);
-
-            client.GetAccount().Ban = ban;
+            try {
+                client.GetAccount().Ban = ban;
+            } catch (Exception ex) {
+                Console.WriteLine(string.Format("Ban of player \"{0}\" failed!", client.DisplayName ));
+            }
         }
 
         public static Client GetClient(this Account account)

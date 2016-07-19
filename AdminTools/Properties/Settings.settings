@@ -1,0 +1,42 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="AdminTools.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="KickOnDefaultName" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="KickOnNameDifference" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="SocialClubOnly" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="MOTD" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Welcome to this GTA 5 Co-op Server! Max Ping: 250</Value>
+    </Setting>
+    <Setting Name="MaxPing" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">250</Value>
+    </Setting>
+    <Setting Name="AntiClones" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="KickOnOutdatedScript" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="KickOnOutdatedGame" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="ScriptVersion" Type="System.String" Scope="User">
+      <Value Profile="(Default)">VERSION_0_9</Value>
+    </Setting>
+    <Setting Name="GameVersion" Type="System.String" Scope="User">
+      <Value Profile="(Default)">26</Value>
+    </Setting>
+    <Setting Name="ColoredNicknames" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="ServerName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">[~h~EU~n~/~b~G~r~E~y~R~n~] Blu's World (LSPD:FR|Roleplay|Fun)</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
