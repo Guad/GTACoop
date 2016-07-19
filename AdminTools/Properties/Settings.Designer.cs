@@ -49,7 +49,7 @@ namespace AdminTools.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool SocialClubOnly {
             get {
                 return ((bool)(this["SocialClubOnly"]));
@@ -61,7 +61,7 @@ namespace AdminTools.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Welcome to this GTA 5 Co-op Server!")]
+        [global::System.Configuration.DefaultSettingValueAttribute("Welcome to this GTA 5 Co-op Server! Max Ping: 250")]
         public string MOTD {
             get {
                 return ((string)(this["MOTD"]));
@@ -80,6 +80,90 @@ namespace AdminTools.Properties {
             }
             set {
                 this["MaxPing"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool AntiClones {
+            get {
+                return ((bool)(this["AntiClones"]));
+            }
+            set {
+                this["AntiClones"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool KickOnOutdatedScript {
+            get {
+                return ((bool)(this["KickOnOutdatedScript"]));
+            }
+            set {
+                this["KickOnOutdatedScript"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool KickOnOutdatedGame {
+            get {
+                return ((bool)(this["KickOnOutdatedGame"]));
+            }
+            set {
+                this["KickOnOutdatedGame"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("VERSION_0_9")]
+        public string ScriptVersion {
+            get {
+                return ((string)(this["ScriptVersion"]));
+            }
+            set {
+                this["ScriptVersion"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("26")]
+        public string GameVersion {
+            get {
+                return ((string)(this["GameVersion"]));
+            }
+            set {
+                this["GameVersion"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ColoredNicknames {
+            get {
+                return ((bool)(this["ColoredNicknames"]));
+            }
+            set {
+                this["ColoredNicknames"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("[~h~EU~n~/~b~G~r~E~y~R~n~] Blu\'s World (LSPD:FR|Roleplay|Fun)")]
+        public string ServerName {
+            get {
+                return ((string)(this["ServerName"]));
+            }
+            set {
+                this["ServerName"] = value;
             }
         }
     }
