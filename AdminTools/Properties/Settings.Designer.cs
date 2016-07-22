@@ -43,7 +43,7 @@ namespace AdminTools.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool SocialClubOnly {
             get {
                 return ((bool)(this["SocialClubOnly"]));
@@ -88,7 +88,7 @@ namespace AdminTools.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool KickOnOutdatedGame {
             get {
                 return ((bool)(this["KickOnOutdatedGame"]));
@@ -97,7 +97,7 @@ namespace AdminTools.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("VERSION_0_9")]
+        [global::System.Configuration.DefaultSettingValueAttribute("VERSION_0_9_1")]
         public string ScriptVersion {
             get {
                 return ((string)(this["ScriptVersion"]));

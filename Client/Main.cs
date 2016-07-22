@@ -1028,6 +1028,24 @@ namespace GTACoOp
                                 if (data != null && !string.IsNullOrEmpty(data.Message))
                                 {
                                     var sender = string.IsNullOrEmpty(data.Sender) ? "SERVER" : data.Sender;
+                                    if (data.Message.ToString().Equals("Please authenticate to your account using /login [password]"))
+                                    {
+                                        if (!String.IsNullOrWhiteSpace(PlayerSettings.AutoLogin))
+                                        {
+                                            var obj = new ChatData()
+                                            {
+                                                Message = "/login " + PlayerSettings.AutoLogin,
+                                            };
+                                            var Data = SerializeBinary(obj);
+
+                                            var Msg = _client.CreateMessage();
+                                            Msg.Write((int)PacketType.ChatData);
+                                            Msg.Write(Data.Length);
+                                            Msg.Write(Data);
+                                            _client.SendMessage(Msg, NetDeliveryMethod.ReliableOrdered, 0);
+                                            return;
+                                        }
+                                    }
                                     _chat.AddMessage(sender, data.Message);
                                     /*lock (_threadJumping)
                                     {
@@ -1535,7 +1553,6 @@ namespace GTACoOp
             {
                 default:
                     return NativeType.Unknown;
-                    break;
                 case 0xD49F9B0955C367DE:
                     return NativeType.ReturnsEntityNeedsModel2;
                 case 0x7DD959874C1FD534:
@@ -1549,13 +1566,11 @@ namespace GTACoOp
                 case 0x9B62392B474F44A0:
                 case 0x63C6CCA8E68AE8C8:
                     return NativeType.ReturnsEntity;
-                    break;
                 case 0x46818D79B1F7499A:
                 case 0x5CDE92C702A8FCE7:
                 case 0xBE339365C863BD36:
                 case 0x5A039BB0BCA604B6:
                     return NativeType.ReturnsBlip;
-                    break;
             }
         }
 

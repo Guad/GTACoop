@@ -83,6 +83,13 @@ namespace AdminTools
         {
             public List<string> list { get; set; }
         }
+        public int readableVersion(ScriptVersion version)
+        {
+            string Version = version.ToString();
+            Version = Regex.Replace(Version, "VERSION_", "", RegexOptions.IgnoreCase);
+            Version = Regex.Replace(Version, "_", "", RegexOptions.IgnoreCase);
+            return Int32.Parse(Version);
+        }
         public override void OnTick()
         {
             if((DateTime.Now.ToString("ss") == "20") && (DateTime.Now.ToString("ss") == "40")) { 
@@ -157,12 +164,15 @@ namespace AdminTools
             if (Properties.Settings.Default.KickOnOutdatedScript == true)
             {
                 //Console.WriteLine(string.Format("[Script Version Check] Got: {0} | Expected: {1}", player.RemoteScriptVersion.ToString(), Properties.Settings.Default.ScriptVersion));
+                //Console.WriteLine(readableVersion(player.RemoteScriptVersion).ToString());
+                //Console.WriteLine(Int32.Parse(Properties.Settings.Default.ScriptVersion));
+                //if (readableVersion(player.RemoteScriptVersion) < Int32.Parse(Properties.Settings.Default.ScriptVersion))
                 if (!player.RemoteScriptVersion.ToString().Equals(Properties.Settings.Default.ScriptVersion))
                 {
                     Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for outdated mod.", player.DisplayName.ToString()));
                     string version = Regex.Replace(Properties.Settings.Default.ScriptVersion, "VERSION_", "", RegexOptions.IgnoreCase);
                     version = Regex.Replace(version, "_", ".", RegexOptions.IgnoreCase);
-                    Program.ServerInstance.KickPlayer(player, string.Format("Update your GTACoop mod to version {0} from gta5-mods.com", version)); return false;
+                    Program.ServerInstance.KickPlayer(player, string.Format("Update your GTACoop to v{0} from bit.ly/gtacoop", version)); return false;
                 }
             }
             if (Properties.Settings.Default.KickOnOutdatedGame)

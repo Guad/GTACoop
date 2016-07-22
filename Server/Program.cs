@@ -27,7 +27,23 @@ namespace GTAServer
         }
         static void Main(string[] args)
         {
-            var settings = ReadSettings(Program.Location + "Settings.xml");
+            System.Diagnostics.Process cmd = new System.Diagnostics.Process();
+            cmd.StartInfo.FileName = "cmd.exe";
+            cmd.StartInfo.RedirectStandardInput = true;
+            cmd.StartInfo.RedirectStandardOutput = true;
+            cmd.StartInfo.CreateNoWindow = true;
+            cmd.StartInfo.UseShellExecute = false;
+            cmd.Start();
+            cmd.StandardInput.WriteLine("chcp 65001");
+            cmd.StandardInput.Flush();
+            cmd.StandardInput.Close();
+            Console.WriteLine(cmd.StandardOutput.ReadToEnd());
+            ServerSettings settings;
+            if(args.Length > 0) {
+                settings = ReadSettings(Program.Location + args[0]);
+            }else {
+                settings = ReadSettings(Program.Location + "Settings.xml");
+            }
             ServerInstance = new GameServer(settings.Port, settings.Name, settings.Gamemode);
             Console.WriteLine("Name: " + settings.Name);
             Console.Write("IPs: ");

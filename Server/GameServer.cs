@@ -121,7 +121,7 @@ namespace GTAServer
         public bool AllowDisplayNames { get; set; }
         public bool AllowOutdatedClients { get; set; }
 
-        public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_9;
+        public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_9_1;
 
         private ServerScript _gamemode { get; set; }
 
@@ -352,8 +352,8 @@ namespace GTAServer
 
                         if ((ScriptVersion)connReq.ScriptVersion == ScriptVersion.Unknown)
                         {
-                            client.NetConnection.Deny("Unknown version. Please update your client from gt5-mods.com");
-                            LogToConsole(3, true, "Network", "Client tried to connect with unknown scriptversion "+connReq.ScriptVersion.ToString());
+                            client.NetConnection.Deny("Unknown version. Please update your client from bit.ly/gtacoop");
+                            LogToConsole(3, true, "Network", "Client "+ connReq.DisplayName +" tried to connect with unknown scriptversion "+connReq.ScriptVersion.ToString());
                             Server.Recycle(msg);
                             continue;
                         }
@@ -407,7 +407,6 @@ namespace GTAServer
                         else
                         {
                             client.NetConnection.Deny("No available player slots.");
-                            Console.WriteLine("Player connection refused: server full.");
                             LogToConsole(4, false, "Network", "Player connection refused: server full with "+ clients.ToString() + "of" + MaxPlayers +".");
                             if (_gamemode != null) _gamemode.OnConnectionRefused(client, "Server is full");
                             if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(client, "Server is full"));
@@ -424,7 +423,7 @@ namespace GTAServer
                             if (_filterscripts != null) _filterscripts.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerConnect(client));
                             Console.Write("New player connected: ");
                             if (sendMsg)
-                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~n~~h~ connected.");
+                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ connected.");
 
                             try{
                                 Console.Write("Nickname: " + client.DisplayName.ToString() + " | ");
@@ -467,25 +466,25 @@ namespace GTAServer
                                         {
                                             if (!client.BanReason.Equals(""))
                                             {
-                                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~n~~h~ has been banned for " + client.BanReason);
+                                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ has been banned for " + client.BanReason);
                                             }
                                             else
                                             {
-                                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~n~~h~ has been banned.");
+                                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ has been banned.");
                                             }
                                         } else if (client.Kicked)
                                         {
                                             if (!client.KickReason.Equals(""))
                                             {
-                                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~n~~h~ was kicked for " + client.KickReason);
+                                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ was kicked for " + client.KickReason);
                                             }
                                             else
                                             {
-                                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~n~~h~ has been kicked.");
+                                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ has been kicked.");
                                             }
                                         }
                                         else{
-                                            SendNotificationToAll("~h~" + client.DisplayName + "~w~~n~~h~ disconnected.");
+                                            SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ disconnected.");
                                         }
 
                                     var dcObj = new PlayerDisconnect()
