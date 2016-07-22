@@ -10,7 +10,8 @@ using System.Text.RegularExpressions;
 using System.Xml.Serialization;
 using GTAServer;
 //using Lidgren.Network;
-using Newtonsoft.Json;
+using Console = Colorful.Console;
+using System.Drawing;
 
 namespace AdminTools
 {
@@ -20,15 +21,30 @@ namespace AdminTools
         internal static Banlist _banned = new Banlist();
         internal static List<long> _authenticatedUsers = new List<long>();
     }
-
     [Serializable]
     public class TestServerScript : ServerScript
     {
+        static void LogToConsole(int flag, bool debug, string module,string message)
+        {
+            if (module == null || module == "") { module = "AdminTools"; }
+            if (flag == 1) {
+                Console.WriteLine("[" + DateTime.Now + "] (DEBUG) " + module.ToUpper() + ": " + message, Color.Cyan);
+            } else if(flag == 2) {
+                Console.WriteLine("[" + DateTime.Now + "] (SUCCESS) " + module.ToUpper() + ": " + message, Color.Green);
+            } else if(flag == 3) {
+                Console.WriteLine("[" + DateTime.Now + "] (WARNING) " + module.ToUpper() + ": " + message, Color.Orange);
+            } else if(flag == 4) {
+                Console.WriteLine("[" + DateTime.Now + "] (ERROR) " + module.ToUpper() + ": " + message, Color.Red);
+            }else {
+                Console.WriteLine("[" + DateTime.Now + "] " + module.ToUpper() + ": " + message);
+            }
+        }
         public static string Location { get { return AppDomain.CurrentDomain.BaseDirectory; } }
         public override string Name { get { return "Server Administration Tools"; } }
+        public int Version { get { return 1;  } }
 
         public bool afk { get; private set; }
-
+        //public AdminSettings Settings = ReadSettings(Program.Location + "/filterscripts/AdminTools.xml");
         public int ServerWeather;
         public TimeSpan ServerTime;
 
@@ -52,34 +68,16 @@ namespace AdminTools
 
         public override void Start()
         {
+            //Console.WriteLine("\x1b[31mRed\x1b[0;37m"); //https://en.wikipedia.org/wiki/ANSI_escape_code
             LoadAccounts(Location + "Accounts.xml");
+            LogToConsole(2, false, null, "Accounts loaded.");
             LoadBanlist(Location + "Banlist.xml");
-            Console.WriteLine("Accounts have been loaded.");
+            LogToConsole(2, false, null, "Bans loaded.");
+            //Properties.Settings.Default.MaxPing
+            //Settings.MaxPing
 
             ServerWeather = 0;
             ServerTime = new TimeSpan(12, 0, 0);
-            string response = String.Empty;
-            try {
-                using (var webClient = new System.Net.WebClient()) {
-                    response = webClient.DownloadString("http://46.101.1.92/");
-                }
-            } catch (Exception e) {
-                Console.WriteLine("Could not contact master server."); return;
-            }
-            if (string.IsNullOrWhiteSpace(response)) { return; }
-            var dejson = JsonConvert.DeserializeObject<MasterServerList>(response) as MasterServerList;
-            if (dejson == null) return;
-            Console.WriteLine("Servers returned by master server:");
-            foreach (var server in dejson.list)
-            {
-                var split = server.Split(':');
-                if (split.Length != 2) continue;
-                int port;
-                if (!int.TryParse(split[1], out port))
-                    continue;
-                Console.Write(split[0] + ":" + port + ", ");
-            }
-            Console.WriteLine("");
         }
         public class MasterServerList
         {
@@ -91,7 +89,7 @@ namespace AdminTools
                 if (Properties.Settings.Default.MaxPing != 0)
                 {
                     for (var i = 0; i < Program.ServerInstance.Clients.Count; i++) {
-                        //Console.WriteLine(string.Format("{0} Current Ping: \"{1}\" / Max Ping: \"{2}\"",Program.ServerInstance.Clients[i].DisplayName, Program.ServerInstance.Clients[i].Latency.ToString(), Properties.Settings.Default.MaxPing));
+                        Console.WriteLine(string.Format("{0} Current Ping: \"{1}\" / Max Ping: \"{2}\"",Program.ServerInstance.Clients[i].DisplayName, Program.ServerInstance.Clients[i].Latency.ToString(), Properties.Settings.Default.MaxPing));
                         if ((int)(Program.ServerInstance.Clients[i].Latency * 1000) > Properties.Settings.Default.MaxPing)
                         {
                             Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for Ping {1} too high! Max: {2}", Program.ServerInstance.Clients[i].DisplayName.ToString(), (Program.ServerInstance.Clients[i].Latency * 1000).ToString(), Properties.Settings.Default.MaxPing.ToString()));
@@ -104,46 +102,42 @@ namespace AdminTools
         }
         public override bool OnPlayerConnect(Client player)
         {
-            try
-            {
-                Console.Write("Nickname: " + player.DisplayName.ToString() + " | ");
-                Console.Write("Realname: " + player.Name.ToString() + " | ");
-                Console.Write("Ping: " + Math.Round(player.Latency * 1000, MidpointRounding.AwayFromZero).ToString() + "ms | ");
-                Console.Write("IP: " + player.NetConnection.RemoteEndPoint.Address.ToString() + " | ");
-                Console.Write("Game Version: " + player.GameVersion.ToString() + " | ");
-                Console.Write("Script Version: " + player.RemoteScriptVersion.ToString() + " | ");
-                Console.Write("Vehicle Health: " + player.VehicleHealth.ToString() + " | ");
-                Console.Write("Last Position: " + player.LastKnownPosition.ToString() + " | ");
-                Console.Write("\n");
-            }
-            catch (Exception e) { }
-            string response = String.Empty;
-            try
-            {
-                using (var webClient = new System.Net.WebClient())
-                {
-                    response = webClient.DownloadString("http://ip-api.com/json/"+player.NetConnection.RemoteEndPoint.Address);
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Could not contact IP API.");
-            }
-            if (!string.IsNullOrWhiteSpace(response)) {
-                IPInfo dejson = JsonConvert.DeserializeObject<IPInfo>(response);
-                if (dejson.list != null)
-                {
-                    if (dejson.status.Equals("success"))
-                    {
-                        string country = dejson.countryCode;
-                        Console.WriteLine("Country Code: "+country);
-                    }else
-                    {
-                        Console.WriteLine("Could not query IP infos from API.");
-                    }
-                }
+            //try
+            //{
+            //    Console.Write("Nickname: " + player.DisplayName.ToString() + " | ");
+            //    Console.Write("Realname: " + player.Name.ToString() + " | ");
+            //    Console.Write("IP: " + player.NetConnection.RemoteEndPoint.Address.ToString() + " | ");
+            //    Console.Write("Game Version: " + player.GameVersion.ToString() + " | ");
+            //    Console.Write("Script Version: " + player.RemoteScriptVersion.ToString() + "\n");
+            //}
+            //catch (Exception e) { }
+            //string response = String.Empty;
+            //try
+            //{
+            //    using (var webClient = new System.Net.WebClient())
+            //    {
+            //        response = webClient.DownloadString("http://ip-api.com/json/"+player.NetConnection.RemoteEndPoint.Address);
+            //    }
+            //}
+            //catch (Exception e)
+            //{
+            //    Console.WriteLine("Could not contact IP API.");
+            //}
+            //if (!string.IsNullOrWhiteSpace(response)) {
+            //    IPInfo dejson = JsonConvert.DeserializeObject<IPInfo>(response);
+            //    if (dejson.list != null)
+            //    {
+            //        if (dejson.status.Equals("success"))
+            //        {
+            //            string country = dejson.countryCode;
+            //            Console.WriteLine("Country Code: "+country);
+            //        }else
+            //        {
+            //            Console.WriteLine("Could not query IP infos from API.");
+            //        }
+            //    }
 
-            }
+            //}
 
             if (!Properties.Settings.Default.ColoredNicknames) {
                 player.DisplayName = Regex.Replace(player.DisplayName, "~.~", "", RegexOptions.IgnoreCase);
@@ -154,15 +148,35 @@ namespace AdminTools
                 Program.ServerInstance.KickPlayer(player, "Change your nickname to a proper one."); return false;
             }
             if (Properties.Settings.Default.KickOnDefaultName) {
-                if (player.DisplayName.StartsWith("RLD!") || player.DisplayName.StartsWith("Player") || player.DisplayName.StartsWith("nosTEAM"))
+                if (player.DisplayName.StartsWith("RLD!") || player.DisplayName.StartsWith("Player") || player.DisplayName.StartsWith("nosTEAM") || player.DisplayName.ToString() == "3dmgame1")
                 {
                     //Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for default nickname.", player.DisplayName.ToString()));
-                    Program.ServerInstance.KickPlayer(player, "Change your nickname to a proper one. (F9 -> Settings -> Nickname)"); return false;
+                    Program.ServerInstance.KickPlayer(player, "Change your nickname! (F9->Settings->Nickname)"); return false;
+                }
+            }
+            if (Properties.Settings.Default.KickOnOutdatedScript == true)
+            {
+                //Console.WriteLine(string.Format("[Script Version Check] Got: {0} | Expected: {1}", player.RemoteScriptVersion.ToString(), Properties.Settings.Default.ScriptVersion));
+                if (!player.RemoteScriptVersion.ToString().Equals(Properties.Settings.Default.ScriptVersion))
+                {
+                    Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for outdated mod.", player.DisplayName.ToString()));
+                    string version = Regex.Replace(Properties.Settings.Default.ScriptVersion, "VERSION_", "", RegexOptions.IgnoreCase);
+                    version = Regex.Replace(version, "_", ".", RegexOptions.IgnoreCase);
+                    Program.ServerInstance.KickPlayer(player, string.Format("Update your GTACoop mod to version {0} from gta5-mods.com", version)); return false;
+                }
+            }
+            if (Properties.Settings.Default.KickOnOutdatedGame)
+            {
+                //Console.WriteLine(string.Format("[Game Version Check] Got: {0} | Expected: {1}", player.GameVersion.ToString(), Properties.Settings.Default.GameVersion.ToString()));
+                if (player.GameVersion < Properties.Settings.Default.GameVersion)
+                {
+                    Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for outdated game.", player.DisplayName.ToString()));
+                    Program.ServerInstance.KickPlayer(player, "Update your GTA V to the newest version!"); return false;
                 }
             }
             if (Properties.Settings.Default.SocialClubOnly) {
-                Console.WriteLine(player.Name);
-                if (player.Name.ToString() == "RLD!" || player.Name.ToString() == "nosTEAM" || player.Name.ToString() == "Player")
+                // Console.WriteLine(player.Name);
+                if (player.Name.ToString() == "RLD!" || player.Name.ToString() == "nosTEAM" || player.Name.ToString() == "Player" || player.Name.ToString() == "3dmgame1")
                 {
                     Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for cracked game.", player.DisplayName.ToString()));
                     Program.ServerInstance.KickPlayer(player, "Buy the game and sign in through social club!"); return false; }
@@ -174,28 +188,10 @@ namespace AdminTools
                     Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for nickname differs from account name.", player.DisplayName.ToString()));
                     Program.ServerInstance.KickPlayer(player, string.Format("Change your nickname to {0}", player.Name)); return false; }
             }
-            if (Properties.Settings.Default.KickOnOutdatedScript == true)
-            {
-                Console.WriteLine(string.Format("[Script Version Check] Got: {0} | Expected: {1}", player.RemoteScriptVersion.ToString(), Properties.Settings.Default.ScriptVersion));
-                if (!player.RemoteScriptVersion.ToString().Equals(Properties.Settings.Default.ScriptVersion))
-                {
-                    Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for outdated mod.", player.DisplayName.ToString()));
-                    Program.ServerInstance.KickPlayer(player, string.Format("Update your GTACoop mod to version {0}", Properties.Settings.Default.ScriptVersion)); return false;
-                }
-            }
-            if (Properties.Settings.Default.KickOnOutdatedGame)
-            {
-                Console.WriteLine(string.Format("[Game Version Check] Got: {0} | Expected: {1}", player.GameVersion.ToString(), Properties.Settings.Default.GameVersion.ToString()));
-                if (!player.GameVersion.ToString().Equals(Properties.Settings.Default.GameVersion.ToString()))
-                {
-                    Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for outdated game.", player.DisplayName.ToString()));
-                    Program.ServerInstance.KickPlayer(player, "Update your GTA V to the newest version!"); return false;
-                }
-            }
             if (player.IsBanned() || player.IsIPBanned())
             {
                 Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("{0} is banned for {1}", player.DisplayName.ToString(), player.GetBan().Reason));
-                Program.ServerInstance.KickPlayer(player, "You are banned: " + player.GetBan().Reason); return false;
+                Program.ServerInstance.KickPlayer(player, "You are banned: " + player.GetBan().Reason, true); return false;
             }
             if (Properties.Settings.Default.OnlyAsciiNickName)
             {
@@ -215,9 +211,9 @@ namespace AdminTools
             }
             if (Properties.Settings.Default.LimitNickNames)
             {
-                if (player.DisplayName.Length < 3 || player.DisplayName.Length > 33)
+                if (player.DisplayName.Length < 3 || player.DisplayName.Length > 100 || Regex.Replace(player.DisplayName, "~.~", "", RegexOptions.IgnoreCase).Length > 15)
                 {
-                    Program.ServerInstance.KickPlayer(player, "Your nickname has to be between 3 and 33 chars long."); return false;
+                    Program.ServerInstance.KickPlayer(player, "Your nickname has to be between 3 and 15 chars long. (Max 100 with colors)"); return false;
                 }
             }
             /*if (Properties.Settings.Default.AntiClones) // TODO: FixIt
@@ -315,7 +311,7 @@ namespace AdminTools
                         target.LastKnownPosition.ToString()));
                     }catch {}
                 }
-                Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Printed playerlist to console."); return false; return false;
+                Program.ServerInstance.SendChatMessageToPlayer(sender, "SERVER", "Printed playerlist to console."); return false;
             }
             if (message.StartsWith("/info"))
             {
@@ -749,7 +745,7 @@ namespace AdminTools
                 cdThread.Start();
                 return false;
             }
-            if (message.Contains("login") || message.Contains("register")) { return false; }
+            if (message.Contains("login") || message.Contains("register") || message.Equals("urtle")) { return false; }
             return true;
         }
 
@@ -769,6 +765,26 @@ namespace AdminTools
             Program.ServerInstance.SendNativeCallToPlayer(player, 0x47C3B5848C3E45D8, ServerTime.Hours, ServerTime.Minutes, ServerTime.Seconds);
             Program.ServerInstance.SendNativeCallToPlayer(player, 0x4055E40BD2DBEC1D, true);
         }
+
+        /*static AdminSettings ReadSettings(string path)
+        {
+            var ser = new XmlSerializer(typeof(AdminSettings));
+
+            AdminSettings settings = null;
+
+            if (File.Exists(path))
+            {
+                using (var stream = File.OpenRead(path)) settings = (AdminSettings)ser.Deserialize(stream);
+
+                using (var stream = new FileStream(path, File.Exists(path) ? FileMode.Truncate : FileMode.Create, FileAccess.ReadWrite)) ser.Serialize(stream, settings);
+            }
+            else
+            {
+                using (var stream = File.OpenWrite(path)) ser.Serialize(stream, settings = new AdminSettings());
+            }
+
+            return settings;
+        }*/
 
         private void LoadAccounts(string path)
         {
@@ -853,6 +869,37 @@ namespace AdminTools
             }
             return hashString.ToString();
         }
+        public void Infoscreen()
+        {
+            while (true) {
+                PrintServerInfo();
+                PrintPlayerInfo();
+                Thread.Sleep(60000);
+            }
+        }
+        public void PrintServerInfo()
+        {
+            string name = Program.ServerInstance.Name;
+        }
+        public void PrintPlayerInfo()
+        {
+
+        }
+        public string SanitizeString(string input)
+        {
+            input = Regex.Replace(input, "~.~", "", RegexOptions.IgnoreCase);
+            return input;
+        }
+        public string FormatString(string input)
+        {
+            input = Regex.Replace(input, "~b~", "<unicode for blue>", RegexOptions.IgnoreCase);
+            input = Regex.Replace(input, "~r~", "<Unicode for reset>", RegexOptions.IgnoreCase);
+            return input;
+        }
+    }
+
+    public class AdminSettings
+    {
     }
 
     public class IPInfo
@@ -951,7 +998,7 @@ namespace AdminTools
             try {
                 client.GetAccount().Ban = ban;
             } catch (Exception ex) {
-                Console.WriteLine(string.Format("Ban of player \"{0}\" failed!", client.DisplayName ));
+                Console.WriteLine(string.Format("Ban of player \"{0}\" failed: {1}", client.DisplayName, ex.ToString() ));
             }
         }
 

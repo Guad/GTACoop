@@ -46,6 +46,7 @@ namespace GTACoOp
         private bool _lastDead;
         private bool _wasTyping;
         private bool _isTrafficEnabled;
+        public bool DEBUG = true;
 
         private DebugWindow _debug;
 

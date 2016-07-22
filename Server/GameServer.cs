@@ -28,6 +28,11 @@ namespace GTAServer
         public int VehicleHealth { get; internal set; }
         public bool IsInVehicle { get; internal set; }
         public bool afk { get; set; }
+        public bool Banned { get; set; }
+        public string BanReason { get; set; }
+        public bool Kicked { get; set; }
+        public string KickReason { get; set; }
+        public bool Silent { get; set; }
 
         public Client(NetConnection nc)
         {
@@ -90,7 +95,6 @@ namespace GTAServer
             MaxPlayers = 32;
             Port = port;
             GamemodeName = gamemodeName;
-
             Name = name;
             SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
             NetPeerConfiguration config = new NetPeerConfiguration("GTAVOnlineRaces");
@@ -115,11 +119,17 @@ namespace GTAServer
         public bool AnnounceSelf { get; set; }
 
         public bool AllowDisplayNames { get; set; }
+        public bool AllowOutdatedClients { get; set; }
 
         public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_9;
 
         private ServerScript _gamemode { get; set; }
+
         private List<ServerScript> _filterscripts;
+        public string WANIP { get; set; }
+        public string LANIP { get; set; }
+        public string LastKicked { get; private set; }
+
         private DateTime _lastAnnounceDateTime;
 
         public void Start(string[] filterscripts)
@@ -244,7 +254,31 @@ namespace GTAServer
                     yield return obj;
             }
         }
-
+        static void LogToConsole(int flag, bool debug, string module, string message)
+        {
+            if (module == null || module.Equals("")) { module = "SERVER"; }
+            if (flag == 1)
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan; Console.WriteLine("[" + DateTime.Now + "] (DEBUG) " + module.ToUpper() + ": " + message);
+            }
+            else if (flag == 2)
+            {
+                Console.ForegroundColor = ConsoleColor.Green; Console.WriteLine("[" + DateTime.Now + "] (SUCCESS) " + module.ToUpper() + ": " + message);
+            }
+            else if (flag == 3)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkYellow; Console.WriteLine("[" + DateTime.Now + "] (WARNING) " + module.ToUpper() + ": " + message);
+            }
+            else if (flag == 4)
+            {
+                Console.ForegroundColor = ConsoleColor.Red; Console.WriteLine("[" + DateTime.Now + "] (ERROR) " + module.ToUpper() + ": " + message);
+            }
+            else
+            {
+                Console.WriteLine("[" + DateTime.Now + "] " + module.ToUpper() + ": " + message);
+            }
+            Console.ForegroundColor = ConsoleColor.White;
+        }
         public void Tick()
         {
             if (AnnounceSelf && DateTime.Now.Subtract(_lastAnnounceDateTime).TotalMinutes >= 5)
@@ -280,7 +314,7 @@ namespace GTAServer
                         var isPing = msg.ReadString();
                         if (isPing == "ping")
                         {
-                            Console.WriteLine("INFO: ping received from " + msg.SenderEndPoint.Address.ToString());
+                            LogToConsole(0, false, "Network", "INFO: ping received from " + msg.SenderEndPoint.Address.ToString()); break;
                             var pong = Server.CreateMessage();
                             pong.Write("pong");
                             Server.SendMessage(pong, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
@@ -296,14 +330,15 @@ namespace GTAServer
                         }
                         break;
                     case NetIncomingMessageType.VerboseDebugMessage:
+                        LogToConsole(0, true, "Network", msg.ReadString()); break;
                     case NetIncomingMessageType.DebugMessage:
+                        LogToConsole(1, false, "Network", msg.ReadString()); break;
                     case NetIncomingMessageType.WarningMessage:
+                        LogToConsole(3, false, "Network", msg.ReadString()); break;
                     case NetIncomingMessageType.ErrorMessage:
-                        Console.WriteLine(msg.ReadString());
-                        break;
+                        LogToConsole(4, false, "Network", msg.ReadString()); break;
                     case NetIncomingMessageType.ConnectionLatencyUpdated:
-                        client.Latency = msg.ReadFloat();
-                        break;
+                        client.Latency = msg.ReadFloat(); break;
                     case NetIncomingMessageType.ConnectionApproval:
                         var type = msg.ReadInt32();
                         var leng = msg.ReadInt32();
@@ -317,7 +352,8 @@ namespace GTAServer
 
                         if ((ScriptVersion)connReq.ScriptVersion == ScriptVersion.Unknown)
                         {
-                            client.NetConnection.Deny("Unknown version. Please update your client.");
+                            client.NetConnection.Deny("Unknown version. Please update your client from gt5-mods.com");
+                            LogToConsole(3, true, "Network", "Client tried to connect with unknown scriptversion "+connReq.ScriptVersion.ToString());
                             Server.Recycle(msg);
                             continue;
                         }
@@ -331,13 +367,10 @@ namespace GTAServer
                                 if (Password != connReq.Password)
                                 {
                                     client.NetConnection.Deny("Wrong password.");
-                                    Console.WriteLine("Player connection refused: wrong password.");
-
-                                    if (_gamemode != null) _gamemode.OnConnectionRefused(client, "Wrong password");
-                                    if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(client, "Wrong password"));
-
+                                    LogToConsole(3, false, "Network", "Player connection refused: wrong password: "+connReq.Password.ToString());
+                                    if (_gamemode != null) _gamemode.OnConnectionRefused(client, "Wrong password.");
+                                    if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(client, "Wrong password."));
                                     Server.Recycle(msg);
-
                                     continue;
                                 }
                             }
@@ -375,6 +408,7 @@ namespace GTAServer
                         {
                             client.NetConnection.Deny("No available player slots.");
                             Console.WriteLine("Player connection refused: server full.");
+                            LogToConsole(4, false, "Network", "Player connection refused: server full with "+ clients.ToString() + "of" + MaxPlayers +".");
                             if (_gamemode != null) _gamemode.OnConnectionRefused(client, "Server is full");
                             if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(client, "Server is full"));
                         }
@@ -388,11 +422,34 @@ namespace GTAServer
 
                             if (_gamemode != null) sendMsg = sendMsg && _gamemode.OnPlayerConnect(client);
                             if (_filterscripts != null) _filterscripts.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerConnect(client));
-
+                            Console.Write("New player connected: ");
                             if (sendMsg)
-                                SendNotificationToAll("Player ~h~" + client.DisplayName + "~h~ has connected.");
+                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~n~~h~ connected.");
 
-                            Console.WriteLine("New player connected: " + client.Name + " (" + client.DisplayName + ")");
+                            try{
+                                Console.Write("Nickname: " + client.DisplayName.ToString() + " | ");
+                            } catch (Exception) { }
+                            try
+                            {
+                                Console.Write("Name: " + client.Name.ToString() + " | ");
+                            }
+                            catch (Exception) { }
+                            try
+                            {
+                                Console.Write("IP: " + client.NetConnection.RemoteEndPoint.Address.ToString() + ":" + client.NetConnection.RemoteEndPoint.Port.ToString() + " | ");
+                            }
+                            catch (Exception) { }
+                            try
+                            {
+                                Console.Write("Game Version: " + client.GameVersion.ToString() + " | ");
+                            }
+                            catch (Exception) { }
+                            try
+                            {
+                                Console.Write("Script Version: " + client.RemoteScriptVersion.ToString() + "");
+                            }
+                            catch (Exception) { }
+                            Console.Write("\n");
                         }
                         else if (newStatus == NetConnectionStatus.Disconnected)
                         {
@@ -404,9 +461,32 @@ namespace GTAServer
 
                                     if (_gamemode != null) sendMsg = sendMsg && _gamemode.OnPlayerDisconnect(client);
                                     if (_filterscripts != null) _filterscripts.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerDisconnect(client));
-
-                                    if (sendMsg)
-                                        SendNotificationToAll("Player ~h~" + client.DisplayName + "~h~ has disconnected.");
+                                    if (client.NetConnection.RemoteEndPoint.Address.ToString().Equals(LastKicked)) { client.Silent = true; }
+                                    if (sendMsg && client.Silent == false)
+                                        if (client.Banned)
+                                        {
+                                            if (!client.BanReason.Equals(""))
+                                            {
+                                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~n~~h~ has been banned for " + client.BanReason);
+                                            }
+                                            else
+                                            {
+                                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~n~~h~ has been banned.");
+                                            }
+                                        } else if (client.Kicked)
+                                        {
+                                            if (!client.KickReason.Equals(""))
+                                            {
+                                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~n~~h~ was kicked for " + client.KickReason);
+                                            }
+                                            else
+                                            {
+                                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~n~~h~ has been kicked.");
+                                            }
+                                        }
+                                        else{
+                                            SendNotificationToAll("~h~" + client.DisplayName + "~w~~n~~h~ disconnected.");
+                                        }
 
                                     var dcObj = new PlayerDisconnect()
                                     {
@@ -415,8 +495,33 @@ namespace GTAServer
 
                                     SendToAll(dcObj, PacketType.PlayerDisconnect, true);
 
-                                    Console.WriteLine("Player disconnected: " + client.Name + " (" + client.DisplayName + ")");
-
+                                    if (client.Banned)
+                                    {
+                                        if (!client.BanReason.Equals(""))
+                                        {
+                                            Console.WriteLine("Player kicked: \"" + client.Name + "\" (" + client.DisplayName + ") for " + client.BanReason);
+                                        }
+                                        else
+                                        {
+                                            Console.WriteLine("Player banned: \"" + client.Name + "\" (" + client.DisplayName + ")");
+                                        }
+                                    }
+                                    else if (client.Kicked)
+                                    {
+                                        if (!client.KickReason.Equals(""))
+                                        {
+                                            Console.WriteLine("Player kicked: \"" + client.Name + "\" (" + client.DisplayName + ") for " + client.KickReason);
+                                        }
+                                        else
+                                        {
+                                            Console.WriteLine("Player kicked: \"" + client.Name + "\" (" + client.DisplayName + ")");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("Player disconnected: \"" + client.Name + "\" (" + client.DisplayName + ")");
+                                    }
+                                    LastKicked = client.NetConnection.RemoteEndPoint.Address.ToString();
                                     Clients.Remove(client);
                                 }
                             }
@@ -973,8 +1078,9 @@ namespace GTAServer
             SendNativeCallToPlayer(player, 0xBF0FD6E56C964FCB, new LocalPlayerArgument(), weaponHash, ammo, equipNow, ammo);
         }
 
-        public void KickPlayer(Client player, string reason)
+        public void KickPlayer(Client player, string reason, bool silent = false)
         {
+            player.Kicked = true;player.KickReason = reason.ToString();player.Silent = silent;
             player.NetConnection.Disconnect("Kicked: " + reason);
         }
 
@@ -1027,16 +1133,6 @@ namespace GTAServer
             SendNativeCallToPlayer(player, 0x202709F4C58A0424, "STRING");
             SendNativeCallToPlayer(player, 0x6C188BE134E074AA, body);
             SendNativeCallToPlayer(player, 0x1CCD9A37359072CF, pic.ToString(), pic.ToString(), flash, (int)iconType, sender, subject);
-            SendNativeCallToPlayer(player, 0xF020C96915705B3A, false, true);
-        }
-
-
-        public void SendPictureNotificationToPlayer(Client player, string body, string pic, int flash, int iconType, string sender, string subject)
-        {
-            //Crash with new LocalPlayerArgument()!
-            SendNativeCallToPlayer(player, 0x202709F4C58A0424, "STRING");
-            SendNativeCallToPlayer(player, 0x6C188BE134E074AA, body);
-            SendNativeCallToPlayer(player, 0x1CCD9A37359072CF, pic, pic, flash, iconType, sender, subject);
             SendNativeCallToPlayer(player, 0xF020C96915705B3A, false, true);
         }
 

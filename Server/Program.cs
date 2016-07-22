@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
+using Newtonsoft.Json;
 
 namespace GTAServer
 {
@@ -13,29 +15,97 @@ namespace GTAServer
     {
         public static string Location { get { return AppDomain.CurrentDomain.BaseDirectory; } }
         public static GameServer ServerInstance { get; set; }
+        public static string WANIP { get; private set; }
+        public static string LANIP { get; private set; }
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool DeleteFile(string name);
-
+        public class MasterServerList
+        {
+            public List<string> list { get; set; }
+        }
         static void Main(string[] args)
         {
             var settings = ReadSettings(Program.Location + "Settings.xml");
-
+            ServerInstance = new GameServer(settings.Port, settings.Name, settings.Gamemode);
             Console.WriteLine("Name: " + settings.Name);
-            Console.WriteLine("Port: " + settings.Port);
+            Console.Write("IPs: ");
+            ServerInstance.WANIP = "";ServerInstance.LANIP = "";
+            try
+            {
+                string url = "http://checkip.dyndns.org/"; //http://ip-api.com/json
+                WebRequest req = WebRequest.Create(url);
+                req.Timeout = 2500;
+                WebResponse resp = req.GetResponse();
+                StreamReader sr = new StreamReader(resp.GetResponseStream());
+                string res = sr.ReadToEnd().Trim();
+                string[] a = res.Split(':');
+                string a2 = a[1].Substring(1);
+                string[] a3 = a2.Split('<');
+                ServerInstance.WANIP = a3[0];
+                Console.Write(ServerInstance.WANIP + "/");
+            } catch{}
+            try {
+                var host = Dns.GetHostEntry(Dns.GetHostName());
+                foreach (var ip in host.AddressList)
+                {
+                    if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                    {
+                        ServerInstance.LANIP = ip.ToString();
+                        Console.Write(ServerInstance.LANIP + "/");
+                    }
+                }
+            } catch { }
+            Console.WriteLine("127.0.0.1:" + settings.Port);
             Console.WriteLine("Player Limit: " + settings.MaxPlayers);
             Console.WriteLine("Starting...");
-
-            ServerInstance = new GameServer(settings.Port, settings.Name, settings.Gamemode);
             ServerInstance.PasswordProtected = settings.PasswordProtected;
             ServerInstance.Password = settings.Password;
             ServerInstance.AnnounceSelf = settings.Announce;
             ServerInstance.MasterServer = settings.MasterServer;
             ServerInstance.MaxPlayers = settings.MaxPlayers;
             ServerInstance.AllowDisplayNames = settings.AllowDisplayNames;
+            ServerInstance.AllowOutdatedClients = settings.AllowOutdatedClients;
 
             ServerInstance.Start(settings.Filterscripts);
+
+            string response = String.Empty;
+            try
+            {
+                using (var webClient = new WebClient())
+                {
+                    response = webClient.DownloadString("http://46.101.1.92/");
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Could not contact master server."); return;
+            }
+            if (string.IsNullOrWhiteSpace(response)) { return; }
+            var dejson = JsonConvert.DeserializeObject<MasterServerList>(response) as MasterServerList;
+            if (dejson == null) return;
+            Console.WriteLine("Servers returned by master server: " + dejson.list.Count().ToString());
+            if (!ServerInstance.WANIP.Equals("")) {
+                foreach (var server in dejson.list) {
+                    var split = server.Split(':');
+                    if (split.Length != 2) continue;
+                    int port;
+                    if (!int.TryParse(split[1], out port)) { 
+                        if (split[0].Equals(ServerInstance.WANIP) && port.Equals(settings.Port)) {
+                                LogToConsole(2, false, null, "We found our server on the serverlist :)"); break;
+                            }
+                            else if (split[0].Equals(ServerInstance.WANIP)) {
+                                LogToConsole(4, false, null, "We found our server IP on the serverlist, but without the right port :|"); break;
+                            }
+                            else {
+                                LogToConsole(5, false, null, "We can't find our server on the serverlist :("); break;
+                            }
+                    }
+                        //Console.Write(split[0] + ":" + port + ", ");
+                }
+            }
+
 
             Console.WriteLine("Started! Waiting for connections.");
 
@@ -44,6 +114,22 @@ namespace GTAServer
                 ServerInstance.Tick();
                 System.Threading.Thread.Sleep(10); // Reducing CPU Usage (Win7 from average 15 % to 0-1 %, Linux from 100 % to 0-2 %)
             }
+        }
+        static void LogToConsole(int flag, bool debug, string module, string message)
+        {
+            if (module == null || module.Equals("")) { module = "SERVER"; }
+            if (flag == 1){
+                Console.ForegroundColor = ConsoleColor.Cyan;Console.WriteLine("[" + DateTime.Now + "] (DEBUG) " + module.ToUpper() + ": " + message);
+            }else if (flag == 2){
+                Console.ForegroundColor = ConsoleColor.Green; Console.WriteLine("[" + DateTime.Now + "] (SUCCESS) " + module.ToUpper() + ": " + message);
+            }else if (flag == 3){
+                Console.ForegroundColor = ConsoleColor.DarkYellow; Console.WriteLine("[" + DateTime.Now + "] (WARNING) " + module.ToUpper() + ": " + message);
+            }else if (flag == 4){
+                Console.ForegroundColor = ConsoleColor.Red; Console.WriteLine("[" + DateTime.Now + "] (ERROR) " + module.ToUpper() + ": " + message);
+            }else{
+                Console.WriteLine("[" + DateTime.Now + "] " + module.ToUpper() + ": " + message);
+            }
+            Console.ForegroundColor = ConsoleColor.White;
         }
 
         static ServerSettings ReadSettings(string path)

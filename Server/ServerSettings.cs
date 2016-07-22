@@ -11,9 +11,13 @@
         public string MasterServer { get; set; }
 
         public bool AllowDisplayNames { get; set; }
+        public bool AllowOutdatedClients { get; set; }
 
         public string Gamemode { get; set; }
         public string[] Filterscripts { get; set; }
+
+        public string LANIP { get; set; }
+        public string WANIP { get; set; }
 
         public ServerSettings()
         {
@@ -25,6 +29,7 @@
             Gamemode = "freeroam";
             Announce = true;
             AllowDisplayNames = true;
+            AllowOutdatedClients = false;
             MasterServer = "http://46.101.1.92/";
             Filterscripts = new string[] { "" };
         }
