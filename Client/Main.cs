@@ -55,6 +55,8 @@ namespace GTACoOp
 
         private static int _messagesSent = 0;
         private static int _messagesReceived = 0;
+        private string _lastIP = "";
+        private int _lastPort = 4499;
         //
 
         public Main()
@@ -291,6 +293,43 @@ namespace GTACoOp
                 Util.SaveSettings(Program.Location + "GTACOOPSettings.xml");
             };
 
+            var autoReconnectItem = new UIMenuCheckboxItem("Auto reconnect", PlayerSettings.AutoReconnect);
+            autoReconnectItem.CheckboxEvent += (item, check) =>
+            {
+                PlayerSettings.AutoReconnect = check;
+                Util.SaveSettings(Program.Location + "GTACOOPSettings.xml");
+            };
+
+            var autoLoginItem = new UIMenuItem("Auto Login");
+            if (PlayerSettings.HidePasswords)
+            {
+                autoLoginItem.SetRightLabel(new String('*', PlayerSettings.AutoLogin.Length));
+            }
+            else
+            {
+                autoLoginItem.SetRightLabel(PlayerSettings.AutoLogin.ToString());
+            }
+            autoLoginItem.Activated += (menu, item) =>
+            {
+                PlayerSettings.AutoLogin = Game.GetUserInput(255);
+                Util.SaveSettings(Program.Location + "GTACOOPSettings.xml");
+                if (PlayerSettings.HidePasswords)
+                {
+                    autoLoginItem.SetRightLabel(new String('*', PlayerSettings.AutoLogin.Length));
+                }
+                else
+                {
+                    autoLoginItem.SetRightLabel(PlayerSettings.AutoLogin.ToString());
+                }
+            };
+
+            var autoRegisterItem = new UIMenuCheckboxItem("Auto register", PlayerSettings.AutoRegister);
+            autoRegisterItem.CheckboxEvent += (item, check) =>
+            {
+                PlayerSettings.AutoRegister = check;
+                Util.SaveSettings(Program.Location + "GTACOOPSettings.xml");
+            };
+
             /*var aboutItem = new UIMenuItem("About this mod");
             autoConnectItem.CheckboxEvent += (item, check) =>
             {
@@ -326,6 +365,9 @@ namespace GTACoOp
             _settingsMenu.AddItem(chatItem);
             _settingsMenu.AddItem(hidePasswordsItem);
             _settingsMenu.AddItem(autoConnectItem);
+            _settingsMenu.AddItem(autoReconnectItem);
+            _settingsMenu.AddItem(autoLoginItem);
+            _settingsMenu.AddItem(autoRegisterItem);
 
             _settingsMenu.AddItem(modeItem);
             _settingsMenu.AddItem(spawnItem);
@@ -864,6 +906,7 @@ namespace GTACoOp
             Function.Call(Hash.SET_GARBAGE_TRUCKS, 0);
             Function.Call(Hash.SET_RANDOM_BOATS, 0);
             Function.Call(Hash.SET_RANDOM_TRAINS, 0);
+            _lastIP = ip;_lastPort = port;
         }
 
         public void ProcessMessages()
@@ -1046,6 +1089,24 @@ namespace GTACoOp
                                             return;
                                         }
                                     }
+                                    if (data.Message.ToString().Equals("You can register an account using /register [password]"))
+                                    {
+                                        if (!String.IsNullOrWhiteSpace(PlayerSettings.AutoLogin) && PlayerSettings.AutoRegister)
+                                        {
+                                            var obj = new ChatData()
+                                            {
+                                                Message = "/register " + PlayerSettings.AutoLogin,
+                                            };
+                                            var Data = SerializeBinary(obj);
+
+                                            var Msg = _client.CreateMessage();
+                                            Msg.Write((int)PacketType.ChatData);
+                                            Msg.Write(Data.Length);
+                                            Msg.Write(Data);
+                                            _client.SendMessage(Msg, NetDeliveryMethod.ReliableOrdered, 0);
+                                            return;
+                                        }
+                                    }
                                     _chat.AddMessage(sender, data.Message);
                                     /*lock (_threadJumping)
                                     {
@@ -1172,10 +1233,12 @@ namespace GTACoOp
                         case NetConnectionStatus.Connected:
                             UI.Notify("Connection successful!");
                             _channel = msg.SenderConnection.RemoteHailMessage.ReadInt32();
+                            
                             break;
                         case NetConnectionStatus.Disconnected:
                             var reason = msg.ReadString();
                             UI.Notify("You have been disconnected" + (string.IsNullOrEmpty(reason) ? " from the server." : ": " + reason));
+                            
 
                             lock (Opponents)
                             {
@@ -1213,6 +1276,10 @@ namespace GTACoOp
                             {
                                 _blipCleanup.ForEach(blip => new Blip(blip).Remove());
                                 _blipCleanup.Clear();
+                            }
+                            if (PlayerSettings.AutoReconnect && !reason.Equals("Connection closed by peer."))
+                            {
+                                ConnectToServer(_lastIP, _lastPort);
                             }
                             break;
                     }

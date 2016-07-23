@@ -16,7 +16,9 @@ namespace GTACoOp
         public Keys ActivationKey { get; set; }
         public bool HidePasswords { get; set; }
         public bool AutoConnect { get; set; }
+        public bool AutoReconnect { get; set; }
         public string AutoLogin { get; set; }
+        public bool AutoRegister { get; set; }
 
         public PlayerSettings()
         {
@@ -32,7 +34,9 @@ namespace GTACoOp
             SyncWorld = true;
             SyncTraffic = false;
             AutoConnect = false;
+            AutoReconnect = true;
             AutoLogin = "";
+            AutoRegister = false;
         }
     }
 }
