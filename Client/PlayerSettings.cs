@@ -19,6 +19,7 @@ namespace GTACoOp
         public bool AutoReconnect { get; set; }
         public string AutoLogin { get; set; }
         public bool AutoRegister { get; set; }
+        public bool AutoStartServer { get; set; }
 
         public PlayerSettings()
         {
@@ -37,6 +38,7 @@ namespace GTACoOp
             AutoReconnect = true;
             AutoLogin = "";
             AutoRegister = false;
+            AutoStartServer = false;
         }
     }
 }

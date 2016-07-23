@@ -4,6 +4,8 @@ A online co-op modification for GTA5. Does not use Rockstar's Online code.
 
 If you have questions be sure to check the [wiki](https://github.com/Guad/GTACoop/wiki) first.
 
+If you encouter a bug / have a suggestion, post it [here](https://github.com/Guad/GTACoop/issues/new).
+
 ![GitHub license](https://img.shields.io/badge/license-AGPL-blue.svg)
 Copyright (C) 2016  Guad
 

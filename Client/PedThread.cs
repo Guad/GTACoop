@@ -51,7 +51,7 @@ namespace GTACoOp
 
             for (int i = 0; i < localNpcs.Count; i++) localNpcs.ElementAt(i).Value.DisplayLocally();
 
-            if (Main.PlayerSettings.SyncWorld)
+            if (Main.SendNpcs)
             {
                 var list = new List<int>(localNpcs.Where(pair => pair.Value.Character != null).Select(pair => pair.Value.Character.Handle));
                 list.AddRange(localOpps.Where(pair => pair.Value.Character != null).Select(pair => pair.Value.Character.Handle));

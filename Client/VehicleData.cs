@@ -24,7 +24,7 @@ namespace GTACoOp
         NativeOnDisconnectRecall = 15,
     }
 
-    public enum ScriptVersion
+    public enum ScriptVersion // Please only increment this/add versions on changes that may break the protocol.
     {
         Unknown = 0,
         VERSION_0_6 = 1,

@@ -107,6 +107,10 @@ namespace AdminTools
                 }
             }
         }
+        public override void OnIncomingConnection(Client player)
+        {
+           //player.NetConnection.Deny("Test Denied");
+        }
         public override bool OnPlayerConnect(Client player)
         {
             //try

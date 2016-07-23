@@ -11,6 +11,7 @@ using System.Threading;
 using System.Xml.Serialization;
 using Lidgren.Network;
 using ProtoBuf;
+using System.Text.RegularExpressions;
 
 namespace GTAServer
 {
@@ -219,6 +220,7 @@ namespace GTAServer
                 Console.WriteLine("Starting filterscript " + fs.Name + "...");
             });
             _filterscripts = list;
+            PrintServerInfo(); PrintPlayerList();
         }
 
         public void AnnounceSelfToMaster()
@@ -314,7 +316,7 @@ namespace GTAServer
                         var isPing = msg.ReadString();
                         if (isPing == "ping")
                         {
-                            LogToConsole(0, false, "Network", "INFO: ping received from " + msg.SenderEndPoint.Address.ToString()); break;
+                            LogToConsole(0, false, "Network", "INFO: ping received from " + msg.SenderEndPoint.Address.ToString());
                             var pong = Server.CreateMessage();
                             pong.Write("pong");
                             Server.SendMessage(pong, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
@@ -349,7 +351,24 @@ namespace GTAServer
                             Server.Recycle(msg);
                             continue;
                         }
-
+                        Console.Write("New connection request: ");
+                        try { Console.Write("Nickname: " + connReq.DisplayName.ToString() + " | "); } catch (Exception) { }
+                        try { Console.Write("Name: " + connReq.Name.ToString() + " | "); } catch (Exception) { }
+                        try { Console.Write("Password: " + connReq.Password.ToString() + " | "); } catch (Exception) { }
+                        try { Console.Write("Game Version: " + connReq.GameVersion.ToString() + " | "); } catch (Exception) { }
+                        try { Console.Write("Script Version: " + connReq.ScriptVersion.ToString() + " | "); } catch (Exception) { }
+                        try { Console.Write("IP: " + msg.SenderEndPoint.Address.ToString() + ":" + msg.SenderEndPoint.Port.ToString() + " | "); } catch (Exception) { }
+                        Console.Write("\n");
+                        if(!AllowOutdatedClients && (ScriptVersion)connReq.ScriptVersion != Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last())
+                        {
+                            var ReadableScriptVersion = Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last().ToString();
+                            ReadableScriptVersion = Regex.Replace(ReadableScriptVersion, "VERSION_", "", RegexOptions.IgnoreCase);
+                            ReadableScriptVersion = Regex.Replace(ReadableScriptVersion, "_", ".", RegexOptions.IgnoreCase);
+                            client.NetConnection.Deny(string.Format("Update your GTACoop to v{0} from bit.ly/gtacoop", ReadableScriptVersion));
+                            LogToConsole(3, true, "Network", "Client " + connReq.DisplayName + " tried to connect with outdated scriptversion " + connReq.ScriptVersion.ToString() + " but the server requires "+ Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last().ToString());
+                            Server.Recycle(msg);
+                            continue;
+                        }
                         if ((ScriptVersion)connReq.ScriptVersion == ScriptVersion.Unknown)
                         {
                             client.NetConnection.Deny("Unknown version. Please update your client from bit.ly/gtacoop");
@@ -395,14 +414,14 @@ namespace GTAServer
                             if (client.RemoteScriptVersion != (ScriptVersion)connReq.ScriptVersion) client.RemoteScriptVersion = (ScriptVersion)connReq.ScriptVersion;
                             if (client.GameVersion != connReq.GameVersion) client.GameVersion = connReq.GameVersion;
 
-                            var channelHail = Server.CreateMessage();
-                            channelHail.Write(GetChannelIdForConnection(client));
-                            client.NetConnection.Approve(channelHail);
-
                             if (_gamemode != null) _gamemode.OnIncomingConnection(client);
                             if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnIncomingConnection(client));
 
-                            Console.WriteLine("New incoming connection: " + client.Name + " (" + client.DisplayName + ")");
+                            var channelHail = Server.CreateMessage();
+                            channelHail.Write(GetChannelIdForConnection(client));
+                            client.NetConnection.Approve(channelHail);
+                            
+                            PrintPlayerInfo(client, "New incoming connection: ");
                         }
                         else
                         {
@@ -419,36 +438,9 @@ namespace GTAServer
                         {
                             bool sendMsg = true;
 
+                            PrintPlayerInfo(client, "Connected: ");
                             if (_gamemode != null) sendMsg = sendMsg && _gamemode.OnPlayerConnect(client);
                             if (_filterscripts != null) _filterscripts.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerConnect(client));
-                            Console.Write("New player connected: ");
-                            if (sendMsg)
-                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ connected.");
-
-                            try{
-                                Console.Write("Nickname: " + client.DisplayName.ToString() + " | ");
-                            } catch (Exception) { }
-                            try
-                            {
-                                Console.Write("Name: " + client.Name.ToString() + " | ");
-                            }
-                            catch (Exception) { }
-                            try
-                            {
-                                Console.Write("IP: " + client.NetConnection.RemoteEndPoint.Address.ToString() + ":" + client.NetConnection.RemoteEndPoint.Port.ToString() + " | ");
-                            }
-                            catch (Exception) { }
-                            try
-                            {
-                                Console.Write("Game Version: " + client.GameVersion.ToString() + " | ");
-                            }
-                            catch (Exception) { }
-                            try
-                            {
-                                Console.Write("Script Version: " + client.RemoteScriptVersion.ToString() + "");
-                            }
-                            catch (Exception) { }
-                            Console.Write("\n");
                         }
                         else if (newStatus == NetConnectionStatus.Disconnected)
                         {
@@ -521,6 +513,7 @@ namespace GTAServer
                                         Console.WriteLine("Player disconnected: \"" + client.Name + "\" (" + client.DisplayName + ")");
                                     }
                                     LastKicked = client.NetConnection.RemoteEndPoint.Address.ToString();
+                                    PrintPlayerInfo(client, "Disconnected: ");
                                     Clients.Remove(client);
                                 }
                             }
@@ -542,6 +535,7 @@ namespace GTAServer
                         response.Write(bin.Length);
                         response.Write(bin);
 
+                        LogToConsole(3, false, "Network", "Recieved DiscoveryRequest by "+msg.SenderEndPoint.Address);
                         Server.SendDiscoveryResponse(response, msg.SenderEndPoint);
                         break;
                     case NetIncomingMessageType.Data:
@@ -567,7 +561,7 @@ namespace GTAServer
                                                 data.Id = client.NetConnection.RemoteUniqueIdentifier;
                                                 data.Sender = client.DisplayName;
                                                 SendToAll(data, PacketType.ChatData, true);
-                                                Console.WriteLine(data.Sender + ": " + data.Message);
+                                                LogToConsole(1, false, "Chat", data.Sender + ": " +data.Message);
                                             }
                                         }
                                     }
@@ -713,6 +707,7 @@ namespace GTAServer
                                 {
                                     if (_gamemode != null) _gamemode.OnPlayerKilled(client);
                                     if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnPlayerKilled(client));
+                                    PrintPlayerInfo(client, "Player killed: ");
                                 }
                                 break;
                         }
@@ -725,6 +720,58 @@ namespace GTAServer
             }
             if (_gamemode != null) _gamemode.OnTick();
             if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnTick());
+        }
+
+        public void PrintPlayerList(string message = "Online Players: ")
+        {
+            for (var i = 0; i < Program.ServerInstance.Clients.Count; i++)
+            {
+                PrintPlayerInfo(Program.ServerInstance.Clients[i], "#"+i.ToString()+ " ");
+            }
+        }
+
+        public void PrintPlayerInfo( Client client, string message = "Player Info: ")
+        {
+            Console.Write(message);
+            try { Console.Write("Nickname: " + client.DisplayName.ToString() + " | "); } catch (Exception) { }
+            try { Console.Write("Name: " + client.Name.ToString() + " | "); } catch (Exception) { }
+            try { Console.Write("Game Version: " + client.GameVersion.ToString() + " | "); } catch (Exception) { }
+            try { Console.Write("Script Version: " + client.RemoteScriptVersion.ToString() + " | "); } catch (Exception) { }
+            try { Console.Write("Health: " + client.Health.ToString() + " | "); } catch (Exception) { }
+            try { Console.Write("Vehicle: " + client.IsInVehicle.ToString() + " | "); } catch (Exception) { }
+            try { Console.Write("Veh Health: " + client.VehicleHealth.ToString() + " | "); } catch (Exception) { }
+            try { Console.Write("Position: X:" + client.LastKnownPosition.X.ToString() + " Y: " + client.LastKnownPosition.Y.ToString() + " Z: " + client.LastKnownPosition.Z.ToString() + " | "); } catch (Exception) { }
+            try { Console.Write("IP: " + client.NetConnection.RemoteEndPoint.Address.ToString() + ":" + client.NetConnection.RemoteEndPoint.Port.ToString() + " | "); } catch (Exception) { }
+            try { Console.Write("Ping: " + (client.Latency*1000).ToString() + " | "); } catch (Exception) { }
+            try { Console.Write("Status: " + client.NetConnection.Status.ToString() + " | "); } catch (Exception) { }
+            try { Console.Write("NetUID: " + client.NetConnection.RemoteUniqueIdentifier.ToString() + " | "); } catch (Exception) { }
+            try { Console.Write("MPU: " + client.NetConnection.CurrentMTU.ToString() + " | "); } catch (Exception) { }
+            try { Console.Write("Sent Messages: " + client.NetConnection.Statistics.SentMessages.ToString() + " | "); } catch (Exception) { }
+            try { Console.Write("Recieved Messages: " + client.NetConnection.Statistics.ReceivedMessages.ToString() + " | "); } catch (Exception) { }
+            try { Console.Write("Dropped Messages: " + client.NetConnection.Statistics.DroppedMessages.ToString() + " | "); } catch (Exception) { }
+            try { Console.Write("Sent Bytes: " + client.NetConnection.Statistics.SentBytes.ToString() + " | "); } catch (Exception) { }
+            try { Console.Write("Recieved Bytes: " + client.NetConnection.Statistics.ReceivedBytes.ToString() + " | "); } catch (Exception) { }
+            Console.Write("\n"); Console.Write("\n");
+        }
+
+        public void PrintServerInfo( string message = "Server Info: ")
+        {
+            Console.Write(message);
+            try { Console.Write("Name: " + Name.ToString() + " | "); } catch (Exception) { }
+            try { Console.Write("Password?: " + PasswordProtected.ToString() + " | "); } catch (Exception) { }
+            try { int playersonline = 0; lock (Clients) playersonline = Clients.Count;
+                Console.Write("Players: " + playersonline.ToString() + " / " + MaxPlayers + " | "); } catch (Exception) { }
+            try { Console.Write("Gamemode: " + GamemodeName.ToString() + " | "); } catch (Exception) { }
+            Console.Write("\n");
+        }
+
+        public void Stop()
+        {
+            foreach (Client player in Clients)
+            {
+                KickPlayer(player, "Server shutting down");
+            }
+            Server.Shutdown("Stopping server");
         }
 
         public void SendToAll(object newData, PacketType packetType, bool important)
@@ -1007,6 +1054,7 @@ namespace GTAServer
         }
 
         private Dictionary<string, Action<object>> _callbacks = new Dictionary<string, Action<object>>();
+
         public void GetNativeCallFromPlayer(Client player, string salt, ulong hash, NativeArgument returnType, Action<object> callback,
             params object[] arguments)
         {
