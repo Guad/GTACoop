@@ -793,7 +793,7 @@ namespace AdminTools
                 message.Supress = true; return message;
             }
             try { message.Prefix = message.Sender.geoIP.Country.IsoCode.ToString(); } catch(Exception ex) { LogToConsole(3, false, "GeoIP", ex.Message.ToString()); }
-                try { message.Suffix = "~r~" + account.Level.ToString() + "~w~"; } catch { message.Suffix = "Guest"; }
+                try { message.Suffix = account.Level.ToString(); } catch { message.Suffix = "Guest"; }
             if (message.Message.Contains("login") || message.Message.Contains("register") || message.Message.Equals("urtle")) { message.Supress = true; return message; }
             return message;
         } catch(Exception ex) { LogToConsole(4, false, "Chat", "Can't handle message: "+ex.Message.ToString()); return null; }
