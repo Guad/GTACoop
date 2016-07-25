@@ -272,6 +272,7 @@ namespace GTAServer
         static void LogToConsole(int flag, bool debug, string module, string message)
         {
             if (module == null || module.Equals("")) { module = "SERVER"; }
+            if (debug && !Program.Debug) return;
             if (flag == 1)
             {
                 Console.ForegroundColor = ConsoleColor.Cyan; Console.WriteLine("[" + DateTime.Now + "] (DEBUG) " + module.ToUpper() + ": " + message);
@@ -349,7 +350,7 @@ namespace GTAServer
                     case NetIncomingMessageType.DebugMessage:
                         LogToConsole(1, false, "Network", msg.ReadString()); break;
                     case NetIncomingMessageType.WarningMessage:
-                        LogToConsole(3, false, "Network", msg.ReadString()); break;
+                        LogToConsole(3, true, "Network", msg.ReadString()); break;
                     case NetIncomingMessageType.ErrorMessage:
                         LogToConsole(4, false, "Network", msg.ReadString()); break;
                     case NetIncomingMessageType.ConnectionLatencyUpdated:

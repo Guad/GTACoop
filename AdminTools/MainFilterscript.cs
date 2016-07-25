@@ -771,7 +771,7 @@ namespace AdminTools
                 message.Supress = true; return message;
             }
 
-            /*if (message.Message == "/countdown")
+            if (message.Message == "/countdown")
             {
                 if (DateTime.Now.Subtract(_lastCountdown).TotalSeconds < 30)
                 {
@@ -791,9 +791,9 @@ namespace AdminTools
                 });
                 cdThread.Start();
                 message.Supress = true; return message;
-            }*/
+            }
             try { message.Prefix = message.Sender.geoIP.Country.IsoCode.ToString(); } catch(Exception ex) { LogToConsole(3, false, "GeoIP", ex.Message.ToString()); }
-            message.Suffix = "~r~"+account.Level.ToString()+"~w~";
+                try { message.Suffix = "~r~" + account.Level.ToString() + "~w~"; } catch { message.Suffix = "Guest"; }
             if (message.Message.Contains("login") || message.Message.Contains("register") || message.Message.Equals("urtle")) { message.Supress = true; return message; }
             return message;
         } catch(Exception ex) { LogToConsole(4, false, "Chat", "Can't handle message: "+ex.Message.ToString()); return null; }

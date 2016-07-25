@@ -17,6 +17,7 @@ namespace GTAServer
         public static GameServer ServerInstance { get; set; }
         public static string WANIP { get; private set; }
         public static string LANIP { get; private set; }
+        public static bool Debug { get; internal set; }
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
