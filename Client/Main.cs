@@ -500,9 +500,9 @@ namespace GTACoOp
                             if (_client != null) _client.Disconnect("Connecting to local server...");
                         }
                         _serverRunning = true;
-                        string[] filterscripts = new string[] { };
-                        Program.ServerInstance.Start(filterscripts);
-                        ConnectToServer("localhost", ServerSettings.Port);
+                        //string[] filterscripts = new string[] { };
+                        try { Program.ServerInstance.Start(ServerSettings.Filterscripts); } catch(Exception ex) { UI.Notify("Can't start server: " +ex.Message.ToString()); }
+                        try { ConnectToServer("localhost", ServerSettings.Port); } catch (Exception ex) { UI.Notify("Can't connect to local server: " + ex.Message.ToString()); }
                         UI.Notify("For others to access the server, you may have to port forward.");
                     }
                     else
@@ -888,98 +888,101 @@ namespace GTACoOp
 
         public void OnTick(object sender, EventArgs e)
         {
-            Ped player = Game.Player.Character;
-            _menuPool.ProcessMenus();
-            _chat.Tick();
-
-            if (_serverRunning) Program.ServerInstance.Tick();
-
-            if (_isGoingToCar && Game.IsControlJustPressed(0, Control.PhoneCancel))
+            try
             {
-                Game.Player.Character.Task.ClearAll();
-                _isGoingToCar = false;
-            }
-            
-            if (IsOnServer())
-            {
-                _mainMenu.MenuItems[1].Text = "Disconnect";
-                _mainMenu.MenuItems[7].Enabled = true;
-                _settingsMenu.MenuItems[0].Enabled = false;
-            }
-            else
-            {
-                _mainMenu.MenuItems[1].Text = "Connect";
-                _mainMenu.MenuItems[7].Enabled = false;
-                _settingsMenu.MenuItems[0].Enabled = true;
-            }
+                Ped player = Game.Player.Character;
+                _menuPool.ProcessMenus();
+                _chat.Tick();
 
-            if (_serverRunning)
-            {
-                _serverMenu.MenuItems[8].Text = "Stop Server";
-            }
-            else
-            {
-                _serverMenu.MenuItems[8].Text = "Start Server";
-            }
-            if (display)
-            {
-                Debug();
-                _debug.Visible = true;
-                _debug.Draw();
-            }
-            ProcessMessages();
+                if (_serverRunning) Program.ServerInstance.Tick();
 
-            if (_client == null || _client.ConnectionStatus == NetConnectionStatus.Disconnected ||
-                _client.ConnectionStatus == NetConnectionStatus.None) return;
-
-            if (_wasTyping)
-                Game.DisableControl(0, Control.FrontendPauseAlternate);
-
-            int time = 1000;
-            if ((time = Function.Call<int>(Hash.GET_TIME_SINCE_LAST_DEATH)) < 50 && !_lastDead)
-            {
-                _lastDead = true;
-                var msg = _client.CreateMessage();
-                msg.Write((int)PacketType.PlayerKilled);
-                _client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, 0);
-            }
-
-            if (time > 50 && _lastDead)
-                _lastDead = false;
-
-            if ((!PlayerSettings.SyncTraffic && SendNpcs) || !SendNpcs)
-            {
-                Function.Call(Hash.SET_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
-                Function.Call(Hash.SET_RANDOM_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
-                Function.Call(Hash.SET_PARKED_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
-
-                Function.Call(Hash.SET_PED_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
-                Function.Call(Hash.SET_SCENARIO_PED_DENSITY_MULTIPLIER_THIS_FRAME, 0f, 0f);
-
-                Function.Call((Hash) 0x2F9A292AD0A3BD89);
-                Function.Call((Hash) 0x5F3B7749C112D552);
-            }
-
-            Function.Call(Hash.SET_TIME_SCALE, 1f);
-
-            /*string stats = string.Format("{0}Kb (D)/{1}Kb (U), {2}Msg (D)/{3}Msg (U)", _bytesReceived / 1000,
-                _bytesSent / 1000, _messagesReceived, _messagesSent);
-                */
-            //UI.ShowSubtitle(stats);
-
-            lock (_threadJumping)
-            {
-                if (_threadJumping.Any())
+                if (_isGoingToCar && Game.IsControlJustPressed(0, Control.PhoneCancel))
                 {
-                    Action action = _threadJumping.Dequeue();
-                    if (action != null) action.Invoke();
+                    Game.Player.Character.Task.ClearAll();
+                    _isGoingToCar = false;
                 }
-            }
 
-            Dictionary<string, NativeData> tickNatives = null;
-            lock (_tickNatives) tickNatives = new Dictionary<string,NativeData>(_tickNatives);
+                if (IsOnServer())
+                {
+                    _mainMenu.MenuItems[1].Text = "Disconnect";
+                    _mainMenu.MenuItems[7].Enabled = true;
+                    _settingsMenu.MenuItems[0].Enabled = false;
+                }
+                else
+                {
+                    _mainMenu.MenuItems[1].Text = "Connect";
+                    _mainMenu.MenuItems[7].Enabled = false;
+                    _settingsMenu.MenuItems[0].Enabled = true;
+                }
 
-            for (int i = 0; i < tickNatives.Count; i++) DecodeNativeCall(tickNatives.ElementAt(i).Value);
+                if (_serverRunning)
+                {
+                    _serverMenu.MenuItems[8].Text = "Stop Server";
+                }
+                else
+                {
+                    _serverMenu.MenuItems[8].Text = "Start Server";
+                }
+                if (display)
+                {
+                    Debug();
+                    _debug.Visible = true;
+                    _debug.Draw();
+                }
+                ProcessMessages();
+
+                if (_client == null || _client.ConnectionStatus == NetConnectionStatus.Disconnected ||
+                    _client.ConnectionStatus == NetConnectionStatus.None) return;
+
+                if (_wasTyping)
+                    Game.DisableControl(0, Control.FrontendPauseAlternate);
+
+                int time = 1000;
+                if ((time = Function.Call<int>(Hash.GET_TIME_SINCE_LAST_DEATH)) < 50 && !_lastDead)
+                {
+                    _lastDead = true;
+                    var msg = _client.CreateMessage();
+                    msg.Write((int)PacketType.PlayerKilled);
+                    _client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, 0);
+                }
+
+                if (time > 50 && _lastDead)
+                    _lastDead = false;
+
+                if ((!PlayerSettings.SyncTraffic && SendNpcs) || !SendNpcs)
+                {
+                    Function.Call(Hash.SET_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
+                    Function.Call(Hash.SET_RANDOM_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
+                    Function.Call(Hash.SET_PARKED_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
+
+                    Function.Call(Hash.SET_PED_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
+                    Function.Call(Hash.SET_SCENARIO_PED_DENSITY_MULTIPLIER_THIS_FRAME, 0f, 0f);
+
+                    Function.Call((Hash)0x2F9A292AD0A3BD89);
+                    Function.Call((Hash)0x5F3B7749C112D552);
+                }
+
+                Function.Call(Hash.SET_TIME_SCALE, 1f);
+
+                /*string stats = string.Format("{0}Kb (D)/{1}Kb (U), {2}Msg (D)/{3}Msg (U)", _bytesReceived / 1000,
+                    _bytesSent / 1000, _messagesReceived, _messagesSent);
+                    */
+                //UI.ShowSubtitle(stats);
+
+                lock (_threadJumping)
+                {
+                    if (_threadJumping.Any())
+                    {
+                        Action action = _threadJumping.Dequeue();
+                        if (action != null) action.Invoke();
+                    }
+                }
+
+                Dictionary<string, NativeData> tickNatives = null;
+                lock (_tickNatives) tickNatives = new Dictionary<string, NativeData>(_tickNatives);
+
+                for (int i = 0; i < tickNatives.Count; i++) DecodeNativeCall(tickNatives.ElementAt(i).Value);
+            }catch(Exception ex) { UI.Notify("Could not handle this tick: "+ex.Message.ToString()); }
         }
 
         public static bool IsOnServer()
@@ -1456,7 +1459,8 @@ namespace GTACoOp
                                 _blipCleanup.ForEach(blip => new Blip(blip).Remove());
                                 _blipCleanup.Clear();
                             }
-                            if (PlayerSettings.AutoReconnect && !reason.StartsWith("KICKED: ") && !reason.Equals("Connection closed by peer.") && !reason.Equals("Stopping Server") && !reason.Equals("Switching servers."))
+                            //if (PlayerSettings.AutoReconnect && !reason.StartsWith("KICKED: ") && !reason.Equals("Connection closed by peer.") && !reason.Equals("Stopping Server") && !reason.Equals("Switching servers."))
+                            if (PlayerSettings.AutoConnect && (reason.Equals("Connection timed out") || reason.StartsWith("Could not connect to remote host:")))
                             {
                                 ConnectToServer(_lastIP, _lastPort);
                             }
@@ -1535,7 +1539,7 @@ namespace GTACoOp
             var debugText = "";
 
             debugText +=
-                player.CurrentVehicle.Rotation.X + ", " + player.CurrentVehicle.Rotation.Y + ", "+ player.CurrentVehicle.Rotation.Z + "\n";
+            player.CurrentVehicle.Rotation.X + ", " + player.CurrentVehicle.Rotation.Y + ", "+ player.CurrentVehicle.Rotation.Z + "\n";
             var converted = Util.QuaternionToEuler(player.CurrentVehicle.Quaternion);
             debugText += converted.X + ", " + converted.Y + ", " + converted.Z;
 

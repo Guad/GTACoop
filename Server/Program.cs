@@ -69,7 +69,7 @@ namespace GTAServer
                     if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
                     {
                         ServerInstance.LANIP = ip.ToString();
-                        Console.Write(ServerInstance.LANIP + "/");
+                        Console.Write(ServerInstance.LANIP + "/");break;
                     }
                 }
             } catch { }
@@ -164,7 +164,7 @@ namespace GTAServer
             {
                 using (var stream = File.OpenWrite(path)) ser.Serialize(stream, settings = new ServerSettings());
             }
-
+            LogToConsole(1, false, "FILE", "Settings loaded from " + path);
             return settings;
         }
     }

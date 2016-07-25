@@ -12,9 +12,21 @@ using System.Xml.Serialization;
 using Lidgren.Network;
 using ProtoBuf;
 using System.Text.RegularExpressions;
+using MaxMind.GeoIP2;
 
 namespace GTAServer
 {
+    public class ChatMessage
+    {
+        public Client Sender { get; set; }
+        public Client Reciever { get; set; }
+        public bool isPrivate { get; set; }
+        public string Message { get; set; }
+        public ConsoleColor Color { get; set; }
+        public string Prefix { get; set; }
+        public string Suffix { get; set; }
+        public bool Supress { get; set; }
+    }
     public class Client
     {
         public NetConnection NetConnection { get; private set; }
@@ -34,6 +46,7 @@ namespace GTAServer
         public bool Kicked { get; set; }
         public string KickReason { get; set; }
         public bool Silent { get; set; }
+        public MaxMind.GeoIP2.Responses.CityResponse geoIP { get; set; }
 
         public Client(NetConnection nc)
         {
@@ -386,7 +399,7 @@ namespace GTAServer
                                 if (Password != connReq.Password)
                                 {
                                     client.NetConnection.Deny("Wrong password.");
-                                    LogToConsole(3, false, "Network", "Player connection refused: wrong password: "+connReq.Password.ToString());
+                                    LogToConsole(3, false, "Network", connReq.DisplayName+" connection refused: Wrong password: "+connReq.Password.ToString());
                                     if (_gamemode != null) _gamemode.OnConnectionRefused(client, "Wrong password.");
                                     if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(client, "Wrong password."));
                                     Server.Recycle(msg);
@@ -407,7 +420,6 @@ namespace GTAServer
 
                                 Clients.Add(client);
                             }
-
                             client.Name = connReq.Name;
                             client.DisplayName = AllowDisplayNames ? connReq.DisplayName : connReq.Name;
 
@@ -426,7 +438,7 @@ namespace GTAServer
                         else
                         {
                             client.NetConnection.Deny("No available player slots.");
-                            LogToConsole(4, false, "Network", "Player connection refused: server full with "+ clients.ToString() + "of" + MaxPlayers +".");
+                            LogToConsole(4, false, "Network", client.DisplayName+" connection refused: server full with "+ clients.ToString() + " of " + MaxPlayers +" players.");
                             if (_gamemode != null) _gamemode.OnConnectionRefused(client, "Server is full");
                             if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(client, "Server is full"));
                         }
@@ -438,9 +450,26 @@ namespace GTAServer
                         {
                             bool sendMsg = true;
 
-                            PrintPlayerInfo(client, "Connected: ");
+                            Console.ForegroundColor = ConsoleColor.DarkGreen; PrintPlayerInfo(client, "Connected: "); Console.ResetColor();
+                            var path = Program.Location + "GeoIP" + Path.DirectorySeparatorChar + "GeoLite2-City.mmdb";
+                            try
+                            {
+                                using (var reader = new DatabaseReader(path))
+                                {
+                                    client.geoIP = reader.City(client.NetConnection.RemoteEndPoint.Address);
+                                }
+                            }
+                            catch (Exception ex) { LogToConsole(3, false, "GeoIP", ex.Message.ToString()); }
                             if (_gamemode != null) sendMsg = sendMsg && _gamemode.OnPlayerConnect(client);
                             if (_filterscripts != null) _filterscripts.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerConnect(client));
+                            if (sendMsg && !client.Silent)
+                                try
+                                {
+                                    SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ connected from "+client.geoIP.Country.Name.ToString()+".");
+                                }catch
+                                {
+                                    SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ connected.");
+                                }
                         }
                         else if (newStatus == NetConnectionStatus.Disconnected)
                         {
@@ -453,7 +482,7 @@ namespace GTAServer
                                     if (_gamemode != null) sendMsg = sendMsg && _gamemode.OnPlayerDisconnect(client);
                                     if (_filterscripts != null) _filterscripts.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerDisconnect(client));
                                     if (client.NetConnection.RemoteEndPoint.Address.ToString().Equals(LastKicked)) { client.Silent = true; }
-                                    if (sendMsg && client.Silent == false)
+                                    if (sendMsg && !client.Silent)
                                         if (client.Banned)
                                         {
                                             if (!client.BanReason.Equals(""))
@@ -513,7 +542,7 @@ namespace GTAServer
                                         Console.WriteLine("Player disconnected: \"" + client.Name + "\" (" + client.DisplayName + ")");
                                     }
                                     LastKicked = client.NetConnection.RemoteEndPoint.Address.ToString();
-                                    PrintPlayerInfo(client, "Disconnected: ");
+                                    Console.ForegroundColor = ConsoleColor.DarkRed; PrintPlayerInfo(client, "Disconnected: "); Console.ResetColor();
                                     Clients.Remove(client);
                                 }
                             }
@@ -535,7 +564,7 @@ namespace GTAServer
                         response.Write(bin.Length);
                         response.Write(bin);
 
-                        LogToConsole(3, false, "Network", "Recieved DiscoveryRequest by "+msg.SenderEndPoint.Address);
+                        LogToConsole(1, false, "Network", "Server Status requested by "+msg.SenderEndPoint.Address);
                         Server.SendDiscoveryResponse(response, msg.SenderEndPoint);
                         break;
                     case NetIncomingMessageType.Data:
@@ -551,22 +580,27 @@ namespace GTAServer
                                         var data = DeserializeBinary<ChatData>(msg.ReadBytes(len)) as ChatData;
                                         if (data != null)
                                         {
-                                            var pass = true;
-                                            if (_gamemode != null) pass = _gamemode.OnChatMessage(client, data.Message);
+                                            var Msg = new ChatMessage();
+                                            Msg.Message = data.Message;
+                                            Msg.Sender = client;
+                                            if (_gamemode != null) Msg = _gamemode.OnChatMessage(Msg);
 
-                                            if (_filterscripts != null) _filterscripts.ForEach(fs => pass = pass && fs.OnChatMessage(client, data.Message));
+                                            if (_filterscripts != null) _filterscripts.ForEach(fs => Msg = fs.OnChatMessage(Msg));
 
-                                            if (pass)
+                                            if (!Msg.Supress)
                                             {
                                                 data.Id = client.NetConnection.RemoteUniqueIdentifier;
-                                                data.Sender = client.DisplayName;
+                                                if(!string.IsNullOrWhiteSpace(Msg.Prefix))
+                                                    data.Sender += "[" + Msg.Prefix + "] ";
+                                                data.Sender += client.DisplayName;
+                                                if (!string.IsNullOrWhiteSpace(Msg.Suffix))
+                                                    data.Sender += " (" + Msg.Suffix + ") ";
                                                 SendToAll(data, PacketType.ChatData, true);
                                                 LogToConsole(1, false, "Chat", data.Sender + ": " +data.Message);
                                             }
                                         }
                                     }
-                                    catch (IndexOutOfRangeException)
-                                    { }
+                                    catch { }
                                 }
                                 break;
                             case PacketType.VehiclePositionData:
@@ -721,6 +755,15 @@ namespace GTAServer
             if (_gamemode != null) _gamemode.OnTick();
             if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnTick());
         }
+        public void Infoscreen()
+        {
+            while (true)
+            {
+                PrintServerInfo();
+                PrintPlayerList();
+                Thread.Sleep(60000);
+            }
+        }
 
         public void PrintPlayerList(string message = "Online Players: ")
         {
@@ -739,19 +782,19 @@ namespace GTAServer
             try { Console.Write("Script Version: " + client.RemoteScriptVersion.ToString() + " | "); } catch (Exception) { }
             try { Console.Write("Health: " + client.Health.ToString() + " | "); } catch (Exception) { }
             try { Console.Write("Vehicle: " + client.IsInVehicle.ToString() + " | "); } catch (Exception) { }
-            try { Console.Write("Veh Health: " + client.VehicleHealth.ToString() + " | "); } catch (Exception) { }
+            try { if(client.IsInVehicle) Console.Write("Veh Health: " + client.VehicleHealth.ToString() + " | "); } catch (Exception) { }
             try { Console.Write("Position: X:" + client.LastKnownPosition.X.ToString() + " Y: " + client.LastKnownPosition.Y.ToString() + " Z: " + client.LastKnownPosition.Z.ToString() + " | "); } catch (Exception) { }
             try { Console.Write("IP: " + client.NetConnection.RemoteEndPoint.Address.ToString() + ":" + client.NetConnection.RemoteEndPoint.Port.ToString() + " | "); } catch (Exception) { }
             try { Console.Write("Ping: " + (client.Latency*1000).ToString() + " | "); } catch (Exception) { }
             try { Console.Write("Status: " + client.NetConnection.Status.ToString() + " | "); } catch (Exception) { }
             try { Console.Write("NetUID: " + client.NetConnection.RemoteUniqueIdentifier.ToString() + " | "); } catch (Exception) { }
             try { Console.Write("MPU: " + client.NetConnection.CurrentMTU.ToString() + " | "); } catch (Exception) { }
-            try { Console.Write("Sent Messages: " + client.NetConnection.Statistics.SentMessages.ToString() + " | "); } catch (Exception) { }
+            /*try { Console.Write("Sent Messages: " + client.NetConnection.Statistics.SentMessages.ToString() + " | "); } catch (Exception) { }
             try { Console.Write("Recieved Messages: " + client.NetConnection.Statistics.ReceivedMessages.ToString() + " | "); } catch (Exception) { }
             try { Console.Write("Dropped Messages: " + client.NetConnection.Statistics.DroppedMessages.ToString() + " | "); } catch (Exception) { }
             try { Console.Write("Sent Bytes: " + client.NetConnection.Statistics.SentBytes.ToString() + " | "); } catch (Exception) { }
-            try { Console.Write("Recieved Bytes: " + client.NetConnection.Statistics.ReceivedBytes.ToString() + " | "); } catch (Exception) { }
-            Console.Write("\n"); Console.Write("\n");
+            try { Console.Write("Recieved Bytes: " + client.NetConnection.Statistics.ReceivedBytes.ToString() + " | "); } catch (Exception) { }*/
+            Console.Write("\n");//Console.Write("\n");
         }
 
         public void PrintServerInfo( string message = "Server Info: ")
@@ -776,12 +819,15 @@ namespace GTAServer
 
         public void SendToAll(object newData, PacketType packetType, bool important)
         {
-            var data = SerializeBinary(newData);
-            NetOutgoingMessage msg = Server.CreateMessage();
-            msg.Write((int)packetType);
-            msg.Write(data.Length);
-            msg.Write(data);
-            Server.SendToAll(msg, important ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced);
+            try
+            {
+                var data = SerializeBinary(newData);
+                NetOutgoingMessage msg = Server.CreateMessage();
+                msg.Write((int)packetType);
+                msg.Write(data.Length);
+                msg.Write(data);
+                Server.SendToAll(msg, important ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced);
+            }catch(Exception ex) { LogToConsole(5, false, "Network", "Error in SendToAll: " + ex.Message.ToString()); }
         }
 
         public void SendToAll(object newData, PacketType packetType, bool important, Client exclude)
@@ -1129,6 +1175,14 @@ namespace GTAServer
         {
             player.Kicked = true;player.KickReason = reason.ToString();player.Silent = silent;
             player.NetConnection.Disconnect("Kicked: " + reason);
+        }
+
+        public void DenyPlayer(Client player, string reason, bool silent = true)
+        {
+            player.NetConnection.Deny(reason);
+            Console.ForegroundColor = ConsoleColor.DarkRed; PrintPlayerInfo(player, "Connection Denied: "+ reason + " || "); Console.ResetColor();
+            if (!silent) SendNotificationToAll(player.DisplayName+" was rejected by the server: "+reason);
+            Clients.Remove(player);
         }
 
         public void SetPlayerPosition(Client player, Vector3 newPosition)

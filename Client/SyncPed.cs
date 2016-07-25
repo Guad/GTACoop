@@ -162,124 +162,125 @@ namespace GTACoOp
 
         public void DisplayLocally()
         {
-            const float hRange = 200f;
-            var gPos = IsInVehicle ? VehiclePosition : Position;
-            var inRange = Game.Player.Character.IsInRangeOf(gPos, hRange);
+            try {
+                const float hRange = 200f;
+                var gPos = IsInVehicle ? VehiclePosition : Position;
+                var inRange = Game.Player.Character.IsInRangeOf(gPos, hRange);
             
-            if (inRange && !_isStreamedIn)
-            {
-                _isStreamedIn = true;
-                if (_mainBlip != null)
+                if (inRange && !_isStreamedIn)
                 {
-                    _mainBlip.Remove();
-                    _mainBlip = null;
-                }
-            }
-            else if(!inRange && _isStreamedIn)
-            {
-                Clear();
-                _isStreamedIn = false;
-            }
-
-            if (!inRange)
-            {
-                if (_mainBlip == null && _blip)
-                {
-                    _mainBlip = World.CreateBlip(gPos);
-                    _mainBlip.Color = BlipColor.White;
-                    _mainBlip.Scale = 0.8f;
-                    SetBlipNameFromTextFile(_mainBlip, Name == null ? "<nameless>" : Name);
-                }
-                if(_blip && _mainBlip != null)
-                    _mainBlip.Position = gPos;
-                return;
-            }
-
-            
-            if (Character == null || !Character.Exists() || !Character.IsInRangeOf(gPos, hRange) || Character.Model.Hash != ModelHash || (Character.IsDead && PedHealth > 0))
-            {
-                if (Character != null) Character.Delete();
-
-                Character = World.CreatePed(new Model(ModelHash), gPos, Rotation.Z);
-                if (Character == null) return;
-
-                Character.BlockPermanentEvents = true;
-                Character.IsInvincible = true;
-                Character.CanRagdoll = false;
-                Character.RelationshipGroup = _relGroup;
-                if (_blip)
-                {
-                    Character.AddBlip();
-                    if (Character.CurrentBlip == null) return;
-                    Character.CurrentBlip.Color = BlipColor.White;
-                    Character.CurrentBlip.Scale = 0.8f;
-                    SetBlipNameFromTextFile(Character.CurrentBlip, Name);
-                }
-                return;
-            }
-
-            if (!Character.IsOccluded && Character.IsInRangeOf(Game.Player.Character.Position, 20f))
-            {
-                var oldPos = UI.WorldToScreen(Character.Position + new Vector3(0, 0, 1.5f));
-                if (oldPos.X != 0 && oldPos.Y != 0)
-                {
-                    var res = UIMenu.GetScreenResolutionMantainRatio();
-                    var pos = new Point((int)((oldPos.X / (float)UI.WIDTH) * res.Width),
-                        (int)((oldPos.Y / (float)UI.HEIGHT) * res.Height));
-
-
-                    new UIResText(Name == null ? "<nameless>" : Name, pos, 0.3f, Color.WhiteSmoke, Font.ChaletLondon, UIResText.Alignment.Centered)
+                    _isStreamedIn = true;
+                    if (_mainBlip != null)
                     {
-                        Outline = true,
-                    }.Draw();
-                }
-            }
-
-            if ((!_lastVehicle && IsInVehicle && VehicleHash != 0) || (_lastVehicle && IsInVehicle && (MainVehicle == null || !Character.IsInVehicle(MainVehicle) || MainVehicle.Model.Hash != VehicleHash || VehicleSeat != Util.GetPedSeat(Character))))
-            {
-                if (MainVehicle != null && Util.IsVehicleEmpty(MainVehicle))
-                    MainVehicle.Delete();
-
-                var vehs = World.GetAllVehicles().OrderBy(v =>
-                {
-                    if (v == null) return float.MaxValue;
-                    return (v.Position - Character.Position).Length();
-                }).ToList();
-
-
-                if (vehs.Any() && vehs[0].Model.Hash == VehicleHash && vehs[0].IsInRangeOf(gPos, 3f))
-                {
-                    MainVehicle = vehs[0];
-                    if (Game.Player.Character.IsInVehicle(MainVehicle) &&
-                        VehicleSeat == Util.GetPedSeat(Game.Player.Character))
-                    {
-                        Game.Player.Character.Task.WarpOutOfVehicle(MainVehicle);
-                        UI.Notify("~r~Car jacked!");
+                        _mainBlip.Remove();
+                        _mainBlip = null;
                     }
                 }
-                else
+                else if(!inRange && _isStreamedIn)
                 {
-                    MainVehicle = World.CreateVehicle(new Model(VehicleHash), gPos, 0);
+                    Clear();
+                    _isStreamedIn = false;
                 }
 
-                if (MainVehicle != null)
+                if (!inRange)
                 {
-                    MainVehicle.PrimaryColor = (VehicleColor)VehiclePrimaryColor;
-                    MainVehicle.SecondaryColor = (VehicleColor)VehicleSecondaryColor;
-                    MainVehicle.Quaternion = VehicleRotation;
-                    MainVehicle.IsInvincible = true;
-                    Character.Task.WarpIntoVehicle(MainVehicle, (VehicleSeat)VehicleSeat);
-
-                    /*if (_playerSeat != -2 && !Game.Player.Character.IsInVehicle(_mainVehicle))
-                    { // TODO: Fix me.
-                        Game.Player.Character.Task.WarpIntoVehicle(_mainVehicle, (VehicleSeat)_playerSeat);
-                    }*/
+                    if (_mainBlip == null && _blip)
+                    {
+                        _mainBlip = World.CreateBlip(gPos);
+                        _mainBlip.Color = BlipColor.White;
+                        _mainBlip.Scale = 0.8f;
+                        SetBlipNameFromTextFile(_mainBlip, Name == null ? "<nameless>" : Name);
+                    }
+                    if(_blip && _mainBlip != null)
+                        _mainBlip.Position = gPos;
+                    return;
                 }
 
-                _lastVehicle = true;
-                _justEnteredVeh = true;
-                _enterVehicleStarted = DateTime.Now;
-                return;
+            
+                if (Character == null || !Character.Exists() || !Character.IsInRangeOf(gPos, hRange) || Character.Model.Hash != ModelHash || (Character.IsDead && PedHealth > 0))
+                {
+                    if (Character != null) Character.Delete();
+
+                    Character = World.CreatePed(new Model(ModelHash), gPos, Rotation.Z);
+                    if (Character == null) return;
+
+                    Character.BlockPermanentEvents = true;
+                    Character.IsInvincible = true;
+                    Character.CanRagdoll = false;
+                    Character.RelationshipGroup = _relGroup;
+                    if (_blip)
+                    {
+                        Character.AddBlip();
+                        if (Character.CurrentBlip == null) return;
+                        Character.CurrentBlip.Color = BlipColor.White;
+                        Character.CurrentBlip.Scale = 0.8f;
+                        SetBlipNameFromTextFile(Character.CurrentBlip, Name);
+                    }
+                    return;
+                }
+
+                if (!Character.IsOccluded && Character.IsInRangeOf(Game.Player.Character.Position, 20f))
+                {
+                    var oldPos = UI.WorldToScreen(Character.Position + new Vector3(0, 0, 1.5f));
+                    if (oldPos.X != 0 && oldPos.Y != 0)
+                    {
+                        var res = UIMenu.GetScreenResolutionMantainRatio();
+                        var pos = new Point((int)((oldPos.X / (float)UI.WIDTH) * res.Width),
+                            (int)((oldPos.Y / (float)UI.HEIGHT) * res.Height));
+
+
+                        new UIResText(Name == null ? "<nameless>" : Name, pos, 0.3f, Color.WhiteSmoke, Font.ChaletLondon, UIResText.Alignment.Centered)
+                        {
+                            Outline = true,
+                        }.Draw();
+                    }
+                }
+
+                if ((!_lastVehicle && IsInVehicle && VehicleHash != 0) || (_lastVehicle && IsInVehicle && (MainVehicle == null || !Character.IsInVehicle(MainVehicle) || MainVehicle.Model.Hash != VehicleHash || VehicleSeat != Util.GetPedSeat(Character))))
+                {
+                    if (MainVehicle != null && Util.IsVehicleEmpty(MainVehicle))
+                        MainVehicle.Delete();
+
+                    var vehs = World.GetAllVehicles().OrderBy(v =>
+                    {
+                        if (v == null) return float.MaxValue;
+                        return (v.Position - Character.Position).Length();
+                    }).ToList();
+
+
+                    if (vehs.Any() && vehs[0].Model.Hash == VehicleHash && vehs[0].IsInRangeOf(gPos, 3f))
+                    {
+                        MainVehicle = vehs[0];
+                        if (Game.Player.Character.IsInVehicle(MainVehicle) &&
+                            VehicleSeat == Util.GetPedSeat(Game.Player.Character))
+                        {
+                            Game.Player.Character.Task.WarpOutOfVehicle(MainVehicle);
+                            UI.Notify("~r~Car jacked!");
+                        }
+                    }
+                    else
+                    {
+                        MainVehicle = World.CreateVehicle(new Model(VehicleHash), gPos, 0);
+                    }
+
+                    if (MainVehicle != null)
+                    {
+                        MainVehicle.PrimaryColor = (VehicleColor)VehiclePrimaryColor;
+                        MainVehicle.SecondaryColor = (VehicleColor)VehicleSecondaryColor;
+                        MainVehicle.Quaternion = VehicleRotation;
+                        MainVehicle.IsInvincible = true;
+                        Character.Task.WarpIntoVehicle(MainVehicle, (VehicleSeat)VehicleSeat);
+
+                        /*if (_playerSeat != -2 && !Game.Player.Character.IsInVehicle(_mainVehicle))
+                        { // TODO: Fix me.
+                            Game.Player.Character.Task.WarpIntoVehicle(_mainVehicle, (VehicleSeat)_playerSeat);
+                        }*/
+                    }
+
+                    _lastVehicle = true;
+                    _justEnteredVeh = true;
+                    _enterVehicleStarted = DateTime.Now;
+                    return;
             }
            
             if (_lastVehicle && _justEnteredVeh && IsInVehicle && !Character.IsInVehicle(MainVehicle) && DateTime.Now.Subtract(_enterVehicleStarted).TotalSeconds <= 4)
@@ -492,38 +493,49 @@ namespace GTACoOp
                     _lastAiming = IsAiming;
                 }
                 _lastVehicle = IsInVehicle;
+            }
+            catch (Exception ex)
+            {
+                UI.Notify("Sync error: "+ex.Message.ToString());
+            }
         }
 
-        public void Clear()
+    public void Clear()
         {
-            /*if (_mainVehicle != null && Character.IsInVehicle(_mainVehicle) && Game.Player.Character.IsInVehicle(_mainVehicle))
+            try
             {
-                _playerSeat = Util.GetPedSeat(Game.Player.Character);
-            }
-            else
-            {
-                _playerSeat = -2;
-            }*/
+                /*if (_mainVehicle != null && Character.IsInVehicle(_mainVehicle) && Game.Player.Character.IsInVehicle(_mainVehicle))
+                {
+                    _playerSeat = Util.GetPedSeat(Game.Player.Character);
+                }
+                else
+                {
+                    _playerSeat = -2;
+                }*/
 
-            if (Character != null)
+                if (Character != null)
+                {
+                    Character.Model.MarkAsNoLongerNeeded();
+                    Character.Delete();
+                }
+                if (_mainBlip != null)
+                {
+                    _mainBlip.Remove();
+                    _mainBlip = null;
+                }
+                if (MainVehicle != null && Util.IsVehicleEmpty(MainVehicle))
+                {
+                    MainVehicle.Model.MarkAsNoLongerNeeded();
+                    MainVehicle.Delete();
+                }
+                if (_parachuteProp != null)
+                {
+                    _parachuteProp.Delete();
+                    _parachuteProp = null;
+                }
+            } catch (Exception ex)
             {
-                Character.Model.MarkAsNoLongerNeeded();
-                Character.Delete();
-            }
-            if (_mainBlip != null)
-            {
-                _mainBlip.Remove();
-                _mainBlip = null;
-            }
-            if (MainVehicle != null && Util.IsVehicleEmpty(MainVehicle))
-            {
-                MainVehicle.Model.MarkAsNoLongerNeeded();
-                MainVehicle.Delete();
-            }
-            if (_parachuteProp != null)
-            {
-                _parachuteProp.Delete();
-                _parachuteProp = null;
+                UI.Notify("Clear sync error: " + ex.Message.ToString());
             }
         }
     }

@@ -11,9 +11,9 @@ namespace GTAServer
         }
 
 
-        public virtual bool OnChatMessage(Client sender, string message)
+        public virtual ChatMessage OnChatMessage(ChatMessage message)
         {
-            return true;
+            return message;
         }
 
         public virtual bool OnPlayerConnect(Client player)
