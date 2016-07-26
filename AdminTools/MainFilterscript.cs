@@ -28,9 +28,12 @@ namespace AdminTools
         static void LogToConsole(int flag, bool debug, string module,string message)
         {
             if (module == null || module == "") { module = "AdminTools"; }
-            if (flag == 1) {
+            if(flag == 1)
+            {
                 Console.WriteLine("[" + DateTime.Now + "] (DEBUG) " + module.ToUpper() + ": " + message, Color.Cyan);
-            } else if(flag == 2) {
+            }
+            else if (flag == 2)
+            {
                 Console.WriteLine("[" + DateTime.Now + "] (SUCCESS) " + module.ToUpper() + ": " + message, Color.Green);
             } else if(flag == 3) {
                 Console.WriteLine("[" + DateTime.Now + "] (WARNING) " + module.ToUpper() + ": " + message, Color.Orange);
@@ -119,11 +122,6 @@ namespace AdminTools
                 Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for impersonating.", player.DisplayName.ToString()));
                 Program.ServerInstance.DenyPlayer(player, "Change your nickname to a proper one."); return;
             }
-            if (player.DisplayName.Trim().StartsWith("[") || player.DisplayName.Trim().EndsWith(")"))
-            {
-                Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for impersonating.", player.DisplayName.ToString()));
-                Program.ServerInstance.DenyPlayer(player, "Remove the () and [] from your nickname."); return;
-            }
             if (Properties.Settings.Default.KickOnDefaultName)
             {
                 if (player.DisplayName.StartsWith("RLD!") || player.DisplayName.StartsWith("Player") || player.DisplayName.StartsWith("nosTEAM") || player.DisplayName.ToString() == "3dmgame1")
@@ -195,23 +193,33 @@ namespace AdminTools
             }
             if (Properties.Settings.Default.LimitNickNames)
             {
-                if (player.DisplayName.Length < 3 || player.DisplayName.Length > 100 || Regex.Replace(player.DisplayName, "~.~", "", RegexOptions.IgnoreCase).Length > 15)
+                if (player.DisplayName.Length < 3 || player.DisplayName.Length > 100 || Regex.Replace(player.DisplayName, "~.~", "", RegexOptions.IgnoreCase).Length > 20)
                 {
-                    Program.ServerInstance.DenyPlayer(player, "Your nickname has to be between 3 and 15 chars long. (Max 100 with colors)"); return;
+                    Program.ServerInstance.DenyPlayer(player, "Your nickname has to be between 3 and 20 chars long. (Max 100 with colors)"); return;
                 }
             }
-            /*if (Properties.Settings.Default.AntiClones) // TODO: FixIt
+            if (Properties.Settings.Default.AntiClones)
             {
+                int count = 0;
                 for (var i = 0; i < Program.ServerInstance.Clients.Count; i++)
                 {
-                    if (player.DisplayName.Contains(Program.ServerInstance.Clients[i].DisplayName))
+                    if (player.NetConnection.RemoteEndPoint.Address.Equals(Program.ServerInstance.Clients[i].NetConnection.RemoteEndPoint.Address))
                     {
-                        player.DisplayName = Program.ServerInstance.Clients[i].DisplayName;
-                        Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for clone detected!", Program.ServerInstance.Clients[i].DisplayName.ToString()));
-                        Program.ServerInstance.KickPlayer(Program.ServerInstance.Clients[i], "Clone detected!");
+                        count++;
+                        if (count > 1)
+                        {
+                            player.DisplayName = Program.ServerInstance.Clients[i].DisplayName;
+                            //Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for clone detected!", Program.ServerInstance.Clients[i].DisplayName.ToString()));
+                            Program.ServerInstance.DenyPlayer(Program.ServerInstance.Clients[i], "Clone detected!"); return;
+                        }
                     }
                 }
-            }*/
+            }
+            if (player.DisplayName.Trim().StartsWith("[") || player.DisplayName.Trim().EndsWith(")"))
+            {
+                Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for impersonating.", player.DisplayName.ToString()));
+                Program.ServerInstance.DenyPlayer(player, "Remove the () and [] from your nickname."); return;
+            }
         }
         public override bool OnPlayerConnect(Client player)
         {
@@ -739,20 +747,7 @@ namespace AdminTools
                 lock (Lists._authenticatedUsers) if (!Lists._authenticatedUsers.Contains(message.Sender.NetConnection.RemoteUniqueIdentifier)) Lists._authenticatedUsers.Add(message.Sender.NetConnection.RemoteUniqueIdentifier);
 
                 Program.ServerInstance.SendChatMessageToPlayer(message.Sender, "SERVER", "Authentication successful!");
-                if ((int)account.Level == 0) {
-                    LogToConsole(2, false, "Accounting", string.Format("User \"{0}\" logged in.", account.Name + " (" + message.Sender.DisplayName + ")"));
-                    message.Supress = true; return message;
-                } else if((int)account.Level == 1) {
-                    LogToConsole(2, false, "Accounting", string.Format("Moderator \"{0}\" logged in.", account.Name + " (" + message.Sender.DisplayName + ")"));
-                    message.Supress = true; return message;
-                }else if ((int)account.Level == 2) {
-                    LogToConsole(2, false, "Accounting", string.Format("Administrator \"{0}\" logged in.", account.Name + " (" + message.Sender.DisplayName + ")"));
-                    message.Supress = true; return message;
-                }
-                else if ((int)account.Level == 3) {
-                    LogToConsole(2, false, "Accounting", string.Format("Owner \"{0}\" logged in.", account.Name + " (" + message.Sender.DisplayName + ")"));
-                    message.Supress = true; return message;
-                }
+                 LogToConsole(2, false, "Accounting", string.Format("{0} \"{1}\" logged in.", account.Level.ToString(), message.Sender.DisplayName));
             }
 
             if (message.Message == "/logout")
@@ -994,7 +989,7 @@ namespace AdminTools
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine(string.Format("Check for ban of player \"{0}\" failed!", client.DisplayName));
+                            Console.WriteLine(string.Format("Check for ban of player \"{0}\" failed: {1}", client.DisplayName, ex.Message.ToString()));
                         }
                         return true;
                     }

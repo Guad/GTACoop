@@ -46,7 +46,7 @@ namespace GTAServer
         public bool Kicked { get; set; }
         public string KickReason { get; set; }
         public bool Silent { get; set; }
-        public MaxMind.GeoIP2.Responses.CityResponse geoIP { get; set; }
+        public MaxMind.GeoIP2.Responses.CountryResponse geoIP { get; set; }
 
         public Client(NetConnection nc)
         {
@@ -110,6 +110,9 @@ namespace GTAServer
             Port = port;
             GamemodeName = gamemodeName;
             Name = name;
+            WanIP = "";
+            LanIP = "";
+            geoIP = null;
             SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
             NetPeerConfiguration config = new NetPeerConfiguration("GTAVOnlineRaces");
             config.Port = port;
@@ -140,9 +143,10 @@ namespace GTAServer
         private ServerScript _gamemode { get; set; }
 
         private List<ServerScript> _filterscripts;
-        public string WANIP { get; set; }
-        public string LANIP { get; set; }
+        public string WanIP { get; set; }
+        public string LanIP { get; set; }
         public string LastKicked { get; private set; }
+        public MaxMind.GeoIP2.Responses.CountryResponse geoIP { get; set; }
 
         private DateTime _lastAnnounceDateTime;
 
@@ -289,6 +293,10 @@ namespace GTAServer
             {
                 Console.ForegroundColor = ConsoleColor.Red; Console.WriteLine("[" + DateTime.Now + "] (ERROR) " + module.ToUpper() + ": " + message);
             }
+            else if (flag == 6)
+            {
+                Console.ForegroundColor = ConsoleColor.Magenta; Console.WriteLine("[" + DateTime.Now + "] " + module.ToUpper() + ": " + message);
+            }
             else
             {
                 Console.WriteLine("[" + DateTime.Now + "] " + module.ToUpper() + ": " + message);
@@ -297,464 +305,470 @@ namespace GTAServer
         }
         public void Tick()
         {
-            if (AnnounceSelf && DateTime.Now.Subtract(_lastAnnounceDateTime).TotalMinutes >= 5)
+            try
             {
-                _lastAnnounceDateTime = DateTime.Now;
-                AnnounceSelfToMaster();
-            }
-
-            NetIncomingMessage msg;
-            while ((msg = Server.ReadMessage()) != null)
-            {
-                Client client = null;
-                lock (Clients)
+                if (AnnounceSelf && DateTime.Now.Subtract(_lastAnnounceDateTime).TotalMinutes >= 5)
                 {
-                    foreach (Client c in Clients)
-                    {
-                        if (c != null && c.NetConnection != null &&
-                            c.NetConnection.RemoteUniqueIdentifier != 0 &&
-                            msg.SenderConnection != null &&
-                            c.NetConnection.RemoteUniqueIdentifier == msg.SenderConnection.RemoteUniqueIdentifier)
-                        {
-                            client = c;
-                            break;
-                        }
-                    }
+                    _lastAnnounceDateTime = DateTime.Now;
+                    AnnounceSelfToMaster();
                 }
 
-                if (client == null) client = new Client(msg.SenderConnection);
-
-                switch (msg.MessageType)
+                NetIncomingMessage msg;
+                while ((msg = Server.ReadMessage()) != null)
                 {
-                    case NetIncomingMessageType.UnconnectedData:
-                        var isPing = msg.ReadString();
-                        if (isPing == "ping")
+                    Client client = null;
+                    lock (Clients)
+                    {
+                        foreach (Client c in Clients)
                         {
-                            LogToConsole(0, false, "Network", "INFO: ping received from " + msg.SenderEndPoint.Address.ToString());
-                            var pong = Server.CreateMessage();
-                            pong.Write("pong");
-                            Server.SendMessage(pong, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
-                        }
-                        if (isPing == "query")
-                        {
-                            int playersonline = 0;
-                            lock (Clients) playersonline = Clients.Count;
-                            Console.WriteLine("INFO: query received from " + msg.SenderEndPoint.Address.ToString());
-                            var pong = Server.CreateMessage();
-                            pong.Write(Name + "%" + PasswordProtected + "%" + playersonline + "%" + MaxPlayers + "%" + GamemodeName);
-                            Server.SendMessage(pong, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
-                        }
-                        break;
-                    case NetIncomingMessageType.VerboseDebugMessage:
-                        LogToConsole(0, true, "Network", msg.ReadString()); break;
-                    case NetIncomingMessageType.DebugMessage:
-                        LogToConsole(1, false, "Network", msg.ReadString()); break;
-                    case NetIncomingMessageType.WarningMessage:
-                        LogToConsole(3, true, "Network", msg.ReadString()); break;
-                    case NetIncomingMessageType.ErrorMessage:
-                        LogToConsole(4, false, "Network", msg.ReadString()); break;
-                    case NetIncomingMessageType.ConnectionLatencyUpdated:
-                        client.Latency = msg.ReadFloat(); break;
-                    case NetIncomingMessageType.ConnectionApproval:
-                        var type = msg.ReadInt32();
-                        var leng = msg.ReadInt32();
-                        var connReq = DeserializeBinary<ConnectionRequest>(msg.ReadBytes(leng)) as ConnectionRequest;
-                        if (connReq == null)
-                        {
-                            client.NetConnection.Deny("Connection Object is null");
-                            Server.Recycle(msg);
-                            continue;
-                        }
-                        Console.Write("New connection request: ");
-                        try { Console.Write("Nickname: " + connReq.DisplayName.ToString() + " | "); } catch (Exception) { }
-                        try { Console.Write("Name: " + connReq.Name.ToString() + " | "); } catch (Exception) { }
-                        try { Console.Write("Password: " + connReq.Password.ToString() + " | "); } catch (Exception) { }
-                        try { Console.Write("Game Version: " + connReq.GameVersion.ToString() + " | "); } catch (Exception) { }
-                        try { Console.Write("Script Version: " + connReq.ScriptVersion.ToString() + " | "); } catch (Exception) { }
-                        try { Console.Write("IP: " + msg.SenderEndPoint.Address.ToString() + ":" + msg.SenderEndPoint.Port.ToString() + " | "); } catch (Exception) { }
-                        Console.Write("\n");
-                        if(!AllowOutdatedClients && (ScriptVersion)connReq.ScriptVersion != Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last())
-                        {
-                            var ReadableScriptVersion = Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last().ToString();
-                            ReadableScriptVersion = Regex.Replace(ReadableScriptVersion, "VERSION_", "", RegexOptions.IgnoreCase);
-                            ReadableScriptVersion = Regex.Replace(ReadableScriptVersion, "_", ".", RegexOptions.IgnoreCase);
-                            client.NetConnection.Deny(string.Format("Update your GTACoop to v{0} from bit.ly/gtacoop", ReadableScriptVersion));
-                            LogToConsole(3, true, "Network", "Client " + connReq.DisplayName + " tried to connect with outdated scriptversion " + connReq.ScriptVersion.ToString() + " but the server requires "+ Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last().ToString());
-                            Server.Recycle(msg);
-                            continue;
-                        }
-                        if ((ScriptVersion)connReq.ScriptVersion == ScriptVersion.Unknown)
-                        {
-                            client.NetConnection.Deny("Unknown version. Please update your client from bit.ly/gtacoop");
-                            LogToConsole(3, true, "Network", "Client "+ connReq.DisplayName +" tried to connect with unknown scriptversion "+connReq.ScriptVersion.ToString());
-                            Server.Recycle(msg);
-                            continue;
-                        }
-
-                        int clients = 0;
-                        lock (Clients) clients = Clients.Count;
-                        if (clients < MaxPlayers)
-                        {
-                            if (PasswordProtected && !string.IsNullOrWhiteSpace(Password))
+                            if (c != null && c.NetConnection != null &&
+                                c.NetConnection.RemoteUniqueIdentifier != 0 &&
+                                msg.SenderConnection != null &&
+                                c.NetConnection.RemoteUniqueIdentifier == msg.SenderConnection.RemoteUniqueIdentifier)
                             {
-                                if (Password != connReq.Password)
-                                {
-                                    client.NetConnection.Deny("Wrong password.");
-                                    LogToConsole(3, false, "Network", connReq.DisplayName+" connection refused: Wrong password: "+connReq.Password.ToString());
-                                    if (_gamemode != null) _gamemode.OnConnectionRefused(client, "Wrong password.");
-                                    if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(client, "Wrong password."));
-                                    Server.Recycle(msg);
-                                    continue;
-                                }
+                                client = c;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (client == null) client = new Client(msg.SenderConnection);
+
+                    switch (msg.MessageType)
+                    {
+                        case NetIncomingMessageType.UnconnectedData:
+                            var isPing = msg.ReadString();
+                            if (isPing == "ping")
+                            {
+                                LogToConsole(0, false, "Network", "INFO: ping received from " + msg.SenderEndPoint.Address.ToString());
+                                var pong = Server.CreateMessage();
+                                pong.Write("pong");
+                                Server.SendMessage(pong, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
+                            }
+                            if (isPing == "query")
+                            {
+                                int playersonline = 0;
+                                lock (Clients) playersonline = Clients.Count;
+                                Console.WriteLine("INFO: query received from " + msg.SenderEndPoint.Address.ToString());
+                                var pong = Server.CreateMessage();
+                                pong.Write(Name + "%" + PasswordProtected + "%" + playersonline + "%" + MaxPlayers + "%" + GamemodeName);
+                                Server.SendMessage(pong, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
+                            }
+                            break;
+                        case NetIncomingMessageType.VerboseDebugMessage:
+                            LogToConsole(0, true, "Network", msg.ReadString()); break;
+                        case NetIncomingMessageType.DebugMessage:
+                            LogToConsole(1, false, "Network", msg.ReadString()); break;
+                        case NetIncomingMessageType.WarningMessage:
+                            LogToConsole(3, true, "Network", msg.ReadString()); break;
+                        case NetIncomingMessageType.ErrorMessage:
+                            LogToConsole(4, false, "Network", msg.ReadString()); break;
+                        case NetIncomingMessageType.ConnectionLatencyUpdated:
+                            client.Latency = msg.ReadFloat(); break;
+                        case NetIncomingMessageType.ConnectionApproval:
+                            var type = msg.ReadInt32();
+                            var leng = msg.ReadInt32();
+                            var connReq = DeserializeBinary<ConnectionRequest>(msg.ReadBytes(leng)) as ConnectionRequest;
+                            if (connReq == null)
+                            {
+                                client.NetConnection.Deny("Connection Object is null");
+                                Server.Recycle(msg);
+                                continue;
+                            }
+                            Console.Write("New connection request: ");
+                            try { Console.Write("Nickname: " + connReq.DisplayName.ToString() + " | "); } catch (Exception) { }
+                            try { Console.Write("Name: " + connReq.Name.ToString() + " | "); } catch (Exception) { }
+                            #if debug
+                            try { Console.Write("Password: " + connReq.Password.ToString() + " | "); } catch (Exception) { }
+                            #endif
+                            try { Console.Write("Game Version: " + connReq.GameVersion.ToString() + " | "); } catch (Exception) { }
+                            try { Console.Write("Script Version: " + (ScriptVersion)connReq.ScriptVersion + " | "); } catch (Exception) { }
+                            try { Console.Write("IP: " + msg.SenderEndPoint.Address.ToString() + ":" + msg.SenderEndPoint.Port.ToString() + " | "); } catch (Exception) { }
+                            Console.Write("\n");
+                            if (!AllowOutdatedClients && (ScriptVersion)connReq.ScriptVersion != Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last())
+                            {
+                                var ReadableScriptVersion = Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last().ToString();
+                                ReadableScriptVersion = Regex.Replace(ReadableScriptVersion, "VERSION_", "", RegexOptions.IgnoreCase);
+                                ReadableScriptVersion = Regex.Replace(ReadableScriptVersion, "_", ".", RegexOptions.IgnoreCase);
+                                client.NetConnection.Deny(string.Format("Update your GTACoop to v{0} from bit.ly/gtacoop", ReadableScriptVersion));
+                                LogToConsole(3, true, "Network", "Client " + connReq.DisplayName + " tried to connect with outdated scriptversion " + connReq.ScriptVersion.ToString() + " but the server requires " + Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last().ToString());
+                                Server.Recycle(msg);
+                                continue;
+                            }
+                            if ((ScriptVersion)connReq.ScriptVersion == ScriptVersion.Unknown)
+                            {
+                                client.NetConnection.Deny("Unknown version. Please update your client from bit.ly/gtacoop");
+                                LogToConsole(3, true, "Network", "Client " + connReq.DisplayName + " tried to connect with unknown scriptversion " + connReq.ScriptVersion.ToString());
+                                Server.Recycle(msg);
+                                continue;
                             }
 
-                            lock (Clients)
+                            int clients = 0;
+                            lock (Clients) clients = Clients.Count;
+                            if (clients < MaxPlayers)
                             {
-                                int duplicate = 0;
-                                string displayname = connReq.DisplayName;
-                                while (AllowDisplayNames && Clients.Any(c => c.DisplayName == connReq.DisplayName))
+                                if (PasswordProtected && !string.IsNullOrWhiteSpace(Password))
                                 {
-                                    duplicate++;
-
-                                    connReq.DisplayName = displayname + " (" + duplicate + ")";
+                                    if (Password != connReq.Password)
+                                    {
+                                        client.NetConnection.Deny("Wrong password.");
+                                        LogToConsole(3, false, "Network", connReq.DisplayName + " connection refused: Wrong password: " + connReq.Password.ToString());
+                                        if (_gamemode != null) _gamemode.OnConnectionRefused(client, "Wrong password.");
+                                        if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(client, "Wrong password."));
+                                        Server.Recycle(msg);
+                                        continue;
+                                    }
                                 }
 
-                                Clients.Add(client);
-                            }
-                            client.Name = connReq.Name;
-                            client.DisplayName = AllowDisplayNames ? connReq.DisplayName : connReq.Name;
-
-                            if (client.RemoteScriptVersion != (ScriptVersion)connReq.ScriptVersion) client.RemoteScriptVersion = (ScriptVersion)connReq.ScriptVersion;
-                            if (client.GameVersion != connReq.GameVersion) client.GameVersion = connReq.GameVersion;
-
-                            if (_gamemode != null) _gamemode.OnIncomingConnection(client);
-                            if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnIncomingConnection(client));
-
-                            var channelHail = Server.CreateMessage();
-                            channelHail.Write(GetChannelIdForConnection(client));
-                            client.NetConnection.Approve(channelHail);
-                            
-                            PrintPlayerInfo(client, "New incoming connection: ");
-                        }
-                        else
-                        {
-                            client.NetConnection.Deny("No available player slots.");
-                            LogToConsole(4, false, "Network", client.DisplayName+" connection refused: server full with "+ clients.ToString() + " of " + MaxPlayers +" players.");
-                            if (_gamemode != null) _gamemode.OnConnectionRefused(client, "Server is full");
-                            if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(client, "Server is full"));
-                        }
-                        break;
-                    case NetIncomingMessageType.StatusChanged:
-                        var newStatus = (NetConnectionStatus)msg.ReadByte();
-
-                        if (newStatus == NetConnectionStatus.Connected)
-                        {
-                            bool sendMsg = true;
-
-                            Console.ForegroundColor = ConsoleColor.DarkGreen; PrintPlayerInfo(client, "Connected: "); Console.ResetColor();
-                            var path = Program.Location + "GeoIP" + Path.DirectorySeparatorChar + "GeoLite2-City.mmdb";
-                            try
-                            {
-                                using (var reader = new DatabaseReader(path))
+                                lock (Clients)
                                 {
-                                    client.geoIP = reader.City(client.NetConnection.RemoteEndPoint.Address);
+                                    int duplicate = 0;
+                                    string displayname = connReq.DisplayName;
+                                    while (AllowDisplayNames && Clients.Any(c => c.DisplayName == connReq.DisplayName))
+                                    {
+                                        duplicate++;
+
+                                        connReq.DisplayName = displayname + " (" + duplicate + ")";
+                                    }
+
+                                    Clients.Add(client);
                                 }
+                                client.Name = connReq.Name;
+                                client.DisplayName = AllowDisplayNames ? connReq.DisplayName : connReq.Name;
+
+                                if (client.RemoteScriptVersion != (ScriptVersion)connReq.ScriptVersion) client.RemoteScriptVersion = (ScriptVersion)connReq.ScriptVersion;
+                                if (client.GameVersion != connReq.GameVersion) client.GameVersion = connReq.GameVersion;
+                                PrintPlayerInfo(client, "New incoming connection: ");
+
+                                if (_gamemode != null) _gamemode.OnIncomingConnection(client);
+                                if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnIncomingConnection(client));
+
+                                var channelHail = Server.CreateMessage();
+                                channelHail.Write(GetChannelIdForConnection(client));
+                                client.NetConnection.Approve(channelHail);
                             }
-                            catch (Exception ex) { LogToConsole(3, false, "GeoIP", ex.Message.ToString()); }
-                            if (_gamemode != null) sendMsg = sendMsg && _gamemode.OnPlayerConnect(client);
-                            if (_filterscripts != null) _filterscripts.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerConnect(client));
-                            if (sendMsg && !client.Silent)
+                            else
+                            {
+                                client.NetConnection.Deny("No available player slots.");
+                                LogToConsole(4, false, "Network", client.DisplayName + " connection refused: server full with " + clients.ToString() + " of " + MaxPlayers + " players.");
+                                if (_gamemode != null) _gamemode.OnConnectionRefused(client, "Server is full");
+                                if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(client, "Server is full"));
+                            }
+                            break;
+                        case NetIncomingMessageType.StatusChanged:
+                            var newStatus = (NetConnectionStatus)msg.ReadByte();
+
+                            if (newStatus == NetConnectionStatus.Connected)
+                            {
+                                bool sendMsg = true;
+
+                                Console.ForegroundColor = ConsoleColor.DarkGreen; PrintPlayerInfo(client, "Connected: "); Console.ResetColor();
+                                var path = Program.Location + "geoip.mmdb";
                                 try
                                 {
-                                    SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ connected from "+client.geoIP.Country.Name.ToString()+".");
-                                }catch
-                                {
-                                    SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ connected.");
+                                    using (var reader = new DatabaseReader(path))
+                                    {
+                                        client.geoIP = reader.Country(client.NetConnection.RemoteEndPoint.Address);
+                                    }
                                 }
-                        }
-                        else if (newStatus == NetConnectionStatus.Disconnected)
-                        {
-                            lock (Clients)
+                                catch (Exception ex) { LogToConsole(3, false, "GeoIP", ex.Message.ToString()); }
+                                if (_gamemode != null) sendMsg = sendMsg && _gamemode.OnPlayerConnect(client);
+                                if (_filterscripts != null) _filterscripts.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerConnect(client));
+                                if (sendMsg && !client.Silent)
+                                    try
+                                    {
+                                        SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ connected from " + client.geoIP.Country.Name.ToString() + ".");
+                                    }
+                                    catch
+                                    {
+                                        SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ connected.");
+                                    }
+                            }
+                            else if (newStatus == NetConnectionStatus.Disconnected)
                             {
-                                if (Clients.Contains(client))
+                                lock (Clients)
                                 {
-                                    var sendMsg = true;
+                                    if (Clients.Contains(client))
+                                    {
+                                        var sendMsg = true;
 
-                                    if (_gamemode != null) sendMsg = sendMsg && _gamemode.OnPlayerDisconnect(client);
-                                    if (_filterscripts != null) _filterscripts.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerDisconnect(client));
-                                    if (client.NetConnection.RemoteEndPoint.Address.ToString().Equals(LastKicked)) { client.Silent = true; }
-                                    if (sendMsg && !client.Silent)
+                                        if (_gamemode != null) sendMsg = sendMsg && _gamemode.OnPlayerDisconnect(client);
+                                        if (_filterscripts != null) _filterscripts.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerDisconnect(client));
+                                        if (client.NetConnection.RemoteEndPoint.Address.ToString().Equals(LastKicked)) { client.Silent = true; }
+                                        if (sendMsg && !client.Silent)
+                                            if (client.Banned)
+                                            {
+                                                if (!client.BanReason.Equals(""))
+                                                {
+                                                    SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ has been banned for " + client.BanReason);
+                                                }
+                                                else
+                                                {
+                                                    SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ has been banned.");
+                                                }
+                                            }
+                                            else if (client.Kicked)
+                                            {
+                                                if (!client.KickReason.Equals(""))
+                                                {
+                                                    SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ was kicked for " + client.KickReason);
+                                                }
+                                                else
+                                                {
+                                                    SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ has been kicked.");
+                                                }
+                                            }
+                                            else
+                                            {
+                                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ disconnected.");
+                                            }
+
+                                        var dcObj = new PlayerDisconnect()
+                                        {
+                                            Id = client.NetConnection.RemoteUniqueIdentifier,
+                                        };
+
+                                        SendToAll(dcObj, PacketType.PlayerDisconnect, true);
+
                                         if (client.Banned)
                                         {
                                             if (!client.BanReason.Equals(""))
                                             {
-                                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ has been banned for " + client.BanReason);
+                                                Console.WriteLine("Player banned: \"" + client.Name + "\" (" + client.DisplayName + ") for " + client.BanReason);
                                             }
                                             else
                                             {
-                                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ has been banned.");
+                                                Console.ForegroundColor = ConsoleColor.Red; PrintPlayerInfo(client, "Banned: "); Console.ResetColor();
                                             }
-                                        } else if (client.Kicked)
+                                        }
+                                        else if (client.Kicked)
                                         {
                                             if (!client.KickReason.Equals(""))
                                             {
-                                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ was kicked for " + client.KickReason);
+                                                Console.WriteLine("Player kicked: \"" + client.Name + "\" (" + client.DisplayName + ") for " + client.KickReason);
                                             }
                                             else
                                             {
-                                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ has been kicked.");
+                                                Console.ForegroundColor = ConsoleColor.Red; PrintPlayerInfo(client, "Kicked: "); Console.ResetColor();
                                             }
                                         }
-                                        else{
-                                            SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ disconnected.");
-                                        }
-
-                                    var dcObj = new PlayerDisconnect()
-                                    {
-                                        Id = client.NetConnection.RemoteUniqueIdentifier,
-                                    };
-
-                                    SendToAll(dcObj, PacketType.PlayerDisconnect, true);
-
-                                    if (client.Banned)
-                                    {
-                                        if (!client.BanReason.Equals(""))
-                                        {
-                                            Console.WriteLine("Player kicked: \"" + client.Name + "\" (" + client.DisplayName + ") for " + client.BanReason);
-                                        }
                                         else
                                         {
-                                            Console.WriteLine("Player banned: \"" + client.Name + "\" (" + client.DisplayName + ")");
+                                            Console.ForegroundColor = ConsoleColor.DarkRed; PrintPlayerInfo(client, "Disconnected: "); Console.ResetColor();
                                         }
+                                        LastKicked = client.NetConnection.RemoteEndPoint.Address.ToString();
+                                        Clients.Remove(client);
                                     }
-                                    else if (client.Kicked)
-                                    {
-                                        if (!client.KickReason.Equals(""))
-                                        {
-                                            Console.WriteLine("Player kicked: \"" + client.Name + "\" (" + client.DisplayName + ") for " + client.KickReason);
-                                        }
-                                        else
-                                        {
-                                            Console.WriteLine("Player kicked: \"" + client.Name + "\" (" + client.DisplayName + ")");
-                                        }
-                                    }
-                                    else
-                                    {
-                                        Console.WriteLine("Player disconnected: \"" + client.Name + "\" (" + client.DisplayName + ")");
-                                    }
-                                    LastKicked = client.NetConnection.RemoteEndPoint.Address.ToString();
-                                    Console.ForegroundColor = ConsoleColor.DarkRed; PrintPlayerInfo(client, "Disconnected: "); Console.ResetColor();
-                                    Clients.Remove(client);
                                 }
                             }
-                        }
-                        break;
-                    case NetIncomingMessageType.DiscoveryRequest:
-                        NetOutgoingMessage response = Server.CreateMessage();
-                        var obj = new DiscoveryResponse();
-                        obj.ServerName = Name;
-                        obj.MaxPlayers = MaxPlayers;
-                        obj.PasswordProtected = PasswordProtected;
-                        obj.Gamemode = GamemodeName;
-                        lock (Clients) obj.PlayerCount = Clients.Count;
-                        obj.Port = Port;
+                            break;
+                        case NetIncomingMessageType.DiscoveryRequest:
+                            NetOutgoingMessage response = Server.CreateMessage();
+                            var obj = new DiscoveryResponse();
+                            obj.ServerName = Name;
+                            obj.MaxPlayers = MaxPlayers;
+                            obj.PasswordProtected = PasswordProtected;
+                            obj.Gamemode = GamemodeName;
+                            lock (Clients) obj.PlayerCount = Clients.Count;
+                            obj.Port = Port;
 
-                        var bin = SerializeBinary(obj);
+                            var bin = SerializeBinary(obj);
 
-                        response.Write((int)PacketType.DiscoveryResponse);
-                        response.Write(bin.Length);
-                        response.Write(bin);
+                            response.Write((int)PacketType.DiscoveryResponse);
+                            response.Write(bin.Length);
+                            response.Write(bin);
 
-                        LogToConsole(1, false, "Network", "Server Status requested by "+msg.SenderEndPoint.Address);
-                        Server.SendDiscoveryResponse(response, msg.SenderEndPoint);
-                        break;
-                    case NetIncomingMessageType.Data:
-                        var packetType = (PacketType)msg.ReadInt32();
+                            LogToConsole(1, false, "Network", "Server Status requested by " + msg.SenderEndPoint.Address);
+                            Server.SendDiscoveryResponse(response, msg.SenderEndPoint);
+                            break;
+                        case NetIncomingMessageType.Data:
+                            var packetType = (PacketType)msg.ReadInt32();
 
-                        switch (packetType)
-                        {
-                            case PacketType.ChatData:
-                                {
-                                    try
+                            switch (packetType)
+                            {
+                                case PacketType.ChatData:
                                     {
-                                        var len = msg.ReadInt32();
-                                        var data = DeserializeBinary<ChatData>(msg.ReadBytes(len)) as ChatData;
-                                        if (data != null)
+                                        try
                                         {
-                                            var Msg = new ChatMessage();
-                                            Msg.Message = data.Message;
-                                            Msg.Sender = client;
-                                            if (_gamemode != null) Msg = _gamemode.OnChatMessage(Msg);
-
-                                            if (_filterscripts != null) _filterscripts.ForEach(fs => Msg = fs.OnChatMessage(Msg));
-
-                                            if (!Msg.Supress)
+                                            var len = msg.ReadInt32();
+                                            var data = DeserializeBinary<ChatData>(msg.ReadBytes(len)) as ChatData;
+                                            if (data != null)
                                             {
-                                                data.Id = client.NetConnection.RemoteUniqueIdentifier;
-                                                if(!string.IsNullOrWhiteSpace(Msg.Prefix))
-                                                    data.Sender += "[" + Msg.Prefix + "] ";
-                                                data.Sender += client.DisplayName;
-                                                if (!string.IsNullOrWhiteSpace(Msg.Suffix))
-                                                    data.Sender += " (" + Msg.Suffix + ") ";
-                                                SendToAll(data, PacketType.ChatData, true);
-                                                LogToConsole(1, false, "Chat", data.Sender + ": " +data.Message);
+                                                var Msg = new ChatMessage();
+                                                Msg.Message = data.Message;
+                                                Msg.Sender = client;
+                                                if (_gamemode != null) Msg = _gamemode.OnChatMessage(Msg);
+
+                                                if (_filterscripts != null) _filterscripts.ForEach(fs => Msg = fs.OnChatMessage(Msg));
+
+                                                if (!Msg.Supress)
+                                                {
+                                                    data.Id = client.NetConnection.RemoteUniqueIdentifier;
+                                                    if (!string.IsNullOrWhiteSpace(Msg.Prefix))
+                                                        data.Sender += "[" + Msg.Prefix + "] ";
+                                                    data.Sender += client.DisplayName;
+                                                    if (!string.IsNullOrWhiteSpace(Msg.Suffix))
+                                                        data.Sender += " (" + Msg.Suffix + ") ";
+                                                    SendToAll(data, PacketType.ChatData, true);
+                                                    LogToConsole(6, false, "Chat", data.Sender + ": " + data.Message);
+                                                }
                                             }
                                         }
+                                        catch { }
                                     }
-                                    catch { }
-                                }
-                                break;
-                            case PacketType.VehiclePositionData:
-                                {
-                                    try
+                                    break;
+                                case PacketType.VehiclePositionData:
                                     {
-                                        var len = msg.ReadInt32();
-                                        var data =
-                                            DeserializeBinary<VehicleData>(msg.ReadBytes(len)) as
-                                                VehicleData;
-                                        if (data != null)
+                                        try
                                         {
-                                            data.Id = client.NetConnection.RemoteUniqueIdentifier;
-                                            data.Name = client.DisplayName;
-                                            data.Latency = client.Latency;
+                                            var len = msg.ReadInt32();
+                                            var data =
+                                                DeserializeBinary<VehicleData>(msg.ReadBytes(len)) as
+                                                    VehicleData;
+                                            if (data != null)
+                                            {
+                                                data.Id = client.NetConnection.RemoteUniqueIdentifier;
+                                                data.Name = client.DisplayName;
+                                                data.Latency = client.Latency;
 
-                                            client.Health = data.PlayerHealth;
-                                            client.LastKnownPosition = data.Position;
-                                            client.VehicleHealth = data.VehicleHealth;
-                                            client.IsInVehicle = true;
+                                                client.Health = data.PlayerHealth;
+                                                client.LastKnownPosition = data.Position;
+                                                client.VehicleHealth = data.VehicleHealth;
+                                                client.IsInVehicle = true;
 
-                                            SendToAll(data, PacketType.VehiclePositionData, false, client);
+                                                SendToAll(data, PacketType.VehiclePositionData, false, client);
+                                            }
                                         }
+                                        catch (IndexOutOfRangeException)
+                                        { }
                                     }
-                                    catch (IndexOutOfRangeException)
-                                    { }
-                                }
-                                break;
-                            case PacketType.PedPositionData:
-                                {
-                                    try
+                                    break;
+                                case PacketType.PedPositionData:
                                     {
-                                        var len = msg.ReadInt32();
-                                        var data = DeserializeBinary<PedData>(msg.ReadBytes(len)) as PedData;
-                                        if (data != null)
+                                        try
                                         {
-                                            data.Id = client.NetConnection.RemoteUniqueIdentifier;
-                                            data.Name = client.DisplayName;
-                                            data.Latency = client.Latency;
+                                            var len = msg.ReadInt32();
+                                            var data = DeserializeBinary<PedData>(msg.ReadBytes(len)) as PedData;
+                                            if (data != null)
+                                            {
+                                                data.Id = client.NetConnection.RemoteUniqueIdentifier;
+                                                data.Name = client.DisplayName;
+                                                data.Latency = client.Latency;
 
-                                            client.Health = data.PlayerHealth;
-                                            client.LastKnownPosition = data.Position;
-                                            client.IsInVehicle = false;
+                                                client.Health = data.PlayerHealth;
+                                                client.LastKnownPosition = data.Position;
+                                                client.IsInVehicle = false;
 
-                                            SendToAll(data, PacketType.PedPositionData, false, client);
+                                                SendToAll(data, PacketType.PedPositionData, false, client);
+                                            }
                                         }
+                                        catch (IndexOutOfRangeException)
+                                        { }
                                     }
-                                    catch (IndexOutOfRangeException)
-                                    { }
-                                }
-                                break;
-                            case PacketType.NpcVehPositionData:
-                                {
-                                    try
+                                    break;
+                                case PacketType.NpcVehPositionData:
                                     {
-                                        var len = msg.ReadInt32();
-                                        var data =
-                                            DeserializeBinary<VehicleData>(msg.ReadBytes(len)) as
-                                                VehicleData;
-                                        if (data != null)
+                                        try
                                         {
-                                            data.Id = client.NetConnection.RemoteUniqueIdentifier;
-                                            SendToAll(data, PacketType.NpcVehPositionData, false, client);
+                                            var len = msg.ReadInt32();
+                                            var data =
+                                                DeserializeBinary<VehicleData>(msg.ReadBytes(len)) as
+                                                    VehicleData;
+                                            if (data != null)
+                                            {
+                                                data.Id = client.NetConnection.RemoteUniqueIdentifier;
+                                                SendToAll(data, PacketType.NpcVehPositionData, false, client);
+                                            }
                                         }
+                                        catch (IndexOutOfRangeException)
+                                        { }
                                     }
-                                    catch (IndexOutOfRangeException)
-                                    { }
-                                }
-                                break;
-                            case PacketType.NpcPedPositionData:
-                                {
-                                    try
+                                    break;
+                                case PacketType.NpcPedPositionData:
                                     {
-                                        var len = msg.ReadInt32();
-                                        var data =
-                                            DeserializeBinary<PedData>(msg.ReadBytes(len)) as PedData;
-                                        if (data != null)
+                                        try
                                         {
-                                            data.Id = msg.SenderConnection.RemoteUniqueIdentifier;
-                                            SendToAll(data, PacketType.NpcPedPositionData, false, client);
+                                            var len = msg.ReadInt32();
+                                            var data =
+                                                DeserializeBinary<PedData>(msg.ReadBytes(len)) as PedData;
+                                            if (data != null)
+                                            {
+                                                data.Id = msg.SenderConnection.RemoteUniqueIdentifier;
+                                                SendToAll(data, PacketType.NpcPedPositionData, false, client);
+                                            }
                                         }
+                                        catch (IndexOutOfRangeException)
+                                        { }
                                     }
-                                    catch (IndexOutOfRangeException)
-                                    { }
-                                }
-                                break;
-                            case PacketType.WorldSharingStop:
-                                {
-                                    var dcObj = new PlayerDisconnect()
+                                    break;
+                                case PacketType.WorldSharingStop:
                                     {
-                                        Id = client.NetConnection.RemoteUniqueIdentifier,
-                                    };
-                                    SendToAll(dcObj, PacketType.WorldSharingStop, true);
-                                }
-                                break;
-                            case PacketType.NativeResponse:
-                                {
-                                    var len = msg.ReadInt32();
-                                    var data = DeserializeBinary<NativeResponse>(msg.ReadBytes(len)) as NativeResponse;
-                                    if (data == null || !_callbacks.ContainsKey(data.Id)) continue;
-                                    object resp = null;
-                                    if (data.Response is IntArgument)
-                                    {
-                                        resp = ((IntArgument)data.Response).Data;
-                                    }
-                                    else if (data.Response is UIntArgument)
-                                    {
-                                        resp = ((UIntArgument)data.Response).Data;
-                                    }
-                                    else if (data.Response is StringArgument)
-                                    {
-                                        resp = ((StringArgument)data.Response).Data;
-                                    }
-                                    else if (data.Response is FloatArgument)
-                                    {
-                                        resp = ((FloatArgument)data.Response).Data;
-                                    }
-                                    else if (data.Response is BooleanArgument)
-                                    {
-                                        resp = ((BooleanArgument)data.Response).Data;
-                                    }
-                                    else if (data.Response is Vector3Argument)
-                                    {
-                                        var tmp = (Vector3Argument)data.Response;
-                                        resp = new Vector3()
+                                        var dcObj = new PlayerDisconnect()
                                         {
-                                            X = tmp.X,
-                                            Y = tmp.Y,
-                                            Z = tmp.Z,
+                                            Id = client.NetConnection.RemoteUniqueIdentifier,
                                         };
+                                        SendToAll(dcObj, PacketType.WorldSharingStop, true);
                                     }
-                                    if (_callbacks.ContainsKey(data.Id))
-                                        _callbacks[data.Id].Invoke(resp);
-                                    _callbacks.Remove(data.Id);
-                                }
-                                break;
-                            case PacketType.PlayerKilled:
-                                {
-                                    if (_gamemode != null) _gamemode.OnPlayerKilled(client);
-                                    if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnPlayerKilled(client));
-                                    PrintPlayerInfo(client, "Player killed: ");
-                                }
-                                break;
-                        }
-                        break;
-                    default:
-                        Console.WriteLine("WARN: Unhandled type: " + msg.MessageType);
-                        break;
+                                    break;
+                                case PacketType.NativeResponse:
+                                    {
+                                        var len = msg.ReadInt32();
+                                        var data = DeserializeBinary<NativeResponse>(msg.ReadBytes(len)) as NativeResponse;
+                                        if (data == null || !_callbacks.ContainsKey(data.Id)) continue;
+                                        object resp = null;
+                                        if (data.Response is IntArgument)
+                                        {
+                                            resp = ((IntArgument)data.Response).Data;
+                                        }
+                                        else if (data.Response is UIntArgument)
+                                        {
+                                            resp = ((UIntArgument)data.Response).Data;
+                                        }
+                                        else if (data.Response is StringArgument)
+                                        {
+                                            resp = ((StringArgument)data.Response).Data;
+                                        }
+                                        else if (data.Response is FloatArgument)
+                                        {
+                                            resp = ((FloatArgument)data.Response).Data;
+                                        }
+                                        else if (data.Response is BooleanArgument)
+                                        {
+                                            resp = ((BooleanArgument)data.Response).Data;
+                                        }
+                                        else if (data.Response is Vector3Argument)
+                                        {
+                                            var tmp = (Vector3Argument)data.Response;
+                                            resp = new Vector3()
+                                            {
+                                                X = tmp.X,
+                                                Y = tmp.Y,
+                                                Z = tmp.Z,
+                                            };
+                                        }
+                                        if (_callbacks.ContainsKey(data.Id))
+                                            _callbacks[data.Id].Invoke(resp);
+                                        _callbacks.Remove(data.Id);
+                                    }
+                                    break;
+                                case PacketType.PlayerKilled:
+                                    {
+                                        if (_gamemode != null) _gamemode.OnPlayerKilled(client);
+                                        if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnPlayerKilled(client));
+                                        PrintPlayerInfo(client, "Player killed: ");
+                                    }
+                                    break;
+                            }
+                            break;
+                        default:
+                            Console.WriteLine("WARN: Unhandled type: " + msg.MessageType);
+                            break;
+                    }
+                    Server.Recycle(msg);
                 }
-                Server.Recycle(msg);
-            }
-            if (_gamemode != null) _gamemode.OnTick();
-            if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnTick());
+                if (_gamemode != null) _gamemode.OnTick();
+                if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnTick());
+            }catch(Exception ex) { LogToConsole(4, false, "", "Can't handle tick: "+ex.Message.ToString()); }
         }
         public void Infoscreen()
         {
@@ -786,11 +800,14 @@ namespace GTAServer
             try { if(client.IsInVehicle) Console.Write("Veh Health: " + client.VehicleHealth.ToString() + " | "); } catch (Exception) { }
             try { Console.Write("Position: X:" + client.LastKnownPosition.X.ToString() + " Y: " + client.LastKnownPosition.Y.ToString() + " Z: " + client.LastKnownPosition.Z.ToString() + " | "); } catch (Exception) { }
             try { Console.Write("IP: " + client.NetConnection.RemoteEndPoint.Address.ToString() + ":" + client.NetConnection.RemoteEndPoint.Port.ToString() + " | "); } catch (Exception) { }
-            try { Console.Write("Ping: " + (client.Latency*1000).ToString() + " | "); } catch (Exception) { }
+            try { if((client.Latency * 1000) > 0)Console.Write("Ping: " + (client.Latency*1000).ToString() + " | "); } catch (Exception) { }
             try { Console.Write("Status: " + client.NetConnection.Status.ToString() + " | "); } catch (Exception) { }
             try { Console.Write("NetUID: " + client.NetConnection.RemoteUniqueIdentifier.ToString() + " | "); } catch (Exception) { }
             try { Console.Write("MPU: " + client.NetConnection.CurrentMTU.ToString() + " | "); } catch (Exception) { }
-            /*try { Console.Write("Sent Messages: " + client.NetConnection.Statistics.SentMessages.ToString() + " | "); } catch (Exception) { }
+            try { Console.Write("Continent: " + client.geoIP.Continent.Name + " | "); } catch (Exception) { }
+            try { Console.Write("Country: " + client.geoIP.Country.Name + "(" + client.geoIP.Country.IsoCode +  ") | "); } catch (Exception) { }
+            /*try { Console.Write("City: " + client.geoIP.City + " | "); } catch (Exception) { }
+            try { Console.Write("Sent Messages: " + client.NetConnection.Statistics.SentMessages.ToString() + " | "); } catch (Exception) { }
             try { Console.Write("Recieved Messages: " + client.NetConnection.Statistics.ReceivedMessages.ToString() + " | "); } catch (Exception) { }
             try { Console.Write("Dropped Messages: " + client.NetConnection.Statistics.DroppedMessages.ToString() + " | "); } catch (Exception) { }
             try { Console.Write("Sent Bytes: " + client.NetConnection.Statistics.SentBytes.ToString() + " | "); } catch (Exception) { }

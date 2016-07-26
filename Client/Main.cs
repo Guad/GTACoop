@@ -1797,7 +1797,6 @@ namespace GTACoOp
             {
                 default:
                     return NativeType.Unknown;
-                    break;
                 case 0xD49F9B0955C367DE:
                     return NativeType.ReturnsEntityNeedsModel2;
                 case 0x7DD959874C1FD534:

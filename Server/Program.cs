@@ -28,7 +28,7 @@ namespace GTAServer
         }
         static void Main(string[] args)
         {
-            System.Diagnostics.Process cmd = new System.Diagnostics.Process();
+            /*System.Diagnostics.Process cmd = new System.Diagnostics.Process();
             cmd.StartInfo.FileName = "cmd.exe";
             cmd.StartInfo.RedirectStandardInput = true;
             cmd.StartInfo.RedirectStandardOutput = true;
@@ -38,17 +38,15 @@ namespace GTAServer
             cmd.StandardInput.WriteLine("chcp 65001");
             cmd.StandardInput.Flush();
             cmd.StandardInput.Close();
-            Console.WriteLine(cmd.StandardOutput.ReadToEnd());
+            Console.WriteLine(cmd.StandardOutput.ReadToEnd());*/
             ServerSettings settings;
             if(args.Length > 0) {
                 settings = ReadSettings(Program.Location + args[0]);
             }else {
                 settings = ReadSettings(Program.Location + "Settings.xml");
             }
-            ServerInstance = new GameServer(settings.Port, settings.Name, settings.Gamemode);
-            Console.WriteLine("Name: " + settings.Name);
             Console.Write("IPs: ");
-            ServerInstance.WANIP = "";ServerInstance.LANIP = "";
+            ServerInstance.WanIP = "";ServerInstance.LanIP = "";
             try
             {
                 string url = "http://checkip.dyndns.org/"; //http://ip-api.com/json
@@ -60,8 +58,8 @@ namespace GTAServer
                 string[] a = res.Split(':');
                 string a2 = a[1].Substring(1);
                 string[] a3 = a2.Split('<');
-                ServerInstance.WANIP = a3[0];
-                Console.Write(ServerInstance.WANIP + "/");
+                ServerInstance.WanIP = a3[0];
+                Console.Write(ServerInstance.WanIP + "/");
             } catch{}
             try {
                 var host = Dns.GetHostEntry(Dns.GetHostName());
@@ -69,14 +67,26 @@ namespace GTAServer
                 {
                     if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
                     {
-                        ServerInstance.LANIP = ip.ToString();
-                        Console.Write(ServerInstance.LANIP + "/");break;
+                        ServerInstance.LanIP = ip.ToString();
+                        Console.Write(ServerInstance.LanIP + "/");break;
                     }
                 }
             } catch { }
             Console.WriteLine("127.0.0.1:" + settings.Port);
+            try {
+                var path = Program.Location + "geoip.mmdb";
+                try
+                {
+                    using (var reader = new MaxMind.GeoIP2.DatabaseReader(path))
+                    {
+                        ServerInstance.geoIP = reader.Country(ServerInstance.WanIP);
+                    }
+                } catch (Exception) { }
+            } catch (Exception ){ }
+            Console.WriteLine("Name: " + settings.Name);
             Console.WriteLine("Player Limit: " + settings.MaxPlayers);
             Console.WriteLine("Starting...");
+            ServerInstance = new GameServer(settings.Port, settings.Name, settings.Gamemode);
             ServerInstance.PasswordProtected = settings.PasswordProtected;
             ServerInstance.Password = settings.Password;
             ServerInstance.AnnounceSelf = settings.Announce;
@@ -95,24 +105,24 @@ namespace GTAServer
                     response = webClient.DownloadString("http://46.101.1.92/");
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Console.WriteLine("Could not contact master server."); return;
+                Console.WriteLine("Could not contact master server: "+ex.Message.ToString()); return;
             }
             if (string.IsNullOrWhiteSpace(response)) { return; }
             var dejson = JsonConvert.DeserializeObject<MasterServerList>(response) as MasterServerList;
             if (dejson == null) return;
             Console.WriteLine("Servers returned by master server: " + dejson.list.Count().ToString());
-            if (!ServerInstance.WANIP.Equals("")) {
+            if (!ServerInstance.WanIP.Equals("")) {
                 foreach (var server in dejson.list) {
                     var split = server.Split(':');
                     if (split.Length != 2) continue;
                     int port;
                     if (!int.TryParse(split[1], out port)) { 
-                        if (split[0].Equals(ServerInstance.WANIP) && port.Equals(settings.Port)) {
+                        if (split[0].Equals(ServerInstance.WanIP) && port.Equals(settings.Port)) {
                                 LogToConsole(2, false, null, "We found our server on the serverlist :)"); break;
                             }
-                            else if (split[0].Equals(ServerInstance.WANIP)) {
+                            else if (split[0].Equals(ServerInstance.WanIP)) {
                                 LogToConsole(4, false, null, "We found our server IP on the serverlist, but without the right port :|"); break;
                             }
                             else {

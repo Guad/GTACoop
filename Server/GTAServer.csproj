@@ -64,11 +64,11 @@
       <HintPath>..\libs\Lidgren.Network.dll</HintPath>
     </Reference>
     <Reference Include="MaxMind.Db, Version=2.0.0.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
-      <HintPath>..\packages\MaxMind.Db.2.1.1-beta1\lib\net45\MaxMind.Db.dll</HintPath>
+      <HintPath>..\packages\MaxMind.Db.2.0.0\lib\net45\MaxMind.Db.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.GeoIP2, Version=2.6.0.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
-      <HintPath>..\packages\MaxMind.GeoIP2.2.7.0-beta2\lib\net45\MaxMind.GeoIP2.dll</HintPath>
+      <HintPath>..\packages\MaxMind.GeoIP2.2.6.0\lib\net45\MaxMind.GeoIP2.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
