@@ -28,26 +28,39 @@ namespace GTAServer
         }
         static void Main(string[] args)
         {
-            /*System.Diagnostics.Process cmd = new System.Diagnostics.Process();
-            cmd.StartInfo.FileName = "cmd.exe";
-            cmd.StartInfo.RedirectStandardInput = true;
-            cmd.StartInfo.RedirectStandardOutput = true;
-            cmd.StartInfo.CreateNoWindow = true;
-            cmd.StartInfo.UseShellExecute = false;
-            cmd.Start();
-            cmd.StandardInput.WriteLine("chcp 65001");
-            cmd.StandardInput.Flush();
-            cmd.StandardInput.Close();
-            Console.WriteLine(cmd.StandardOutput.ReadToEnd());*/
-            ServerSettings settings;
-            if(args.Length > 0) {
-                settings = ReadSettings(Program.Location + args[0]);
-            }else {
-                settings = ReadSettings(Program.Location + "Settings.xml");
-            }
-            Console.Write("IPs: ");
-            ServerInstance.WanIP = "";ServerInstance.LanIP = "";
-            try
+            try {
+                //Console.WriteLine("Break");
+                /*System.Diagnostics.Process cmd = new System.Diagnostics.Process();
+                cmd.StartInfo.FileName = "cmd.exe";
+                cmd.StartInfo.RedirectStandardInput = true;
+                cmd.StartInfo.RedirectStandardOutput = true;
+                cmd.StartInfo.CreateNoWindow = true;
+                cmd.StartInfo.UseShellExecute = false;
+                cmd.Start();
+                cmd.StandardInput.WriteLine("chcp 65001");
+                cmd.StandardInput.Flush();
+                cmd.StandardInput.Close();
+                Console.WriteLine(cmd.StandardOutput.ReadToEnd());*/
+                ServerSettings settings;
+                try
+                {
+                    if (args.Length > 0)
+                    {
+                        settings = ReadSettings(Program.Location + args[0]);
+                    }
+                    else
+                    {
+                        settings = ReadSettings(Program.Location + "Settings.xml");
+                    }
+                }
+                catch (Exception) { settings = ReadSettings(Program.Location + "Settings.xml"); }
+                try { Console.Write("IPs: "); } catch (Exception) { }
+                try
+                {
+                    ServerInstance.WanIP = "";ServerInstance.LanIP = "";
+                }
+                catch (Exception) { }
+                try
             {
                 string url = "http://checkip.dyndns.org/"; //http://ip-api.com/json
                 WebRequest req = WebRequest.Create(url);
@@ -74,15 +87,18 @@ namespace GTAServer
             } catch { }
             Console.WriteLine("127.0.0.1:" + settings.Port);
             try {
-                var path = Program.Location + "geoip.mmdb";
-                try
-                {
-                    using (var reader = new MaxMind.GeoIP2.DatabaseReader(path))
-                    {
-                        ServerInstance.geoIP = reader.Country(ServerInstance.WanIP);
+                    if (!string.IsNullOrWhiteSpace(ServerInstance.WanIP)) {
+                        var path = Program.Location + "geoip.mmdb";
+                        try
+                        {
+                            using (var reader = new MaxMind.GeoIP2.DatabaseReader(path))
+                            {
+                                ServerInstance.geoIP = reader.Country(ServerInstance.WanIP);
+                            }
+                        }
+                        catch (Exception ex) { Console.WriteLine("Can't set GeoIP: " + ex.Message); }
                     }
-                } catch (Exception) { }
-            } catch (Exception ){ }
+                } catch (Exception ){ }
             Console.WriteLine("Name: " + settings.Name);
             Console.WriteLine("Player Limit: " + settings.MaxPlayers);
             Console.WriteLine("Starting...");
@@ -107,7 +123,7 @@ namespace GTAServer
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Could not contact master server: "+ex.Message.ToString()); return;
+                Console.WriteLine("Could not contact master server: "+ex.Message); return;
             }
             if (string.IsNullOrWhiteSpace(response)) { return; }
             var dejson = JsonConvert.DeserializeObject<MasterServerList>(response) as MasterServerList;
@@ -132,6 +148,8 @@ namespace GTAServer
                         //Console.Write(split[0] + ":" + port + ", ");
                 }
             }
+            }
+            catch (Exception ex){ Console.WriteLine("Can't start server: "+ex.Message); }
 
 
             Console.WriteLine("Started! Waiting for connections.");

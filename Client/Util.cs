@@ -132,7 +132,7 @@ namespace GTACoOp
             var ser = new XmlSerializer(typeof(PlayerSettings));
             using (var stream = new FileStream(path, File.Exists(path) ? FileMode.Truncate : FileMode.Create, FileAccess.ReadWrite)) ser.Serialize(stream, Main.PlayerSettings);
             } catch (Exception ex) {
-                UI.Notify("Error saving player settings: " + ex.Message.ToString());
+                UI.Notify("Error saving player settings: " + ex.Message);
             }
         }
 
@@ -143,7 +143,7 @@ namespace GTACoOp
                 var ser = new XmlSerializer(typeof(ServerSettings));
             using (var stream = new FileStream(path, File.Exists(path) ? FileMode.Truncate : FileMode.Create, FileAccess.ReadWrite)) ser.Serialize(stream, Main.ServerSettings);
             } catch (Exception ex) {
-                UI.Notify("Error saving server settings: " + ex.Message.ToString());
+                UI.Notify("Error saving server settings: " + ex.Message);
             }
 }
 

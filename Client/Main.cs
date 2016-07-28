@@ -24,7 +24,7 @@ namespace GTACoOp
     {
         public static PlayerSettings PlayerSettings;
         public static ServerSettings ServerSettings;
-        public static readonly ScriptVersion LocalScriptVersion = ScriptVersion.VERSION_0_9_1;
+        public static readonly ScriptVersion LocalScriptVersion = ScriptVersion.VERSION_0_9_2;
         public static readonly string ReadableScriptVersion = Regex.Replace(Regex.Replace(LocalScriptVersion.ToString(), "VERSION_", "", RegexOptions.IgnoreCase), "_", ".", RegexOptions.IgnoreCase);
 
         private readonly UIMenu _mainMenu;
@@ -501,8 +501,8 @@ namespace GTACoOp
                         }
                         _serverRunning = true;
                         //string[] filterscripts = new string[] { };
-                        try { Program.ServerInstance.Start(ServerSettings.Filterscripts); } catch(Exception ex) { UI.Notify("Can't start server: " +ex.Message.ToString()); }
-                        try { ConnectToServer("localhost", ServerSettings.Port); } catch (Exception ex) { UI.Notify("Can't connect to local server: " + ex.Message.ToString()); }
+                        try { Program.ServerInstance.Start(ServerSettings.Filterscripts); } catch(Exception ex) { UI.Notify("Can't start server: " +ex.Message); }
+                        try { ConnectToServer("localhost", ServerSettings.Port); } catch (Exception ex) { UI.Notify("Can't connect to local server: " + ex.Message); }
                         UI.Notify("For others to access the server, you may have to port forward.");
                     }
                     else
@@ -982,7 +982,7 @@ namespace GTACoOp
                 lock (_tickNatives) tickNatives = new Dictionary<string, NativeData>(_tickNatives);
 
                 for (int i = 0; i < tickNatives.Count; i++) DecodeNativeCall(tickNatives.ElementAt(i).Value);
-            }catch(Exception ex) { UI.Notify("Could not handle this tick: "+ex.Message.ToString()); }
+            }catch(Exception ex) { UI.Notify("Could not handle this tick: "+ex.Message); }
         }
 
         public static bool IsOnServer()
@@ -1810,13 +1810,11 @@ namespace GTACoOp
                 case 0x9B62392B474F44A0:
                 case 0x63C6CCA8E68AE8C8:
                     return NativeType.ReturnsEntity;
-                    break;
                 case 0x46818D79B1F7499A:
                 case 0x5CDE92C702A8FCE7:
                 case 0xBE339365C863BD36:
                 case 0x5A039BB0BCA604B6:
                     return NativeType.ReturnsBlip;
-                    break;
             }
         }
 

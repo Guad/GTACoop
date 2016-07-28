@@ -4,15 +4,14 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
-using System.Xml.Serialization;
 using Lidgren.Network;
 using ProtoBuf;
 using System.Text.RegularExpressions;
 using MaxMind.GeoIP2;
+using System.Security.Principal;
+using System.Diagnostics;
 
 namespace GTAServer
 {
@@ -138,14 +137,14 @@ namespace GTAServer
         public bool AllowDisplayNames { get; set; }
         public bool AllowOutdatedClients { get; set; }
 
-        public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_9_1;
+        public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_9_2;
 
         private ServerScript _gamemode { get; set; }
 
         private List<ServerScript> _filterscripts;
         public string WanIP { get; set; }
         public string LanIP { get; set; }
-        public string LastKicked { get; private set; }
+        public string LastKicked { get; set; }
         public MaxMind.GeoIP2.Responses.CountryResponse geoIP { get; set; }
 
         private DateTime _lastAnnounceDateTime;
@@ -153,7 +152,6 @@ namespace GTAServer
         public void Start(string[] filterscripts)
         {
             Server.Start();
-
             if (AnnounceSelf)
             {
                 _lastAnnounceDateTime = DateTime.Now;
@@ -211,23 +209,16 @@ namespace GTAServer
             {
                 if (string.IsNullOrWhiteSpace(path)) continue;
 
-                try
-                {
-                    try
-                    {
+                try {
+                    try {
                         Program.DeleteFile(Program.Location + "filterscripts" + Path.DirectorySeparatorChar + GamemodeName + ".dll:Zone.Identifier");
-                    }
-                    catch
-                    {
-                    }
+                    } catch { }
 
                     var fsAsm = Assembly.LoadFrom(Program.Location + "filterscripts" + Path.DirectorySeparatorChar + path + ".dll");
                     var fsObj = InstantiateScripts(fsAsm);
                     list.AddRange(fsObj);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("Failed to load filterscript \"" + path + "\", error: " + ex.Message);
+                } catch (Exception ex) {
+                    Console.WriteLine("Failed to load filterscript \"" + path + "\", error: " + ex.ToString());
                 }
             }
 
@@ -371,9 +362,7 @@ namespace GTAServer
                             var connReq = DeserializeBinary<ConnectionRequest>(msg.ReadBytes(leng)) as ConnectionRequest;
                             if (connReq == null)
                             {
-                                client.NetConnection.Deny("Connection Object is null");
-                                Server.Recycle(msg);
-                                continue;
+                                DenyPlayer(client, "Connection Object is null", true, msg); continue;
                             }
                             Console.Write("New connection request: ");
                             try { Console.Write("Nickname: " + connReq.DisplayName.ToString() + " | "); } catch (Exception) { }
@@ -382,7 +371,7 @@ namespace GTAServer
                             try { Console.Write("Password: " + connReq.Password.ToString() + " | "); } catch (Exception) { }
                             #endif
                             try { Console.Write("Game Version: " + connReq.GameVersion.ToString() + " | "); } catch (Exception) { }
-                            try { Console.Write("Script Version: " + (ScriptVersion)connReq.ScriptVersion + " | "); } catch (Exception) { }
+                            try { Console.Write("Script Version: ["+connReq.ScriptVersion.ToString()+ "] "+(ScriptVersion)connReq.ScriptVersion + "("+(byte)connReq.ScriptVersion + ") | "); } catch (Exception) { }
                             try { Console.Write("IP: " + msg.SenderEndPoint.Address.ToString() + ":" + msg.SenderEndPoint.Port.ToString() + " | "); } catch (Exception) { }
                             Console.Write("\n");
                             if (!AllowOutdatedClients && (ScriptVersion)connReq.ScriptVersion != Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last())
@@ -390,17 +379,13 @@ namespace GTAServer
                                 var ReadableScriptVersion = Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last().ToString();
                                 ReadableScriptVersion = Regex.Replace(ReadableScriptVersion, "VERSION_", "", RegexOptions.IgnoreCase);
                                 ReadableScriptVersion = Regex.Replace(ReadableScriptVersion, "_", ".", RegexOptions.IgnoreCase);
-                                client.NetConnection.Deny(string.Format("Update your GTACoop to v{0} from bit.ly/gtacoop", ReadableScriptVersion));
                                 LogToConsole(3, true, "Network", "Client " + connReq.DisplayName + " tried to connect with outdated scriptversion " + connReq.ScriptVersion.ToString() + " but the server requires " + Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last().ToString());
-                                Server.Recycle(msg);
-                                continue;
+                                DenyPlayer(client, string.Format("Update your GTACoop to v{0} from bit.ly/gtacoop", ReadableScriptVersion), true, msg); continue;
                             }
-                            if ((ScriptVersion)connReq.ScriptVersion == ScriptVersion.Unknown)
+                            if ((ScriptVersion)connReq.ScriptVersion == ScriptVersion.VERSION_UNKNOWN)
                             {
-                                client.NetConnection.Deny("Unknown version. Please update your client from bit.ly/gtacoop");
                                 LogToConsole(3, true, "Network", "Client " + connReq.DisplayName + " tried to connect with unknown scriptversion " + connReq.ScriptVersion.ToString());
-                                Server.Recycle(msg);
-                                continue;
+                                DenyPlayer(client, "Unknown version. Please update your client from bit.ly/gtacoop", true, msg); continue;
                             }
 
                             int clients = 0;
@@ -411,12 +396,8 @@ namespace GTAServer
                                 {
                                     if (Password != connReq.Password)
                                     {
-                                        client.NetConnection.Deny("Wrong password.");
                                         LogToConsole(3, false, "Network", connReq.DisplayName + " connection refused: Wrong password: " + connReq.Password.ToString());
-                                        if (_gamemode != null) _gamemode.OnConnectionRefused(client, "Wrong password.");
-                                        if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(client, "Wrong password."));
-                                        Server.Recycle(msg);
-                                        continue;
+                                        DenyPlayer(client, "Wrong password.", true, msg); continue;
                                     }
                                 }
 
@@ -449,10 +430,8 @@ namespace GTAServer
                             }
                             else
                             {
-                                client.NetConnection.Deny("No available player slots.");
                                 LogToConsole(4, false, "Network", client.DisplayName + " connection refused: server full with " + clients.ToString() + " of " + MaxPlayers + " players.");
-                                if (_gamemode != null) _gamemode.OnConnectionRefused(client, "Server is full");
-                                if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(client, "Server is full"));
+                                DenyPlayer(client, "No available player slots.", true, msg);
                             }
                             break;
                         case NetIncomingMessageType.StatusChanged:
@@ -471,17 +450,17 @@ namespace GTAServer
                                         client.geoIP = reader.Country(client.NetConnection.RemoteEndPoint.Address);
                                     }
                                 }
-                                catch (Exception ex) { LogToConsole(3, false, "GeoIP", ex.Message.ToString()); }
+                                catch (Exception ex) { LogToConsole(3, false, "GeoIP", ex.Message); }
                                 if (_gamemode != null) sendMsg = sendMsg && _gamemode.OnPlayerConnect(client);
                                 if (_filterscripts != null) _filterscripts.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerConnect(client));
                                 if (sendMsg && !client.Silent)
                                     try
                                     {
-                                        SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ connected from " + client.geoIP.Country.Name.ToString() + ".");
+                                        SendNotificationToAll("~h~" + client.DisplayName + "~h~~w~ connected from " + client.geoIP.Country.Name.ToString() + ".");
                                     }
                                     catch
                                     {
-                                        SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ connected.");
+                                        SendNotificationToAll("~h~" + client.DisplayName + "~h~~w~ connected.");
                                     }
                             }
                             else if (newStatus == NetConnectionStatus.Disconnected)
@@ -500,27 +479,27 @@ namespace GTAServer
                                             {
                                                 if (!client.BanReason.Equals(""))
                                                 {
-                                                    SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ has been banned for " + client.BanReason);
+                                                    SendNotificationToAll("~h~" + client.DisplayName + "~h~~w~ has been banned for " + client.BanReason);
                                                 }
                                                 else
                                                 {
-                                                    SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ has been banned.");
+                                                    SendNotificationToAll("~h~" + client.DisplayName + "~h~~w~ has been banned.");
                                                 }
                                             }
                                             else if (client.Kicked)
                                             {
                                                 if (!client.KickReason.Equals(""))
                                                 {
-                                                    SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ was kicked for " + client.KickReason);
+                                                    SendNotificationToAll("~h~" + client.DisplayName + "~h~~w~ was kicked for " + client.KickReason);
                                                 }
                                                 else
                                                 {
-                                                    SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ has been kicked.");
+                                                    SendNotificationToAll("~h~" + client.DisplayName + "~h~~w~ has been kicked.");
                                                 }
                                             }
                                             else
                                             {
-                                                SendNotificationToAll("~h~" + client.DisplayName + "~w~~h~ disconnected.");
+                                                SendNotificationToAll("~h~" + client.DisplayName + "~h~~w~ disconnected.");
                                             }
 
                                         var dcObj = new PlayerDisconnect()
@@ -751,11 +730,11 @@ namespace GTAServer
                                         _callbacks.Remove(data.Id);
                                     }
                                     break;
-                                case PacketType.PlayerKilled:
+                                case PacketType.PlayerSpawned:
                                     {
-                                        if (_gamemode != null) _gamemode.OnPlayerKilled(client);
-                                        if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnPlayerKilled(client));
-                                        PrintPlayerInfo(client, "Player killed: ");
+                                        if (_gamemode != null) _gamemode.OnPlayerSpawned(client);
+                                        if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnPlayerSpawned(client));
+                                        PrintPlayerInfo(client, "Player spawned: ");
                                     }
                                     break;
                             }
@@ -768,7 +747,7 @@ namespace GTAServer
                 }
                 if (_gamemode != null) _gamemode.OnTick();
                 if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnTick());
-            }catch(Exception ex) { LogToConsole(4, false, "", "Can't handle tick: "+ex.Message.ToString()); }
+            }catch(Exception ex) { LogToConsole(4, false, "", "Can't handle tick: "+ex.Message); }
         }
         public void Infoscreen()
         {
@@ -805,7 +784,7 @@ namespace GTAServer
             try { Console.Write("NetUID: " + client.NetConnection.RemoteUniqueIdentifier.ToString() + " | "); } catch (Exception) { }
             try { Console.Write("MPU: " + client.NetConnection.CurrentMTU.ToString() + " | "); } catch (Exception) { }
             try { Console.Write("Continent: " + client.geoIP.Continent.Name + " | "); } catch (Exception) { }
-            try { Console.Write("Country: " + client.geoIP.Country.Name + "(" + client.geoIP.Country.IsoCode +  ") | "); } catch (Exception) { }
+            try { Console.Write("Country: " + client.geoIP.Country.Name + " [" + client.geoIP.Country.IsoCode +  "] | "); } catch (Exception) { }
             /*try { Console.Write("City: " + client.geoIP.City + " | "); } catch (Exception) { }
             try { Console.Write("Sent Messages: " + client.NetConnection.Statistics.SentMessages.ToString() + " | "); } catch (Exception) { }
             try { Console.Write("Recieved Messages: " + client.NetConnection.Statistics.ReceivedMessages.ToString() + " | "); } catch (Exception) { }
@@ -845,7 +824,7 @@ namespace GTAServer
                 msg.Write(data.Length);
                 msg.Write(data);
                 Server.SendToAll(msg, important ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced);
-            }catch(Exception ex) { LogToConsole(5, false, "Network", "Error in SendToAll: " + ex.Message.ToString()); }
+            }catch(Exception ex) { LogToConsole(5, false, "Network", "Error in SendToAll: " + ex.Message); }
         }
 
         public void SendToAll(object newData, PacketType packetType, bool important, Client exclude)
@@ -1195,13 +1174,24 @@ namespace GTAServer
             player.NetConnection.Disconnect("Kicked: " + reason);
         }
 
-        public void DenyPlayer(Client player, string reason, bool silent = true)
+        public void DenyPlayer(Client player, string reason, bool silent = true, NetIncomingMessage msg = null, int duration = 60)
         {
+            if (_gamemode != null) _gamemode.OnConnectionRefused(player, reason);
+            if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(player, reason));
             player.NetConnection.Deny(reason);
             Console.ForegroundColor = ConsoleColor.DarkRed; PrintPlayerInfo(player, "Connection Denied: "+ reason + " || "); Console.ResetColor();
-            if (!silent) SendNotificationToAll(player.DisplayName+" was rejected by the server: "+reason);
-            Clients.Remove(player);
+            if (!silent) { SendNotificationToAll(player.DisplayName + " was rejected by the server: " + reason); }
+            string _ip = player.NetConnection.RemoteEndPoint.Address.ToString();
+            Clients.Remove(player); if (msg != null) Server.Recycle(msg);
+            BlockIP(_ip, "GTAServer Block (" + _ip + ")", duration);
         }
+        /*public void DenyConnection(Client player, string reason, bool silent = true, NetIncomingMessage msg = null)
+        {
+            player. (reason);
+            Console.ForegroundColor = ConsoleColor.DarkRed; PrintPlayerInfo(player, "Connection Denied: " + reason + " || "); Console.ResetColor();
+            if (!silent) SendNotificationToAll(player.DisplayName + " was rejected by the server: " + reason);
+            Clients.Remove(player);if (msg != null) Server.Recycle(msg);
+        }*/
 
         public void SetPlayerPosition(Client player, Vector3 newPosition)
         {
@@ -1293,5 +1283,125 @@ namespace GTAServer
         {
             GetNativeCallFromPlayer(player, salt, 0x2202A3F42C8E5F79, new BooleanArgument(), callback, new LocalPlayerArgument());
         }
+        /*const string guidFWPolicy2 = "{E2B3C97F-6AE1-41AC-817A-F6F92166D7DD}";
+        const string guidRWRule = "{2C5BC43E-3369-4C33-AB0C-BE9469677AF4}";
+        public void BlockIPviaFirewall(string ip, string name = "Blocked by GTAServer", int duration = -1, string port = "4499")
+        {
+            Type typeFWPolicy2 = Type.GetTypeFromCLSID(new Guid(guidFWPolicy2));
+            Type typeFWRule = Type.GetTypeFromCLSID(new Guid(guidRWRule));
+            NetFwTypeLib.INetFwPolicy2 fwPolicy2 = (NetFwTypeLib.INetFwPolicy2)Activator.CreateInstance(typeFWPolicy2);
+            NetFwTypeLib.INetFwRule newRule = (NetFwTypeLib.INetFwRule)Activator.CreateInstance(typeFWRule);
+            newRule.Name = "InBound_Rule";
+            newRule.Description = "Block inbound traffic from "+ip+" over TCP port "+port;
+            newRule.Protocol = (int)NetFwTypeLib.NET_FW_IP_PROTOCOL_.NET_FW_IP_PROTOCOL_TCP;
+            newRule.LocalPorts = port;
+            newRule.RemoteAddresses = ip;
+            newRule.Direction = NetFwTypeLib.NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN;
+            newRule.Enabled = true;
+            newRule.Grouping = "@firewallapi.dll,-23255";
+            newRule.Profiles = fwPolicy2.CurrentProfileTypes;
+            newRule.Action = NetFwTypeLib.NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
+            fwPolicy2.Rules.Add(newRule);
+            if(duration != -1)
+            {
+                ThreadStart StartPointMethod = null;
+                Thread t = new Thread(StartPointMethod);
+                t.Join(duration * 1000);
+            }
+    }*/
+
+        private void BlockIP(string ip, string name = "Blocked by GTAServer", int duration = -1, string port = "")
+        {
+            if (!IsAdministrator()) { LogToConsole(3, false, "Firewall", "Not blocking " + ip + " cause the app is not started as admin."); return; }
+            if (string.IsNullOrEmpty(port)) { port = Port.ToString(); }
+            if (duration != -1)
+            {
+                cmdExec(null, "advfirewall firewall add rule name=\""+name+ "\" description=\"Block inbound traffic from " + ip+" over UDP port "+port+" for "+(duration).ToString()+ " seconds.\" dir=in interface=any action=block protocol=udp localport=" + port+" remoteip="+ip, "netsh.exe", true);
+                cmdExec(null, "ping 127.0.0.1 - n " + (duration + 1).ToString() + " > nul & netsh advfirewall firewall delete rule name = all dir =in protocol = udp localport = " + port + " remoteip = " + ip, "cmd.exe");
+                LogToConsole(2, false, "Firewall", "Blocked " + ip + " for "+duration+ " seconds!");
+            }
+            else {
+                cmdExec("netsh advfirewall firewall add rule name=\"" +name +"\" description=\"Block inbound traffic from "+ip+" over UDP port "+port+"\" dir=in interface=any action=block localport="+port+" remoteip="+ip);
+                LogToConsole(2, false, "Firewall", "Blocked " + ip + " permanently!");
+            }
+        }
+        public static bool IsAdministrator()
+        {
+            return (new WindowsPrincipal(WindowsIdentity.GetCurrent()))
+                    .IsInRole(WindowsBuiltInRole.Administrator);
+        }
+        public static void cmdExec2(string exec, string arg = null, string app = @"C:\Windows\System32\cmd.exe", bool waitForExit = false)
+        {
+            var psi = new ProcessStartupInfo
+            {
+                Arguments = $"advfirewall firewall add rule name={name} description=Block inbound traffic from {ip} over TCP port {port} dir=in interface=any action=block localport={port} remoteip={ip} && ping 127.0.0.1 -n {duration * 1000 + 1} > nul && advfirewall firewall delete rule dir=in localport={port} remoteip={ip}",
+                FileName = "netsh.exe",
+            using (var process = Process.Start(psi))
+            {
+                process.WaitForExit();
+            }
+        }
+        public static void cmdExec(string exec, string arg = null, string app = @"C:\Windows\System32\cmd.exe", bool waitForExit = false)
+        {
+            ProcessStartInfo cmdStartInfo = new ProcessStartInfo();
+            cmdStartInfo.FileName = app;
+            if (!string.IsNullOrEmpty(arg)) { cmdStartInfo.Arguments = arg; }
+            cmdStartInfo.RedirectStandardOutput = true;
+            cmdStartInfo.RedirectStandardInput = true;
+            cmdStartInfo.UseShellExecute = false;
+            cmdStartInfo.CreateNoWindow = true;
+            Process cmdProcess = new Process();
+            cmdProcess.StartInfo = cmdStartInfo;
+            using (var process = cmdProcess.Start())
+            {
+                process.WaitForExit();
+            }
+            if (!string.IsNullOrEmpty(exec))
+            {
+                cmdProcess.StandardInput.WriteLine(exec);
+            }
+            if (waitForExit)
+            {
+                cmdProcess.WaitForExit();
+            }
+        }
+        public static void ReadFromCMD(string exec, string arg = null, string app = @"C:\Windows\System32\cmd.exe")
+        {
+            ProcessStartInfo cmdStartInfo = new ProcessStartInfo();
+            cmdStartInfo.FileName = app;
+            if (!string.IsNullOrEmpty(arg)) { cmdStartInfo.Arguments = arg; }
+            cmdStartInfo.RedirectStandardOutput = true;
+            cmdStartInfo.RedirectStandardError = true;
+            cmdStartInfo.RedirectStandardInput = true;
+            cmdStartInfo.UseShellExecute = false;
+            cmdStartInfo.CreateNoWindow = true;
+
+            Process cmdProcess = new Process();
+            cmdProcess.StartInfo = cmdStartInfo;
+            cmdProcess.ErrorDataReceived += cmd_Error;
+            cmdProcess.OutputDataReceived += cmd_DataReceived;
+            cmdProcess.EnableRaisingEvents = true;
+            cmdProcess.Start();
+            cmdProcess.BeginOutputReadLine();
+            cmdProcess.BeginErrorReadLine();
+
+            if (!string.IsNullOrEmpty(exec))
+            {
+                cmdProcess.StandardInput.WriteLine(exec);
+            }
+            //cmdProcess.WaitForExit();
+        }
+
+        static void cmd_DataReceived(object sender, DataReceivedEventArgs e)
+        {
+            Console.WriteLine("Output from other process");
+            Console.WriteLine(e.Data);
+        }
+
+            static void cmd_Error(object sender, DataReceivedEventArgs e)
+        {
+            Console.WriteLine("Error from other process");
+            Console.WriteLine(e.Data);
+        }
+        }
     }
-}

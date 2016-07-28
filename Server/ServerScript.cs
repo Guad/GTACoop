@@ -6,41 +6,21 @@ namespace GTAServer
     {
         public virtual string Name { get; set; }
 
-        public virtual void Start()
-        {
-        }
+        public virtual void Start() { }
+
+        
+        public virtual void OnIncomingConnection(Client player) { }
+        public virtual bool OnPlayerConnect(Client player) { return true; }
 
 
-        public virtual ChatMessage OnChatMessage(ChatMessage message)
-        {
-            return message;
-        }
+        public virtual void OnConnectionRefused(Client player, string reason) { }
 
-        public virtual bool OnPlayerConnect(Client player)
-        {
-            return true;
-        }
-
-        public virtual void OnIncomingConnection(Client player)
-        {
-        }
-
-        public virtual bool OnPlayerDisconnect(Client player)
-        {
-            return true;
-        }
+        public virtual bool OnPlayerDisconnect(Client player) { return true; }
 
 
-        public virtual void OnConnectionRefused(Client player, string reason)
-        {
-        }
+        public virtual void OnPlayerSpawned(Client player) { }
+        public virtual ChatMessage OnChatMessage(ChatMessage message) { return message; }
 
-        public virtual void OnPlayerKilled(Client player)
-        {
-        }
-
-        public virtual void OnTick()
-        {
-        }
+        public virtual void OnTick() { }
     }
 }

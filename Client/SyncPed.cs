@@ -496,7 +496,7 @@ namespace GTACoOp
             }
             catch (Exception ex)
             {
-                UI.Notify("Sync error: "+ex.Message.ToString());
+                UI.Notify("Sync error: "+ex.Message);
             }
         }
 
@@ -535,7 +535,7 @@ namespace GTACoOp
                 }
             } catch (Exception ex)
             {
-                UI.Notify("Clear sync error: " + ex.Message.ToString());
+                UI.Notify("Clear sync error: " + ex.Message);
             }
         }
     }
