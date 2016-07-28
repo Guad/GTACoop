@@ -404,7 +404,6 @@ namespace GTAServer
                                         DenyPlayer(client, "Wrong password.", true, msg); continue;
                                     }
                                 }
-
                                 lock (Clients)
                                 {
                                     int duplicate = 0;
@@ -413,7 +412,7 @@ namespace GTAServer
                                     {
                                         duplicate++;
 
-                                        connReq.DisplayName = displayname + " (" + duplicate + ")";
+                                        connReq.DisplayName = displayname + " {" + duplicate + "}";
                                     }
 
                                     Clients.Add(client);

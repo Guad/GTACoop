@@ -1564,6 +1564,7 @@ namespace GTACoOp
 
                     _serverBrowserMenu.AddItem(item);
                     _serverBrowserMenu.CurrentSelection = lastIndx;
+                    //_serverBrowserMenu.Subtitle.Caption = "Servers listed: ~g~~h~" + dejson.list.Count().ToString();
                 }
             }
         }
