@@ -1024,6 +1024,7 @@ namespace GTACoOp
                 }
                 else
                 {
+                    //Game.DisableControl(1, Control )
                     var message = Game.GetUserInput(255);
                     if (!string.IsNullOrEmpty(message))
                     {

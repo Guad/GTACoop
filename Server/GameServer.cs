@@ -381,11 +381,15 @@ namespace GTAServer
                                 ReadableScriptVersion = Regex.Replace(ReadableScriptVersion, "_", ".", RegexOptions.IgnoreCase);
                                 LogToConsole(3, true, "Network", "Client " + connReq.DisplayName + " tried to connect with outdated scriptversion " + connReq.ScriptVersion.ToString() + " but the server requires " + Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last().ToString());
                                 DenyPlayer(client, string.Format("Update your GTACoop to v{0} from bit.ly/gtacoop", ReadableScriptVersion), true, msg); continue;
+                            }else if (AllowOutdatedClients && (ScriptVersion)connReq.ScriptVersion != Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last())
+                            {
+                                SendNotificationToPlayer(client, "~r~You are using a outdated version of GTA Coop.~w~");
+                                SendNotificationToPlayer(client, "~h~If you have lags or issues, update your mod!~h~", true);
                             }
                             if ((ScriptVersion)connReq.ScriptVersion == ScriptVersion.VERSION_UNKNOWN)
                             {
                                 LogToConsole(3, true, "Network", "Client " + connReq.DisplayName + " tried to connect with unknown scriptversion " + connReq.ScriptVersion.ToString());
-                                DenyPlayer(client, "Unknown version. Please update your client from bit.ly/gtacoop", true, msg); continue;
+                                DenyPlayer(client, "Unknown version. Please redownload GTA Coop from bit.ly/gtacoop", true, msg); continue;
                             }
 
                             int clients = 0;
@@ -1183,7 +1187,7 @@ namespace GTAServer
             if (!silent) { SendNotificationToAll(player.DisplayName + " was rejected by the server: " + reason); }
             string _ip = player.NetConnection.RemoteEndPoint.Address.ToString();
             Clients.Remove(player); if (msg != null) Server.Recycle(msg);
-            BlockIP(_ip, "GTAServer Block (" + _ip + ")", duration);
+            //BlockIP(_ip, "GTAServer Block (" + _ip + ")", duration);
         }
         /*public void DenyConnection(Client player, string reason, bool silent = true, NetIncomingMessage msg = null)
         {
@@ -1330,7 +1334,7 @@ namespace GTAServer
             return (new WindowsPrincipal(WindowsIdentity.GetCurrent()))
                     .IsInRole(WindowsBuiltInRole.Administrator);
         }
-        public static void cmdExec2(string exec, string arg = null, string app = @"C:\Windows\System32\cmd.exe", bool waitForExit = false)
+        /*public static void cmdExec2(string exec, string arg = null, string app = @"C:\Windows\System32\cmd.exe", bool waitForExit = false)
         {
             var psi = new ProcessStartupInfo
             {
@@ -1340,7 +1344,7 @@ namespace GTAServer
             {
                 process.WaitForExit();
             }
-        }
+        }*/
         public static void cmdExec(string exec, string arg = null, string app = @"C:\Windows\System32\cmd.exe", bool waitForExit = false)
         {
             ProcessStartInfo cmdStartInfo = new ProcessStartInfo();
@@ -1352,10 +1356,10 @@ namespace GTAServer
             cmdStartInfo.CreateNoWindow = true;
             Process cmdProcess = new Process();
             cmdProcess.StartInfo = cmdStartInfo;
-            using (var process = cmdProcess.Start())
+            /*using (var process = cmdProcess.Start())
             {
                 process.WaitForExit();
-            }
+            }*/
             if (!string.IsNullOrEmpty(exec))
             {
                 cmdProcess.StandardInput.WriteLine(exec);

@@ -132,9 +132,9 @@ namespace AdminTools
             }
             if (Settings.KickOnDifferentScript == true)
             {
-                Console.WriteLine(string.Format("[Script Version Check] Got: {0} | Expected: {1}", player.RemoteScriptVersion.ToString(), Settings.NeededScriptVersion.ToString()));
-                Console.WriteLine((ScriptVersion)player.RemoteScriptVersion);
-                Console.WriteLine((ScriptVersion)Settings.NeededScriptVersion);
+                //Console.WriteLine(string.Format("[Script Version Check] Got: {0} | Expected: {1}", player.RemoteScriptVersion.ToString(), Settings.NeededScriptVersion.ToString()));
+                //Console.WriteLine((ScriptVersion)player.RemoteScriptVersion);
+                //Console.WriteLine((ScriptVersion)Settings.NeededScriptVersion);
                 //if (readableVersion(player.RemoteScriptVersion) < Int32.Parse(Settings.MinScriptVersion))
                 if ((ScriptVersion)player.RemoteScriptVersion != (ScriptVersion)Settings.NeededScriptVersion)
                 {
