@@ -76,12 +76,12 @@ namespace GTACoOp
             if (string.IsNullOrEmpty(sender))
             {
                 _mainScaleform.CallFunction("ADD_MESSAGE", "", SanitizeString(msg));
-                System.IO.File.AppendAllText("scripts\\GTACOOP_chat.log", "[" + DateTime.UtcNow + "] "+msg);
+                System.IO.File.AppendAllText("scripts\\GTACOOP_chat.log", "[" + DateTime.UtcNow + "] "+msg+"\n");
             }
             else
             {
                 _mainScaleform.CallFunction("ADD_MESSAGE", SanitizeString(sender) + ":", SanitizeString(msg));
-                System.IO.File.AppendAllText("scripts\\GTACOOP_chat.log", "[" + DateTime.UtcNow + "] " + sender +": " + msg);
+                System.IO.File.AppendAllText("scripts\\GTACOOP_chat.log", "[" + DateTime.UtcNow + "] " + sender +": " + msg + "\n");
             }
         }
 

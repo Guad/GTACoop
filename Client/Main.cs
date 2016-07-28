@@ -937,7 +937,7 @@ namespace GTACoOp
                     _client.ConnectionStatus == NetConnectionStatus.None) return;
 
                 if (_wasTyping)
-                    Game.DisableControl(0, Control.FrontendPauseAlternate);
+                    Game.DisableControlThisFrame(0, Control.FrontendPauseAlternate);
 
                 int time = 1000;
                 if ((time = Function.Call<int>(Hash.GET_TIME_SINCE_LAST_DEATH)) < 50 && !_lastDead)
@@ -984,7 +984,10 @@ namespace GTACoOp
                 lock (_tickNatives) tickNatives = new Dictionary<string, NativeData>(_tickNatives);
 
                 for (int i = 0; i < tickNatives.Count; i++) DecodeNativeCall(tickNatives.ElementAt(i).Value);
-            }catch(Exception ex) { UI.Notify("Could not handle this tick: "+ex.Message); }
+            }catch(Exception ex) {
+                UI.Notify("<ERROR> Could not handle this tick:"); UI.Notify(ex.Message);
+                File.AppendAllText("scripts\\GTACOOP.log", "[" + DateTime.UtcNow + "] <ERROR> Could not handle this tick: " + ex.Message+"\n");
+            }
         }
 
         public static bool IsOnServer()
@@ -1029,7 +1032,7 @@ namespace GTACoOp
                     //Game.DisableAllControlsThisFrame(2);
                     foreach (GTA.Control control in Enum.GetValues(typeof(GTA.Control)))
                     {
-                        Game.DisableControl(2, control);
+                        Game.DisableControlThisFrame(2, control);
                     }
                     var message = Game.GetUserInput(255);
                     foreach (GTA.Control control in Enum.GetValues(typeof(GTA.Control)))
@@ -1429,7 +1432,7 @@ namespace GTACoOp
                         case NetConnectionStatus.Connected:
                             UI.Notify("Connection successful!");
                             _channel = msg.SenderConnection.RemoteHailMessage.ReadInt32();
-                            System.IO.File.AppendAllText("scripts\\GTACOOP_chat.log", "[" + DateTime.UtcNow + "] New server: " + msg);
+                            //File.AppendAllText("scripts\\GTACOOP_chat.log", "[" + DateTime.UtcNow + "] New server: " + msg + "\n");
                             break;
                         case NetConnectionStatus.Disconnected:
                             var reason = msg.ReadString();
@@ -1487,18 +1490,19 @@ namespace GTACoOp
                     var bin = msg.ReadBytes(len);
                     var data = DeserializeBinary<DiscoveryResponse>(bin) as DiscoveryResponse;
                     if (data == null) return;
-                    MaxMind.GeoIP2.Responses.CountryResponse geoIP;
-                    var path = Program.Location + "geoip.mmdb";string _description;
+                    MaxMind.GeoIP2.Responses.CountryResponse geoIP; string _description;
                     try
                     {
-                        using (var reader = new DatabaseReader(path))
+                        using (var reader = new DatabaseReader(Program.Location + Path.DirectorySeparatorChar + "geoip.mmdb"))
                         {
-                            geoIP = reader.Country(msg.SenderEndPoint.Address);
+                            geoIP = reader.Country(msg.SenderEndPoint.Address.ToString());
                             data.ServerName = "["+geoIP.Continent.Code+"/"+geoIP.Country.IsoCode+"] "+data.ServerName;
                             _description = "[" + geoIP.Continent.Name + "/" + geoIP.Country.Name + "] " + msg.SenderEndPoint.Address.ToString() + ":" + data.Port;
                         }
                     }
-                    catch (Exception ex) {
+                    catch (Exception ex)
+                    {
+                        UI.Notify("GeoIP: "+ex.Message);
                         LogToConsole(3, false, "GeoIP", ex.Message);
                         _description = msg.SenderEndPoint.Address.ToString() + ":" + data.Port;
                     }
