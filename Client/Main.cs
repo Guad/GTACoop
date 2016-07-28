@@ -301,6 +301,13 @@ namespace GTACoOp
                 Util.SaveSettings(Program.Location + "ClientSettings.xml");
             };
 
+            var chatLogItem = new UIMenuCheckboxItem("Log Chats", PlayerSettings.ChatLog);
+            chatLogItem.CheckboxEvent += (item, check) =>
+            {
+                PlayerSettings.ChatLog = check;
+                Util.SaveSettings(Program.Location + "ClientSettings.xml");
+            };
+
             var hidePasswordsItem = new UIMenuCheckboxItem("Hide Passwords (Restart required)", PlayerSettings.HidePasswords);
             hidePasswordsItem.CheckboxEvent += (item, check) =>
             {
@@ -603,16 +610,19 @@ namespace GTACoOp
             catch (Exception e)
             {
                 UI.Notify("~r~~h~ERROR~h~~w~~n~Could not contact master server. Try again later.");
-                var logOutput = "===== EXCEPTION CONTACTING MASTER SERVER @ " + DateTime.UtcNow + " ======\n";
-                logOutput += "Message: " + e.Message;
-                logOutput += "\nData: " + e.Data;
-                logOutput += "\nStack: " + e.StackTrace;
-                logOutput += "\nSource: " + e.Source;
-                logOutput += "\nTarget: " + e.TargetSite;
-                if (e.InnerException != null)
-                    logOutput += "\nInnerException: " + e.InnerException.Message;
-                logOutput += "\n";
-                File.AppendAllText("scripts\\GTACOOP.log", logOutput);
+                if (Main.PlayerSettings.Logging)
+                {
+                    var logOutput = "===== EXCEPTION CONTACTING MASTER SERVER @ " + DateTime.UtcNow + " ======\n";
+                    logOutput += "Message: " + e.Message;
+                    logOutput += "\nData: " + e.Data;
+                    logOutput += "\nStack: " + e.StackTrace;
+                    logOutput += "\nSource: " + e.Source;
+                    logOutput += "\nTarget: " + e.TargetSite;
+                    if (e.InnerException != null)
+                        logOutput += "\nInnerException: " + e.InnerException.Message;
+                    logOutput += "\n";
+                    File.AppendAllText("scripts\\GTACOOP.log", logOutput);
+                }
                 return;
             }
 
@@ -624,7 +634,7 @@ namespace GTACoOp
             if (dejson == null) return;
 
             Console.WriteLine("Servers returned by master server: " + dejson.list.Count().ToString());
-            _serverBrowserMenu.Subtitle.Caption = dejson.list.Count().ToString();
+            _serverBrowserMenu.Subtitle.Caption = "Servers listed: ~g~~h~" + dejson.list.Count().ToString();
             var item = new UIMenuItem(dejson.list.Count().ToString() + " Servers listed.");
             item.SetLeftBadge(UIMenuItem.BadgeStyle.Star);
             if (_client == null)
@@ -986,7 +996,8 @@ namespace GTACoOp
                 for (int i = 0; i < tickNatives.Count; i++) DecodeNativeCall(tickNatives.ElementAt(i).Value);
             }catch(Exception ex) {
                 UI.Notify("<ERROR> Could not handle this tick:"); UI.Notify(ex.Message);
-                File.AppendAllText("scripts\\GTACOOP.log", "[" + DateTime.UtcNow + "] <ERROR> Could not handle this tick: " + ex.Message+"\n");
+                if(Main.PlayerSettings.Logging)
+                    File.AppendAllText("scripts\\GTACOOP.log", "[" + DateTime.UtcNow + "] <ERROR> Could not handle this tick: " + ex.Message+"\n");
             }
         }
 

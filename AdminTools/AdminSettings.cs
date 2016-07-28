@@ -17,6 +17,11 @@
         public bool OnlyAsciiNickName { get; set; }
         public bool OnlyAsciiUserName { get; set; }
         public bool LimitNickNames { get; set; }
+        public string CountryRestriction { get; set; }
+        /*public bool WhiteListEnabled { get; set; }
+        public string[] WhiteList { get; set; }
+        public bool BlackListEnabled { get; set; }
+        public string[] BlackList { get; set; }*/
 
         public AdminSettings()
         {
@@ -35,6 +40,13 @@
             OnlyAsciiNickName = true;
             OnlyAsciiUserName = false;
             LimitNickNames = true;
+            CountryRestriction = "";
+            /*WhiteListEnabled = false;
+            WhiteList[0] = "Bluscream";
+            WhiteList[1] = "Redscream";
+            BlackListEnabled = false;
+            BlackList[0] = "Faggot";
+            BlackList[1] = "Bastard";*/
         }
     }
 }

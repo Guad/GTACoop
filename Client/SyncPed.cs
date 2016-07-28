@@ -20,6 +20,7 @@ namespace GTACoOp
     {
         public SynchronizationMode SyncMode;
         public long Host;
+        public MaxMind.GeoIP2.Responses.CountryResponse geoIP;
         public Ped Character;
         public Vector3 Position;
         public Quaternion Rotation;

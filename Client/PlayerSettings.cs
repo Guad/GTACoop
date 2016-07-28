@@ -10,7 +10,9 @@ namespace GTACoOp
         public string LastPassword { get; set; }
         public bool SyncWorld { get; set; }
         public bool SyncTraffic { get; set; }
+        public bool Logging { get; set; }
         public bool OldChat { get; set; }
+        public bool ChatLog { get; set; }
         public int MaxStreamedNpcs { get; set; }
         public string MasterServerAddress { get; set; }
         public Keys ActivationKey { get; set; }
@@ -31,7 +33,9 @@ namespace GTACoOp
             LastIP = "127.0.0.1";
             LastPort = 4499;
             LastPassword = "changeme";
+            Logging = false;
             OldChat = false;
+            ChatLog = false;
             SyncWorld = true;
             SyncTraffic = false;
             AutoConnect = false;

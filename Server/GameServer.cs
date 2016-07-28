@@ -371,7 +371,7 @@ namespace GTAServer
                             try { Console.Write("Password: " + connReq.Password.ToString() + " | "); } catch (Exception) { }
                             #endif
                             try { Console.Write("Game Version: " + connReq.GameVersion.ToString() + " | "); } catch (Exception) { }
-                            try { Console.Write("Script Version: ["+connReq.ScriptVersion.ToString()+ "] "+(ScriptVersion)connReq.ScriptVersion + "("+(byte)connReq.ScriptVersion + ") | "); } catch (Exception) { }
+                            try { Console.Write("Script Version: ["+connReq.ScriptVersion.ToString()+ "] "+(ScriptVersion)connReq.ScriptVersion+" | "); } catch (Exception) { }
                             try { Console.Write("IP: " + msg.SenderEndPoint.Address.ToString() + ":" + msg.SenderEndPoint.Port.ToString() + " | "); } catch (Exception) { }
                             Console.Write("\n");
                             if (!AllowOutdatedClients && (ScriptVersion)connReq.ScriptVersion != Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last())
@@ -751,7 +751,7 @@ namespace GTAServer
                 }
                 if (_gamemode != null) _gamemode.OnTick();
                 if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnTick());
-            }catch(Exception ex) { LogToConsole(4, false, "", "Can't handle tick: "+ex.Message); }
+            }catch(Exception ex) { LogToConsole(4, false, "", "Can't handle tick: "+ex.ToString()); }
         }
         public void Infoscreen()
         {

@@ -12,7 +12,6 @@ using GTAServer;
 //using Lidgren.Network;
 using Console = Colorful.Console;
 using System.Drawing;
-using MaxMind.GeoIP2;
 
 namespace AdminTools
 {
@@ -77,8 +76,6 @@ namespace AdminTools
             LogToConsole(2, false, null, "Accounts loaded.");
             LoadBanlist(Location + "Banlist.xml");
             LogToConsole(2, false, null, "Bans loaded.");
-            //Settings.MaxPing
-            //Settings.MaxPing
 
             ServerWeather = 0;
             ServerTime = new TimeSpan(12, 0, 0);
@@ -103,8 +100,8 @@ namespace AdminTools
                         Console.WriteLine(string.Format("{0} Current Ping: \"{1}\" / Max Ping: \"{2}\"",Program.ServerInstance.Clients[i].DisplayName, Math.Round(Program.ServerInstance.Clients[i].Latency * 1000, MidpointRounding.AwayFromZero).ToString(), Settings.MaxPing));
                         if (Math.Round(Program.ServerInstance.Clients[i].Latency * 1000, MidpointRounding.AwayFromZero) > Settings.MaxPing)
                         {
-                            Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for Ping {1} too high! Max: {2}", Program.ServerInstance.Clients[i].DisplayName.ToString(), (Program.ServerInstance.Clients[i].Latency * 1000).ToString(), Settings.MaxPing.ToString()));
-                            Program.ServerInstance.KickPlayer(Program.ServerInstance.Clients[i], string.Format("Ping {0} too high! Max: {1}", (Program.ServerInstance.Clients[i].Latency * 1000).ToString(), Settings.MaxPing.ToString()));
+                            Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for Ping {1} too high! Max: {2}", Program.ServerInstance.Clients[i].DisplayName.ToString(), Math.Round(Program.ServerInstance.Clients[i].Latency * 1000, MidpointRounding.AwayFromZero).ToString(), Settings.MaxPing.ToString()));
+                            Program.ServerInstance.KickPlayer(Program.ServerInstance.Clients[i], string.Format("Ping {0} too high! Max: {1}", Math.Round(Program.ServerInstance.Clients[i].Latency * 1000, MidpointRounding.AwayFromZero).ToString(), Settings.MaxPing.ToString()));
                         }
                     }
 
@@ -124,7 +121,7 @@ namespace AdminTools
             }
             if (Settings.KickOnDefaultNickName)
             {
-                if (player.DisplayName.StartsWith("RLD!") || player.DisplayName.StartsWith("Player") || player.DisplayName.StartsWith("nosTEAM") || player.DisplayName.ToString() == "3dmgame1")
+                if (player.DisplayName.ToLower().StartsWith("rld!") || player.DisplayName.ToLower().StartsWith("player") || player.DisplayName.ToLower().StartsWith("nosteam") || player.DisplayName.ToLower().StartsWith("3dmgame1") || player.DisplayName.StartsWith("3dm") || player.DisplayName.ToLower().StartsWith("your name"))
                 {
                     //Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for default nickname.", player.DisplayName.ToString()));
                     Program.ServerInstance.DenyPlayer(player, "~r~Change your nickname!~w~ (~h~F9~h~->~h~Settings~h~->~h~Nickname~h~)", true, null, 10); return;
@@ -220,6 +217,15 @@ namespace AdminTools
                 Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for impersonating.", player.DisplayName.ToString()));
                 Program.ServerInstance.DenyPlayer(player, "Remove the () and [] from your nickname.", false, null, 15); return;
             }
+            try {
+                if (!string.IsNullOrEmpty(Settings.CountryRestriction) && !string.IsNullOrEmpty(player.geoIP.Country.Name))
+                {
+                    if (!Settings.CountryRestriction.Equals(player.geoIP.Country.Name))
+                    {
+                        Program.ServerInstance.DenyPlayer(player, "Sorry, but only players from " + Settings.CountryRestriction + " allowed here.", false, null); return;
+                    }
+                }
+            } catch { }
         }
         public override bool OnPlayerConnect(Client player)
         {
