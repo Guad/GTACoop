@@ -74,9 +74,15 @@ namespace GTACoOp
         public void AddMessage(string sender, string msg)
         {
             if (string.IsNullOrEmpty(sender))
+            {
                 _mainScaleform.CallFunction("ADD_MESSAGE", "", SanitizeString(msg));
+                System.IO.File.AppendAllText("scripts\\GTACOOP_chat.log", "[" + DateTime.UtcNow + "] "+msg);
+            }
             else
+            {
                 _mainScaleform.CallFunction("ADD_MESSAGE", SanitizeString(sender) + ":", SanitizeString(msg));
+                System.IO.File.AppendAllText("scripts\\GTACOOP_chat.log", "[" + DateTime.UtcNow + "] " + sender +": " + msg);
+            }
         }
 
         public string SanitizeString(string input)

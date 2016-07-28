@@ -17,6 +17,8 @@ using Control = GTA.Control;
 using GTAServer;
 using System.Text.RegularExpressions;
 using System.Globalization;
+using MaxMind.GeoIP2;
+using MaxMind.GeoIP2.Model;
 
 namespace GTACoOp
 {
@@ -621,8 +623,8 @@ namespace GTACoOp
 
             if (dejson == null) return;
 
-            Console.WriteLine("Servers returned by master server: " + dejson.list.ToString());
-            //_serverBrowserMenu.S = dejson.list.Count().ToString();
+            Console.WriteLine("Servers returned by master server: " + dejson.list.Count().ToString());
+            _serverBrowserMenu.Subtitle.Caption = dejson.list.Count().ToString();
             var item = new UIMenuItem(dejson.list.Count().ToString() + " Servers listed.");
             item.SetLeftBadge(UIMenuItem.BadgeStyle.Star);
             if (_client == null)
@@ -1427,6 +1429,7 @@ namespace GTACoOp
                         case NetConnectionStatus.Connected:
                             UI.Notify("Connection successful!");
                             _channel = msg.SenderConnection.RemoteHailMessage.ReadInt32();
+                            System.IO.File.AppendAllText("scripts\\GTACOOP_chat.log", "[" + DateTime.UtcNow + "] New server: " + msg);
                             break;
                         case NetConnectionStatus.Disconnected:
                             var reason = msg.ReadString();
@@ -1484,13 +1487,28 @@ namespace GTACoOp
                     var bin = msg.ReadBytes(len);
                     var data = DeserializeBinary<DiscoveryResponse>(bin) as DiscoveryResponse;
                     if (data == null) return;
+                    MaxMind.GeoIP2.Responses.CountryResponse geoIP;
+                    var path = Program.Location + "geoip.mmdb";string _description;
+                    try
+                    {
+                        using (var reader = new DatabaseReader(path))
+                        {
+                            geoIP = reader.Country(msg.SenderEndPoint.Address);
+                            data.ServerName = "["+geoIP.Continent.Code+"/"+geoIP.Country.IsoCode+"] "+data.ServerName;
+                            _description = "[" + geoIP.Continent.Name + "/" + geoIP.Country.Name + "] " + msg.SenderEndPoint.Address.ToString() + ":" + data.Port;
+                        }
+                    }
+                    catch (Exception ex) {
+                        LogToConsole(3, false, "GeoIP", ex.Message);
+                        _description = msg.SenderEndPoint.Address.ToString() + ":" + data.Port;
+                    }
                     var item = new UIMenuItem(data.ServerName);
                     TextInfo _gamemode = new System.Globalization.CultureInfo("en-US", false).TextInfo;
                     string __gamemode = _gamemode.ToTitleCase(data.Gamemode.ToString());
                     var gamemode = data.Gamemode == null ? "Unknown" : __gamemode;
 
                     item.SetRightLabel(gamemode + " | " + data.PlayerCount + "/" + data.MaxPlayers);
-                    item.Description = msg.SenderEndPoint.Address.ToString() + ":" + data.Port;
+                    item.Description = _description;
 
                     if (data.PasswordProtected)
                         item.SetLeftBadge(UIMenuItem.BadgeStyle.Lock);
@@ -1533,6 +1551,38 @@ namespace GTACoOp
                     _serverBrowserMenu.CurrentSelection = lastIndx;
                 }
             }
+        }
+
+
+        static void LogToConsole(int flag, bool debug, string module, string message)
+        {
+            if (module == null || module.Equals("")) { module = "CLIENT"; }
+            if (debug && !Program.Debug) return;
+            if (flag == 1)
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan; Console.WriteLine("[" + DateTime.Now + "] (DEBUG) " + module.ToUpper() + ": " + message);
+            }
+            else if (flag == 2)
+            {
+                Console.ForegroundColor = ConsoleColor.Green; Console.WriteLine("[" + DateTime.Now + "] (SUCCESS) " + module.ToUpper() + ": " + message);
+            }
+            else if (flag == 3)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkYellow; Console.WriteLine("[" + DateTime.Now + "] (WARNING) " + module.ToUpper() + ": " + message);
+            }
+            else if (flag == 4)
+            {
+                Console.ForegroundColor = ConsoleColor.Red; Console.WriteLine("[" + DateTime.Now + "] (ERROR) " + module.ToUpper() + ": " + message);
+            }
+            else if (flag == 6)
+            {
+                Console.ForegroundColor = ConsoleColor.Magenta; Console.WriteLine("[" + DateTime.Now + "] " + module.ToUpper() + ": " + message);
+            }
+            else
+            {
+                Console.WriteLine("[" + DateTime.Now + "] " + module.ToUpper() + ": " + message);
+            }
+            Console.ForegroundColor = ConsoleColor.White;
         }
 
 

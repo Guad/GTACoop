@@ -49,6 +49,14 @@
     <Reference Include="Lidgren.Network">
       <HintPath>..\..\GTACoop\libs\client\Lidgren.Network.dll</HintPath>
     </Reference>
+    <Reference Include="MaxMind.Db, Version=2.0.0.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\SERVERS\GameServer\Grand Theft Auto\GTA V\MaxMind.Db.dll</HintPath>
+    </Reference>
+    <Reference Include="MaxMind.GeoIP2, Version=2.6.0.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\SERVERS\GameServer\Grand Theft Auto\GTA V\filterscripts\MaxMind.GeoIP2.dll</HintPath>
+    </Reference>
     <Reference Include="NativeUI">
       <HintPath>..\..\GTACoop\libs\client\NativeUI.dll</HintPath>
     </Reference>

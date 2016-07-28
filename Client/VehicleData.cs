@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using GTA.Math;
+using NativeUI;
 using ProtoBuf;
 
 namespace GTACoOp
@@ -33,7 +34,7 @@ namespace GTACoOp
         VERSION_0_8_1 = 4,
         VERSION_0_9 = 5,
         VERSION_0_9_1 = 6,
-        VERSION_0_9_2 =7,
+        VERSION_0_9_2 = 7,
     }
 
     [ProtoContract]

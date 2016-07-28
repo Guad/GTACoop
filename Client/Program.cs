@@ -15,6 +15,8 @@ namespace GTACoOp
 {
     public static class Program
     {
+        internal static bool Debug;
+
         public static string Location { get { return AppDomain.CurrentDomain.BaseDirectory; } }
         
         // The following code is written for compat. for filterscripts/gamemodes/commands
