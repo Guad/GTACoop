@@ -42,6 +42,15 @@
       <HintPath>..\packages\Colorful.Console.1.0.5\lib\net452\Colorful.Console.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="GTAServer, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\SERVERS\GameServer\Grand Theft Auto\GTA V\GTAServer.exe</HintPath>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Lidgren.Network, Version=2012.1.7.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Lidgren.Network.1.0.2\lib\net451\Lidgren.Network.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="MaxMind.Db, Version=2.0.0.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
       <HintPath>..\packages\MaxMind.Db.2.0.0\lib\net45\MaxMind.Db.dll</HintPath>
       <Private>True</Private>
@@ -65,12 +74,6 @@
     <Compile Include="AdminSettings.cs" />
     <Compile Include="MainFilterscript.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Server\GTAServer.csproj">
-      <Project>{559ee224-bf7b-49d8-9cee-11e6ba71fe4e}</Project>
-      <Name>GTAServer</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config">

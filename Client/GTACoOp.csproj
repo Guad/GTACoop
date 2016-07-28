@@ -43,9 +43,8 @@
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="GTAServer, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\libs\GTAServer.dll</HintPath>
+    <Reference Include="GTAServer">
+      <HintPath>..\..\..\..\SERVERS\GameServer\Grand Theft Auto\GTA V\GTAServer.exe</HintPath>
     </Reference>
     <Reference Include="Lidgren.Network, Version=2012.1.7.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Lidgren.Network.1.0.2\lib\net451\Lidgren.Network.dll</HintPath>
@@ -60,7 +59,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="NativeUI, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+    <Reference Include="NativeUI, Version=1.7.0.0, Culture=neutral, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\libs\NativeUI.dll</HintPath>
     </Reference>
@@ -72,8 +71,10 @@
       <HintPath>..\packages\protobuf-net.2.1.0\lib\net451\protobuf-net.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="ScriptHookVDotNet">
+    <Reference Include="ScriptHookVDotNet, Version=2.9.2.0, Culture=neutral, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\libs\ScriptHookVDotNet.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
