@@ -1024,8 +1024,17 @@ namespace GTACoOp
                 }
                 else
                 {
-                    //Game.DisableControl(1, Control )
+                    //Game.DisableAllControlsThisFrame(2);
+                    foreach (GTA.Control control in Enum.GetValues(typeof(GTA.Control)))
+                    {
+                        Game.DisableControl(2, control);
+                    }
                     var message = Game.GetUserInput(255);
+                    foreach (GTA.Control control in Enum.GetValues(typeof(GTA.Control)))
+                    {
+                        Game.EnableControl(2, control);
+                    }
+                    //Game.EnableAllControlsThisFrame(2);
                     if (!string.IsNullOrEmpty(message))
                     {
                         var obj = new ChatData()
