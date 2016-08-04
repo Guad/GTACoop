@@ -18,6 +18,7 @@ namespace GTAServer
         public static string WANIP { get; private set; }
         public static string LANIP { get; private set; }
         public static bool Debug { get; internal set; }
+        private static bool AllowAllowOutdatedClients { get; set; }
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -28,8 +29,9 @@ namespace GTAServer
         }
         static void Main(string[] args)
         {
-            try {
-                //Console.WriteLine("Break");
+            try
+            {
+                AllowAllowOutdatedClients = false;
                 /*System.Diagnostics.Process cmd = new System.Diagnostics.Process();
                 cmd.StartInfo.FileName = "cmd.exe";
                 cmd.StartInfo.RedirectStandardInput = true;
@@ -108,8 +110,13 @@ namespace GTAServer
             ServerInstance.AnnounceSelf = settings.Announce;
             ServerInstance.MasterServer = settings.MasterServer;
             ServerInstance.MaxPlayers = settings.MaxPlayers;
-            ServerInstance.AllowDisplayNames = settings.AllowDisplayNames;
+            ServerInstance.AllowNickNames = settings.AllowDisplayNames;
             ServerInstance.AllowOutdatedClients = settings.AllowOutdatedClients;
+            if(ServerInstance.AllowOutdatedClients && !AllowAllowOutdatedClients)
+            {
+                ServerInstance.AllowOutdatedClients = false;
+                Console.WriteLine("AllowOutdatedClients was disabled on this release for security reasons! Ignoring...");
+            }
 
             ServerInstance.Start(settings.Filterscripts);
 
@@ -123,31 +130,39 @@ namespace GTAServer
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Could not contact master server: "+ex.Message); return;
+                Console.WriteLine("Could not contact master server: "+ex.Message); //return;
             }
-            if (string.IsNullOrWhiteSpace(response)) { return; }
-            var dejson = JsonConvert.DeserializeObject<MasterServerList>(response) as MasterServerList;
-            if (dejson == null) return;
-            Console.WriteLine("Servers returned by master server: " + dejson.list.Count().ToString());
-            if (!ServerInstance.WanIP.Equals("")) {
-                foreach (var server in dejson.list) {
-                    var split = server.Split(':');
-                    if (split.Length != 2) continue;
-                    int port;
-                    if (!int.TryParse(split[1], out port)) { 
-                        if (split[0].Equals(ServerInstance.WanIP) && port.Equals(settings.Port)) {
-                                LogToConsole(2, false, null, "We found our server on the serverlist :)"); break;
+                if (!string.IsNullOrWhiteSpace(response))
+                {
+                    var dejson = JsonConvert.DeserializeObject<MasterServerList>(response) as MasterServerList;
+                    if (dejson == null) return;
+                    Console.WriteLine("Servers returned by master server: " + dejson.list.Count().ToString());
+                    if (!ServerInstance.WanIP.Equals(""))
+                    {
+                        foreach (var server in dejson.list)
+                        {
+                            var split = server.Split(':');
+                            if (split.Length != 2) continue;
+                            int port;
+                            if (!int.TryParse(split[1], out port))
+                            {
+                                if (split[0].Equals(ServerInstance.WanIP) && port.Equals(settings.Port))
+                                {
+                                    LogToConsole(2, false, null, "We found our server on the serverlist :)"); break;
+                                }
+                                else if (split[0].Equals(ServerInstance.WanIP))
+                                {
+                                    LogToConsole(4, false, null, "We found our server IP on the serverlist, but without the right port :|"); break;
+                                }
+                                else
+                                {
+                                    LogToConsole(5, false, null, "We can't find our server on the serverlist :("); break;
+                                }
                             }
-                            else if (split[0].Equals(ServerInstance.WanIP)) {
-                                LogToConsole(4, false, null, "We found our server IP on the serverlist, but without the right port :|"); break;
-                            }
-                            else {
-                                LogToConsole(5, false, null, "We can't find our server on the serverlist :("); break;
-                            }
+                            //Console.Write(split[0] + ":" + port + ", ");
+                        }
                     }
-                        //Console.Write(split[0] + ":" + port + ", ");
                 }
-            }
             }
             catch (Exception ex){ Console.WriteLine("Can't start server: "+ex.Message); }
 

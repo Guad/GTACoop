@@ -1,3 +1,8 @@
+import sys
+if sys.version_info >= (3, 0):
+    sys.stdout.write("This app requires Python 2.X")
+    sys.exit(1)
+
 import flask
 import threading
 from datetime import datetime
@@ -15,7 +20,7 @@ def index():
 	global servers	
 	if flask.request.method == 'POST':
 		dejson = {'port': flask.request.data}
-		print dejson['port']
+		print(dejson['port'])
 		srvString = flask.request.remote_addr + ':' + dejson['port']
 		servers[srvString] = datetime.now()
 		return '200'
@@ -24,7 +29,7 @@ def index():
 
 
 def checkThread():
-	print 'cleaning list...'
+	print('cleaning list...')
 	for server in dict(servers):
 		date = servers[server]
 		if (datetime.now() - date).total_seconds() > 10*60:

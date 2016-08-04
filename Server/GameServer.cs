@@ -40,10 +40,9 @@ namespace GTAServer
         public int VehicleHealth { get; internal set; }
         public bool IsInVehicle { get; internal set; }
         public bool afk { get; set; }
-        public bool Banned { get; set; }
-        public string BanReason { get; set; }
         public bool Kicked { get; set; }
         public string KickReason { get; set; }
+        public Client KickedBy { get; set; }
         public bool Silent { get; set; }
         public MaxMind.GeoIP2.Responses.CountryResponse geoIP { get; set; }
 
@@ -134,10 +133,10 @@ namespace GTAServer
         public string MasterServer { get; set; }
         public bool AnnounceSelf { get; set; }
 
-        public bool AllowDisplayNames { get; set; }
+        public bool AllowNickNames { get; set; }
         public bool AllowOutdatedClients { get; set; }
 
-        public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_9_2;
+        public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_9_3;
 
         private ServerScript _gamemode { get; set; }
 
@@ -380,7 +379,7 @@ namespace GTAServer
                                 ReadableScriptVersion = Regex.Replace(ReadableScriptVersion, "VERSION_", "", RegexOptions.IgnoreCase);
                                 ReadableScriptVersion = Regex.Replace(ReadableScriptVersion, "_", ".", RegexOptions.IgnoreCase);
                                 LogToConsole(3, true, "Network", "Client " + connReq.DisplayName + " tried to connect with outdated scriptversion " + connReq.ScriptVersion.ToString() + " but the server requires " + Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last().ToString());
-                                DenyPlayer(client, string.Format("Update your GTACoop to v{0} from bit.ly/gtacoop", ReadableScriptVersion), true, msg); continue;
+                                DenyPlayer(client, string.Format("Update to GTACoop v{0} from bit.ly/gtacoop", ReadableScriptVersion), true, msg); continue;
                             }else if (AllowOutdatedClients && (ScriptVersion)connReq.ScriptVersion != Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last())
                             {
                                 SendNotificationToPlayer(client, "~r~You are using a outdated version of GTA Coop.~w~");
@@ -408,7 +407,7 @@ namespace GTAServer
                                 {
                                     int duplicate = 0;
                                     string displayname = connReq.DisplayName;
-                                    while (AllowDisplayNames && Clients.Any(c => c.DisplayName == connReq.DisplayName))
+                                    while (AllowNickNames && Clients.Any(c => c.DisplayName == connReq.DisplayName))
                                     {
                                         duplicate++;
 
@@ -418,7 +417,7 @@ namespace GTAServer
                                     Clients.Add(client);
                                 }
                                 client.Name = connReq.Name;
-                                client.DisplayName = AllowDisplayNames ? connReq.DisplayName : connReq.Name;
+                                client.DisplayName = AllowNickNames ? connReq.DisplayName : connReq.Name;
 
                                 if (client.RemoteScriptVersion != (ScriptVersion)connReq.ScriptVersion) client.RemoteScriptVersion = (ScriptVersion)connReq.ScriptVersion;
                                 if (client.GameVersion != connReq.GameVersion) client.GameVersion = connReq.GameVersion;
@@ -478,26 +477,28 @@ namespace GTAServer
                                         if (_filterscripts != null) _filterscripts.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerDisconnect(client));
                                         if (client.NetConnection.RemoteEndPoint.Address.ToString().Equals(LastKicked)) { client.Silent = true; }
                                         if (sendMsg && !client.Silent)
-                                            if (client.Banned)
-                                            {
-                                                if (!client.BanReason.Equals(""))
-                                                {
-                                                    SendNotificationToAll("~h~" + client.DisplayName + "~h~~w~ has been banned for " + client.BanReason);
-                                                }
-                                                else
-                                                {
-                                                    SendNotificationToAll("~h~" + client.DisplayName + "~h~~w~ has been banned.");
-                                                }
-                                            }
-                                            else if (client.Kicked)
+                                            if (client.Kicked)
                                             {
                                                 if (!client.KickReason.Equals(""))
                                                 {
-                                                    SendNotificationToAll("~h~" + client.DisplayName + "~h~~w~ was kicked for " + client.KickReason);
+                                                    if(client.KickedBy != null)
+                                                    {
+                                                        SendNotificationToAll("~h~" + client.DisplayName + "~h~~w~ was kicked by "+ client.KickedBy.DisplayName +"~w~ for " + client.KickReason);
+                                                    } else
+                                                    {
+                                                        SendNotificationToAll("~h~" + client.DisplayName + "~h~~w~ was kicked for " + client.KickReason);
+                                                    }
                                                 }
                                                 else
                                                 {
-                                                    SendNotificationToAll("~h~" + client.DisplayName + "~h~~w~ has been kicked.");
+                                                    if (client.KickedBy != null)
+                                                    {
+                                                        SendNotificationToAll("~h~" + client.DisplayName + "~h~~w~ has been kicked by "+ client.KickedBy.DisplayName+"~w~.");
+                                                    }
+                                                    else
+                                                    {
+                                                        SendNotificationToAll("~h~" + client.DisplayName + "~h~~w~ has been kicked.");
+                                                    }
                                                 }
                                             }
                                             else
@@ -511,19 +512,8 @@ namespace GTAServer
                                         };
 
                                         SendToAll(dcObj, PacketType.PlayerDisconnect, true);
-
-                                        if (client.Banned)
-                                        {
-                                            if (!client.BanReason.Equals(""))
-                                            {
-                                                Console.WriteLine("Player banned: \"" + client.Name + "\" (" + client.DisplayName + ") for " + client.BanReason);
-                                            }
-                                            else
-                                            {
-                                                Console.ForegroundColor = ConsoleColor.Red; PrintPlayerInfo(client, "Banned: "); Console.ResetColor();
-                                            }
-                                        }
-                                        else if (client.Kicked)
+                                        
+                                        if (client.Kicked)
                                         {
                                             if (!client.KickReason.Equals(""))
                                             {
@@ -1171,9 +1161,9 @@ namespace GTAServer
             SendNativeCallToPlayer(player, 0xBF0FD6E56C964FCB, new LocalPlayerArgument(), weaponHash, ammo, equipNow, ammo);
         }
 
-        public void KickPlayer(Client player, string reason, bool silent = false)
+        public void KickPlayer(Client player, string reason, bool silent = false, Client sender = null)
         {
-            player.Kicked = true;player.KickReason = reason.ToString();player.Silent = silent;
+            player.Kicked = true;player.KickReason = reason.ToString();player.Silent = silent;player.KickedBy = sender;
             player.NetConnection.Disconnect("Kicked: " + reason);
         }
 

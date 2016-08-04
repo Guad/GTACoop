@@ -10,7 +10,7 @@
         public bool Announce { get; set; }
         public string MasterServer { get; set; }
 
-        public bool AllowDisplayNames { get; set; }
+        public bool AllowNickNames { get; set; }
         public bool AllowOutdatedClients { get; set; }
 
         public string Gamemode { get; set; }
@@ -28,7 +28,7 @@
             PasswordProtected = false;
             Gamemode = "freeroam";
             Announce = true;
-            AllowDisplayNames = true;
+            AllowNickNames = true;
             AllowOutdatedClients = false;
             MasterServer = "http://46.101.1.92/";
             Filterscripts = new string[] { "" };

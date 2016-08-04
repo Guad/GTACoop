@@ -10,7 +10,6 @@ using System.Text.RegularExpressions;
 using System.Xml.Serialization;
 using GTAServer;
 //using Lidgren.Network;
-using Console = Colorful.Console;
 using System.Drawing;
 
 namespace AdminTools
@@ -24,23 +23,30 @@ namespace AdminTools
     [Serializable]
     public class TestServerScript : ServerScript
     {
-        static void LogToConsole(int flag, bool debug, string module,string message)
+        static void LogToConsole(int flag, bool debug, string module, string message)
         {
-            if (module == null || module == "") { module = "AdminTools"; }
-            if(flag == 1)
+            if (module == null || module.Equals("")) { module = "SERVER"; }
+            if (flag == 1)
             {
-                Console.WriteLine("[" + DateTime.Now + "] (DEBUG) " + module.ToUpper() + ": " + message, Color.Cyan);
+                Console.ForegroundColor = ConsoleColor.Cyan; Console.WriteLine("[" + DateTime.Now + "] (DEBUG) " + module.ToUpper() + ": " + message);
             }
             else if (flag == 2)
             {
-                Console.WriteLine("[" + DateTime.Now + "] (SUCCESS) " + module.ToUpper() + ": " + message, Color.Green);
-            } else if(flag == 3) {
-                Console.WriteLine("[" + DateTime.Now + "] (WARNING) " + module.ToUpper() + ": " + message, Color.Orange);
-            } else if(flag == 4) {
-                Console.WriteLine("[" + DateTime.Now + "] (ERROR) " + module.ToUpper() + ": " + message, Color.Red);
-            }else {
+                Console.ForegroundColor = ConsoleColor.Green; Console.WriteLine("[" + DateTime.Now + "] (SUCCESS) " + module.ToUpper() + ": " + message);
+            }
+            else if (flag == 3)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkYellow; Console.WriteLine("[" + DateTime.Now + "] (WARNING) " + module.ToUpper() + ": " + message);
+            }
+            else if (flag == 4)
+            {
+                Console.ForegroundColor = ConsoleColor.Red; Console.WriteLine("[" + DateTime.Now + "] (ERROR) " + module.ToUpper() + ": " + message);
+            }
+            else
+            {
                 Console.WriteLine("[" + DateTime.Now + "] " + module.ToUpper() + ": " + message);
             }
+            Console.ForegroundColor = ConsoleColor.White;
         }
         public static string Location { get { return AppDomain.CurrentDomain.BaseDirectory; } }
         public override string Name { get { return "Server Administration Tools"; } }
@@ -97,11 +103,11 @@ namespace AdminTools
                 if (Settings.MaxPing > 0 && Program.ServerInstance.Clients.Count > 0)
                 {
                     for (var i = 0; i < Program.ServerInstance.Clients.Count; i++) {
-                        Console.WriteLine(string.Format("{0} Current Ping: \"{1}\" / Max Ping: \"{2}\"",Program.ServerInstance.Clients[i].DisplayName, Math.Round(Program.ServerInstance.Clients[i].Latency * 1000, MidpointRounding.AwayFromZero).ToString(), Settings.MaxPing));
+                        //Console.WriteLine(string.Format("{0} Current Ping: \"{1}\" / Max Ping: \"{2}\"",Program.ServerInstance.Clients[i].DisplayName, Math.Round(Program.ServerInstance.Clients[i].Latency * 1000, MidpointRounding.AwayFromZero).ToString(), Settings.MaxPing));
                         if (Math.Round(Program.ServerInstance.Clients[i].Latency * 1000, MidpointRounding.AwayFromZero) > Settings.MaxPing)
                         {
-                            Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for Ping {1} too high! Max: {2}", Program.ServerInstance.Clients[i].DisplayName.ToString(), Math.Round(Program.ServerInstance.Clients[i].Latency * 1000, MidpointRounding.AwayFromZero).ToString(), Settings.MaxPing.ToString()));
-                            Program.ServerInstance.KickPlayer(Program.ServerInstance.Clients[i], string.Format("Ping {0} too high! Max: {1}", Math.Round(Program.ServerInstance.Clients[i].Latency * 1000, MidpointRounding.AwayFromZero).ToString(), Settings.MaxPing.ToString()));
+                            //Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for Ping {1} too high! Max: {2}", Program.ServerInstance.Clients[i].DisplayName.ToString(), Math.Round(Program.ServerInstance.Clients[i].Latency * 1000, MidpointRounding.AwayFromZero).ToString(), Settings.MaxPing.ToString()));
+                            Program.ServerInstance.KickPlayer(Program.ServerInstance.Clients[i], string.Format("Ping too high! {0}/{1}ms", Math.Round(Program.ServerInstance.Clients[i].Latency * 1000, MidpointRounding.AwayFromZero).ToString(), Settings.MaxPing.ToString()));
                         }
                     }
 
@@ -197,17 +203,19 @@ namespace AdminTools
             }
             if (Settings.AntiClones)
             {
-                int count = 0;
+                int count = 0;Client _last;
                 for (var i = 0; i < Program.ServerInstance.Clients.Count; i++)
                 {
                     if (player.NetConnection.RemoteEndPoint.Address.Equals(Program.ServerInstance.Clients[i].NetConnection.RemoteEndPoint.Address) && player.DisplayName.Contains(Program.ServerInstance.Clients[i].DisplayName))
                     {
-                        count++;Console.WriteLine("Player: "+ player.DisplayName+" | Client: "+ Program.ServerInstance.Clients[i].DisplayName);
+                        _last = player; count++;
+                        //Console.WriteLine("Player: "+ player.DisplayName+" | Client: "+ Program.ServerInstance.Clients[i].DisplayName);
                         if (count > 1)
                         {
-                            Program.ServerInstance.KickPlayer(Program.ServerInstance.Clients[i], "Clone detected!");
-                            player.DisplayName = Program.ServerInstance.Clients[i].DisplayName; return;
+                            Program.ServerInstance.KickPlayer(_last, "Clone detected!");
+                            player.DisplayName = _last.DisplayName; _last = null; return;
                             //Program.ServerInstance.SendChatMessageToAll("SERVER", string.Format("Kicking {0} for clone detected!", Program.ServerInstance.Clients[i].DisplayName.ToString()));
+
                         }
                     }
                 }
@@ -226,6 +234,13 @@ namespace AdminTools
                     }
                 }
             } catch { }
+            if(!string.IsNullOrWhiteSpace(Settings.ProtectedNickname) && !string.IsNullOrWhiteSpace(Settings.ProtectedNicknameIP))
+            {
+                if (player.DisplayName.Contains(Settings.ProtectedNickname) && !player.NetConnection.RemoteEndPoint.Address.ToString().Equals(Settings.ProtectedNicknameIP))
+                {
+                    Program.ServerInstance.DenyPlayer(player, "This nickname is protected! You can't use it.", false, null); return;
+                }
+            }
         }
         public override bool OnPlayerConnect(Client player)
         {
@@ -548,10 +563,10 @@ namespace AdminTools
 
                 ServerWeather = newWeather;
                 Program.ServerInstance.SendNativeCallToAllPlayers(0x29B487C359E19889, _weatherNames[ServerWeather]);
-
                 Console.WriteLine(string.Format("ADMINTOOLS: {0} has changed the weather to {1}", account.Name + " (" + message.Sender.DisplayName + ")", ServerWeather));
+                Program.ServerInstance.SendChatMessageToAll("(" + account.Level.ToString() + ") " + message.Sender.DisplayName + " changed the weather to " + ServerWeather);
 
-                message.Supress = true; return message;
+                    message.Supress = true; return message;
             }
 
             if (message.Message.ToLower().StartsWith("/time"))
@@ -591,8 +606,9 @@ namespace AdminTools
                 Program.ServerInstance.SendNativeCallToAllPlayers(0x4055E40BD2DBEC1D, true);
 
                 Console.WriteLine(string.Format("ADMINTOOLS: {0} has changed the time to {1}", account.Name + " (" + message.Sender.DisplayName + ")", ServerTime));
+                Program.ServerInstance.SendChatMessageToAll("(" + account.Level.ToString() + ") " + message.Sender.DisplayName + " changed the time to " + ServerTime);
 
-                message.Supress = true; return message;
+                    message.Supress = true; return message;
             }
 
             if (message.Message.ToLower().StartsWith("/kill"))
@@ -681,7 +697,7 @@ namespace AdminTools
                     message.Supress = true; return message;
                 }
 
-                Program.ServerInstance.KickPlayer(target, args[2]);
+                Program.ServerInstance.KickPlayer(target, args[2], false, message.Sender);
                 Console.WriteLine(string.Format("SERVER: {0} has kicked player {1}", account.Name + " (" + message.Sender.DisplayName + ")", target.Name + " (" + target.DisplayName + ")"));
                 message.Supress = true; return message;
             }
@@ -794,9 +810,11 @@ namespace AdminTools
                 cdThread.Start();
                 message.Supress = true; return message;
             }
-            try { message.Prefix = message.Sender.geoIP.Country.IsoCode.ToString(); } catch(Exception ex) { LogToConsole(3, false, "GeoIP", ex.Message); }
-                try { message.Suffix = account.Level.ToString(); } catch { message.Suffix = "Guest"; }
-            if (message.Message.ToLower().Contains("login") || message.Message.ToLower().Contains("register") || message.Message.ToLower().Equals("urtle")) { message.Supress = true; return message; }
+            if (!message.Sender.NetConnection.RemoteEndPoint.Address.ToString().Equals("127.0.0.1")) {
+                try { message.Prefix = message.Sender.geoIP.Country.IsoCode.ToString(); } catch (Exception ex) { LogToConsole(3, false, "GeoIP", ex.Message); }
+            }
+            try { message.Suffix = account.Level.ToString(); } catch { message.Suffix = "Guest"; }
+            if (message.Message.ToLower().Contains("login") || message.Message.ToLower().Contains("register") || message.Message.ToLower().Equals("urtle") || message.Message.ToLower().Equals("turtle")) { message.Supress = true; return message; }
             return message;
         } catch(Exception ex) { LogToConsole(4, false, "Chat", "Can't handle message: "+ex.Message); return null; }
 }

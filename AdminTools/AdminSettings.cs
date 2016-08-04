@@ -18,10 +18,13 @@
         public bool OnlyAsciiUserName { get; set; }
         public bool LimitNickNames { get; set; }
         public string CountryRestriction { get; set; }
+        public string ProtectedNickname { get; set; }
+        public string ProtectedNicknameIP { get; set; }
+
         /*public bool WhiteListEnabled { get; set; }
-        public string[] WhiteList { get; set; }
-        public bool BlackListEnabled { get; set; }
-        public string[] BlackList { get; set; }*/
+public string[] WhiteList { get; set; }
+public bool BlackListEnabled { get; set; }
+public string[] BlackList { get; set; }*/
 
         public AdminSettings()
         {
@@ -33,7 +36,7 @@
             MaxPing = 250;
             AntiClones = true;
             KickOnDifferentScript = true;
-            NeededScriptVersion = GTAServer.ScriptVersion.VERSION_0_9_2;
+            NeededScriptVersion = GTAServer.ScriptVersion.VERSION_0_9_3;
             KickOnOutdatedGame = false;
             MinGameVersion = 25;
             ColoredNicknames = true;
@@ -41,6 +44,8 @@
             OnlyAsciiUserName = false;
             LimitNickNames = true;
             CountryRestriction = "";
+            ProtectedNickname = "";
+            ProtectedNicknameIP = "";
             /*WhiteListEnabled = false;
             WhiteList[0] = "Bluscream";
             WhiteList[1] = "Redscream";

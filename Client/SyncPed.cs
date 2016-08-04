@@ -16,6 +16,13 @@ namespace GTACoOp
         Teleport,
     }
 
+    public enum TrafficMode
+    {
+        None,
+        Parked,
+        All,
+    }
+
     public class SyncPed
     {
         public SynchronizationMode SyncMode;
