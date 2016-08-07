@@ -9,6 +9,7 @@
         public string Password { get; set; }
         public bool Announce { get; set; }
         public string MasterServer { get; set; }
+        public string BackupMasterServer { get; set; }
 
         public bool AllowNickNames { get; set; }
         public bool AllowOutdatedClients { get; set; }
@@ -31,6 +32,7 @@
             AllowNickNames = true;
             AllowOutdatedClients = false;
             MasterServer = "http://46.101.1.92/";
+            BackupMasterServer = "http://79.143.189.135/";
             Filterscripts = new string[] { "" };
         }
     }

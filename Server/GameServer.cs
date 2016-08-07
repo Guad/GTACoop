@@ -131,6 +131,7 @@ namespace GTAServer
         public bool PasswordProtected { get; set; }
         public string GamemodeName { get; set; }
         public string MasterServer { get; set; }
+        public string BackupMasterServer { get; set; }
         public bool AnnounceSelf { get; set; }
 
         public bool AllowNickNames { get; set; }
@@ -240,7 +241,16 @@ namespace GTAServer
                 }
                 catch (WebException)
                 {
-                    Console.WriteLine("Failed to announce self: master server is not available at this time.");
+                    Console.WriteLine("Failed to announce self: master server is not available at this time. Using fallback server...");
+                    try
+                    {
+                        wb.UploadData(BackupMasterServer, Encoding.UTF8.GetBytes(Port.ToString()));
+                    }
+                    catch (WebException)
+                    {
+                        Console.WriteLine("Failed to announce self: backup master server is not available at this time. Trying again later...");
+
+                    }
                 }
             }
         }

@@ -15,6 +15,7 @@ namespace GTACoOp
         public bool ChatLog { get; set; }
         public int MaxStreamedNpcs { get; set; }
         public string MasterServerAddress { get; set; }
+        public string BackupMasterServerAddress { get; set; }
         public Keys ActivationKey { get; set; }
         public bool HidePasswords { get; set; }
         public bool AutoConnect { get; set; }
@@ -28,6 +29,7 @@ namespace GTACoOp
             DisplayName = string.IsNullOrWhiteSpace(GTA.Game.Player.Name) ? "Player" : GTA.Game.Player.Name;
             MaxStreamedNpcs = 10;
             MasterServerAddress = "http://46.101.1.92/";
+            BackupMasterServerAddress = "http://79.143.189.135/";
             ActivationKey = Keys.F9;
             HidePasswords = false;
             LastIP = "127.0.0.1";

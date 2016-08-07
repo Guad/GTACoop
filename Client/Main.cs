@@ -129,7 +129,7 @@ namespace GTACoOp
             _chat.OnComplete += (sender, args) =>
             {
                 var message = _chat.CurrentInput;
-                if (!string.IsNullOrEmpty(message))
+                if (!string.IsNullOrWhiteSpace(message))
                 {
                     var obj = new ChatData()
                     {
@@ -183,9 +183,12 @@ namespace GTACoOp
             listenItem.Activated += (menu, item) =>
             {
                 _clientIp = Game.GetUserInput(255);
-                PlayerSettings.LastIP = _clientIp;
-                Util.SaveSettings(Program.Location + "ClientSettings.xml");
-                listenItem.SetRightLabel(_clientIp);
+                if (!string.IsNullOrWhiteSpace(_clientIp))
+                {
+                    PlayerSettings.LastIP = _clientIp;
+                    Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                    listenItem.SetRightLabel(PlayerSettings.LastIP);
+                }
             };
 
             var portItem = new UIMenuItem("Port");
@@ -193,8 +196,7 @@ namespace GTACoOp
             portItem.Activated += (menu, item) =>
             {
                 string newPort = Game.GetUserInput(5);
-                int nPort;
-                bool success = int.TryParse(newPort, out nPort);
+                int nPort; bool success = int.TryParse(newPort, out nPort);
                 if (!success)
                 {
                     UI.Notify("Wrong port format.");
@@ -217,15 +219,19 @@ namespace GTACoOp
             }
             passItem.Activated += (menu, item) =>
             {
-                PlayerSettings.LastPassword = Game.GetUserInput(255);
-                Util.SaveSettings(Program.Location + "ClientSettings.xml");
-                if (PlayerSettings.HidePasswords)
+                string _LastPassword = Game.GetUserInput(255);
+                if (!string.IsNullOrEmpty(_LastPassword))
                 {
-                    passItem.SetRightLabel(new String('*', PlayerSettings.LastPassword.Length));
-                }
-                else
-                {
-                    passItem.SetRightLabel(PlayerSettings.LastPassword.ToString());
+                    PlayerSettings.DisplayName = _LastPassword;
+                    Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                    if (PlayerSettings.HidePasswords)
+                    {
+                        passItem.SetRightLabel(new String('*', PlayerSettings.LastPassword.Length));
+                    }
+                    else
+                    {
+                        passItem.SetRightLabel(PlayerSettings.LastPassword.ToString());
+                    }
                 }
             };
 
@@ -283,9 +289,13 @@ namespace GTACoOp
             nameItem.SetRightLabel(PlayerSettings.DisplayName);
             nameItem.Activated += (menu, item) =>
             {
-                PlayerSettings.DisplayName = Game.GetUserInput(32);
-                Util.SaveSettings(Program.Location + "ClientSettings.xml");
-                nameItem.SetRightLabel(PlayerSettings.DisplayName);
+                string _DisplayName = Game.GetUserInput(32);
+                if (!string.IsNullOrWhiteSpace(_DisplayName))
+                {
+                    PlayerSettings.DisplayName = _DisplayName;
+                    Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                    nameItem.SetRightLabel(PlayerSettings.DisplayName);
+                }
             };
 
             var masterItem = new UIMenuItem("Master Server");
@@ -293,9 +303,25 @@ namespace GTACoOp
             masterItem.Activated += (menu, item) =>
             {
                 _masterIP = Game.GetUserInput(255);
-                PlayerSettings.MasterServerAddress = _masterIP;
-                Util.SaveSettings(Program.Location + "ClientSettings.xml");
-                masterItem.SetRightLabel(PlayerSettings.MasterServerAddress);
+                if (!string.IsNullOrWhiteSpace(_masterIP))
+                {
+                    PlayerSettings.MasterServerAddress = _masterIP;
+                    Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                    masterItem.SetRightLabel(PlayerSettings.MasterServerAddress);
+                }
+            };
+
+            var backupMasterItem = new UIMenuItem("Backup Master Server");
+            backupMasterItem.SetRightLabel(PlayerSettings.BackupMasterServerAddress);
+            backupMasterItem.Activated += (menu, item) =>
+            {
+                var _input = Game.GetUserInput(255);
+                if (!string.IsNullOrWhiteSpace(_input))
+                {
+                    PlayerSettings.BackupMasterServerAddress = _input;
+                    Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                    backupMasterItem.SetRightLabel(PlayerSettings.BackupMasterServerAddress);
+                }
             };
 
 
@@ -379,15 +405,19 @@ namespace GTACoOp
             }
             autoLoginItem.Activated += (menu, item) =>
             {
-                PlayerSettings.AutoLogin = Game.GetUserInput(255);
-                Util.SaveSettings(Program.Location + "ClientSettings.xml");
-                if (PlayerSettings.HidePasswords)
+                string _AutoLogin = Game.GetUserInput(255);
+                if (!string.IsNullOrEmpty(_AutoLogin))
                 {
-                    autoLoginItem.SetRightLabel(new String('*', PlayerSettings.AutoLogin.Length));
-                }
-                else
-                {
-                    autoLoginItem.SetRightLabel(PlayerSettings.AutoLogin.ToString());
+                    PlayerSettings.AutoLogin = _AutoLogin;
+                    Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                    if (PlayerSettings.HidePasswords)
+                    {
+                        autoLoginItem.SetRightLabel(new String('*', PlayerSettings.AutoLogin.Length));
+                    }
+                    else
+                    {
+                        autoLoginItem.SetRightLabel(PlayerSettings.AutoLogin.ToString());
+                    }
                 }
             };
 
@@ -449,9 +479,12 @@ namespace GTACoOp
             serverNameItem.SetRightLabel(ServerSettings.Name);
             serverNameItem.Activated += (menu, item) =>
             {
-                ServerSettings.Name = Game.GetUserInput(32);
-                serverNameItem.SetRightLabel(ServerSettings.Name);
-                Util.SaveServerSettings(Program.Location + "ServerSettings.xml");
+                string _Name = Game.GetUserInput(32);
+                if (!string.IsNullOrWhiteSpace(_Name)) {
+                    ServerSettings.Name = _Name;
+                    serverNameItem.SetRightLabel(ServerSettings.Name);
+                    Util.SaveServerSettings(Program.Location + "ServerSettings.xml");
+                }
             };
 
             var serverMaxPlayersItem = new UIMenuItem("Server Max Players");
@@ -497,16 +530,20 @@ namespace GTACoOp
             var serverPasswordTextItem = new UIMenuItem("Password");
             serverPasswordTextItem.Activated += (menu, item) =>
             {
-                ServerSettings.Password = Game.GetUserInput(255);
-                if (PlayerSettings.HidePasswords)
+                string _input = Game.GetUserInput(255);
+                if (!string.IsNullOrEmpty(_input))
                 {
-                    passItem.SetRightLabel(new String('*', ServerSettings.Password.Length));
+                    ServerSettings.Name = _input;
+                    if (PlayerSettings.HidePasswords)
+                    {
+                        passItem.SetRightLabel(new String('*', ServerSettings.Password.Length));
+                    }
+                    else
+                    {
+                        passItem.SetRightLabel(ServerSettings.Password.ToString());
+                    }
+                    Util.SaveServerSettings(Program.Location + "ServerSettings.xml");
                 }
-                else
-                {
-                    passItem.SetRightLabel(ServerSettings.Password.ToString());
-                }
-                Util.SaveServerSettings(Program.Location + "ServerSettings.xml");
             };
 
             var serverAnnounceItem = new UIMenuCheckboxItem("Announce to Master Server", ServerSettings.Announce);
@@ -514,6 +551,32 @@ namespace GTACoOp
             {
                 ServerSettings.Announce = check;
                 Util.SaveServerSettings(Program.Location + "ServerSettings.xml");
+            };
+
+            var serverMasterItem = new UIMenuItem("Master Server Adress");
+            serverMasterItem.SetRightLabel(ServerSettings.MasterServer);
+            serverMasterItem.Activated += (menu, item) =>
+            {
+                var _input = Game.GetUserInput(255);
+                if (!string.IsNullOrWhiteSpace(_masterIP))
+                {
+                    PlayerSettings.MasterServerAddress = _input;
+                    Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                    serverMasterItem.SetRightLabel(ServerSettings.MasterServer);
+                }
+            };
+
+            var serverBackupMasterItem = new UIMenuItem("Backup Master Server");
+            serverBackupMasterItem.SetRightLabel(ServerSettings.BackupMasterServer);
+            serverBackupMasterItem.Activated += (menu, item) =>
+            {
+                var _input = Game.GetUserInput(255);
+                if (!string.IsNullOrWhiteSpace(_input))
+                {
+                    PlayerSettings.BackupMasterServerAddress = _input;
+                    Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                    serverBackupMasterItem.SetRightLabel(ServerSettings.BackupMasterServer);
+                }
             };
 
             var serverAllowDisplayNamesItem = new UIMenuCheckboxItem("Allow Nicknames", ServerSettings.AllowNickNames);
@@ -538,6 +601,7 @@ namespace GTACoOp
                     Program.ServerInstance.Password = ServerSettings.Password;
                     Program.ServerInstance.AnnounceSelf = ServerSettings.Announce;
                     Program.ServerInstance.MasterServer = ServerSettings.MasterServer;
+                    Program.ServerInstance.BackupMasterServer = ServerSettings.BackupMasterServer;
                     Program.ServerInstance.MaxPlayers = ServerSettings.MaxPlayers;
                     Program.ServerInstance.AllowNickNames = ServerSettings.AllowNickNames;
 
@@ -565,6 +629,8 @@ namespace GTACoOp
             _serverMenu.AddItem(serverPasswordEnabledItem);
             _serverMenu.AddItem(serverPasswordTextItem);
             _serverMenu.AddItem(serverAnnounceItem);
+            _serverMenu.AddItem(serverMasterItem);
+            _serverMenu.AddItem(serverBackupMasterItem);
             _serverMenu.AddItem(serverAllowDisplayNamesItem);
             _serverMenu.AddItem(serverAutoStartItem);
             _serverMenu.AddItem(serverStartItem);
@@ -638,7 +704,7 @@ namespace GTACoOp
             }
             catch (Exception e)
             {
-                UI.Notify("~r~~h~ERROR~h~~w~~n~Could not contact master server. Try again later.");
+                UI.Notify("~r~~h~ERROR~h~~w~~n~Could not contact master server. Trying Fallback Server.");
                 if (Main.PlayerSettings.Logging)
                 {
                     var logOutput = "===== EXCEPTION CONTACTING MASTER SERVER @ " + DateTime.UtcNow + " ======\n";
@@ -652,9 +718,31 @@ namespace GTACoOp
                     logOutput += "\n";
                     File.AppendAllText("scripts\\GTACOOP.log", logOutput);
                 }
-                return;
+                try
+                {
+                    using (var wc = new WebClient())
+                    {
+                        response = wc.DownloadString(PlayerSettings.BackupMasterServerAddress);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    UI.Notify("~r~~h~ERROR~h~~w~~n~Could not contact backup master server. Please retry later...");
+                    if (Main.PlayerSettings.Logging)
+                    {
+                        var logOutput = "===== EXCEPTION CONTACTING BACKUP MASTER SERVER @ " + DateTime.UtcNow + " ======\n";
+                        logOutput += "Message: " + ex.Message;
+                        logOutput += "\nData: " + ex.Data;
+                        logOutput += "\nStack: " + ex.StackTrace;
+                        logOutput += "\nSource: " + ex.Source;
+                        logOutput += "\nTarget: " + ex.TargetSite;
+                        if (e.InnerException != null)
+                            logOutput += "\nInnerException: " + e.InnerException.Message;
+                        logOutput += "\n";
+                        File.AppendAllText("scripts\\GTACOOP.log", logOutput);
+                    }
+                }
             }
-
             if (string.IsNullOrWhiteSpace(response))
                 return;
 
@@ -1115,7 +1203,7 @@ namespace GTACoOp
                         Game.EnableControl(2, control);
                     }
                     //Game.EnableAllControlsThisFrame(2);
-                    if (!string.IsNullOrEmpty(message))
+                    if (!string.IsNullOrWhiteSpace(message))
                     {
                         var obj = new ChatData()
                         {
