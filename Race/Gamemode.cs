@@ -167,19 +167,25 @@ namespace Race
             return true;
         }
 
-        public override bool OnChatMessage(Client sender, string message)
+        public override ChatMessage OnChatMessage(ChatMessage msg)
+            // client sender, string message
         {
+            Client sender = msg.Sender;
+            string message = msg.Message;
+
             if (message == "/votemap" && !IsVoteActive() && (!IsRaceOngoing || DateTime.UtcNow.Subtract(RaceStart).TotalSeconds > 60))
             {
                 StartVote();
-                return false;
+                msg.Supress = true;
+                return msg;
             }
             else if (message.StartsWith("/vote"))
             {
                 if (DateTime.Now.Subtract(VoteStart).TotalSeconds > 60)
                 {
                     Program.ServerInstance.SendChatMessageToPlayer(sender, "No current vote is in progress.");
-                    return false;
+                    msg.Supress = true;
+                    return msg;
                 }
 
                 var args = message.Split();
@@ -187,26 +193,30 @@ namespace Race
                 if (args.Length <= 1)
                 {
                     Program.ServerInstance.SendChatMessageToPlayer(sender, "USAGE", "/vote [id]");
-                    return false;
+                    msg.Supress = true;
+                    return msg;
                 }
 
                 if (Voters.Contains(sender))
                 {
                     Program.ServerInstance.SendChatMessageToPlayer(sender, "ERROR", "You have already voted!");
-                    return false;
+                    msg.Supress = true;
+                    return msg;
                 }
 
                 int choice;
                 if (!int.TryParse(args[1], out choice) || choice <= 0 || choice > AvailableChoices.Count)
                 {
                     Program.ServerInstance.SendChatMessageToPlayer(sender, "USAGE", "/vote [id]");
-                    return false;
+                    msg.Supress = true;
+                    return msg;
                 }
 
                 Votes[choice]++;
                 Program.ServerInstance.SendChatMessageToPlayer(sender, "You have voted for " + AvailableChoices[choice].Name); 
                 Voters.Add(sender);
-                return false;
+                msg.Supress = true;
+                return msg;
             }
             else if (message == "/q")
             {
@@ -224,9 +234,10 @@ namespace Race
                 }
 
                 Program.ServerInstance.KickPlayer(sender, "requested");
-                return false;
+                msg.Supress = true;
+                return msg;
             }
-            return true;
+            return msg;
         }
 
         public override bool OnPlayerConnect(Client player)
