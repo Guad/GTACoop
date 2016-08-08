@@ -15,35 +15,116 @@ using System.Diagnostics;
 
 namespace GTAServer
 {
+    /// <summary>
+    /// Another version of the ChatData class?
+    /// TODO: Task BluScream about this...
+    /// </summary>
     public class ChatMessage
     {
+        /// <summary>
+        /// Sender of the message
+        /// </summary>
         public Client Sender { get; set; }
+        /// <summary>
+        /// Receiver of the message
+        /// </summary>
         public Client Reciever { get; set; }
+        /// <summary>
+        /// If the message is private
+        /// Note: ReSharper is suggesting IsPrivate as a property name
+        /// </summary>
         public bool isPrivate { get; set; }
+        /// <summary>
+        /// Contents of message
+        /// </summary>
         public string Message { get; set; }
+        /// <summary>
+        /// Color of the message
+        /// </summary>
         public ConsoleColor Color { get; set; }
+        /// <summary>
+        /// Message prefix
+        /// </summary>
         public string Prefix { get; set; }
+        /// <summary>
+        /// Message suffix
+        /// </summary>
         public string Suffix { get; set; }
+        /// <summary>
+        /// If the message should be suppressed
+        /// TODO: More detailed (where is it suppressed from? just chat? just console? both?
+        /// </summary>
         public bool Supress { get; set; }
     }
+    /// <summary>
+    /// Class containing data for the client
+    /// </summary>
     public class Client
     {
+        /// <summary>
+        /// Connection from the server to the client
+        /// </summary>
         public NetConnection NetConnection { get; private set; }
+        /// <summary>
+        /// Name of the player (Usually SC name)
+        /// </summary>
         public string Name { get; set; }
+        /// <summary>
+        /// Display name of the player (Usually SC name but can be changed)
+        /// </summary>
         public string DisplayName { get; set; }
+        /// <summary>
+        /// Latency of the client
+        /// </summary>
         public float Latency { get; set; }
+        /// <summary>
+        /// Remote client version
+        /// </summary>
         public ScriptVersion RemoteScriptVersion { get; set; }
+        /// <summary>
+        /// Remote game version
+        /// </summary>
         public int GameVersion { get; set; }
-
+        /// <summary>
+        /// Last known position of the player
+        /// </summary>
         public Vector3 LastKnownPosition { get; internal set; }
+        /// <summary>
+        /// Health of the player
+        /// </summary>
         public int Health { get; internal set; }
+        /// <summary>
+        /// Vehicle health of the player
+        /// </summary>
         public int VehicleHealth { get; internal set; }
+        /// <summary>
+        /// If the player is in a vehicle
+        /// </summary>
         public bool IsInVehicle { get; internal set; }
+        /// <summary>
+        /// If the player is AFK
+        /// Note: ReSharper is suggesting 'Afk' as a method name'
+        /// </summary>
         public bool afk { get; set; }
+        /// <summary>
+        /// If they got kicked
+        /// </summary>
         public bool Kicked { get; set; }
+        /// <summary>
+        /// Reason the player was kicked
+        /// </summary>
         public string KickReason { get; set; }
+        /// <summary>
+        /// Who the player was kicked by
+        /// </summary>
         public Client KickedBy { get; set; }
+        /// <summary>
+        /// If the player is silent/muted (?)
+        /// </summary>
         public bool Silent { get; set; }
+        /// <summary>
+        /// GeoIP response
+        /// </summary>
         public MaxMind.GeoIP2.Responses.CountryResponse geoIP { get; set; }
 
         public Client(NetConnection nc)
@@ -52,53 +133,178 @@ namespace GTAServer
         }
     }
 
+    /// <summary>
+    /// Notification icon types
+    /// </summary>
     public enum NotificationIconType
     {
+        /// <summary>
+        /// Chatbox notification icon
+        /// </summary>
         Chatbox = 1,
+        /// <summary>
+        /// Email notification icon
+        /// </summary>
         Email = 2,
+        /// <summary>
+        /// Friend request icon
+        /// </summary>
         AddFriendRequest = 3,
+        /// <summary>
+        /// No icon? Not sure
+        /// TODO: Test this
+        /// </summary>
         Nothing = 4,
+        /// <summary>
+        /// Right jumping arrow icon? Not sure
+        /// TODO: Test this
+        /// </summary>
         RightJumpingArrow = 7,
+        /// <summary>
+        /// RP icon
+        /// </summary>
         RP_Icon = 8,
+        /// <summary>
+        /// Dollar sign icon
+        /// </summary>
         DollarIcon = 9,
     }
 
+    /// <summary>
+    /// Notification picture type
+    /// </summary>
     public enum NotificationPicType
     {
-        CHAR_DEFAULT, // : Default profile pic
-        CHAR_FACEBOOK, // Facebook
-        CHAR_SOCIAL_CLUB, // Social Club Star
-        CHAR_CARSITE2, // Super Auto San Andreas Car Site
-        CHAR_BOATSITE, // Boat Site Anchor
-        CHAR_BANK_MAZE, // Maze Bank Logo
-        CHAR_BANK_FLEECA, // Fleeca Bank
-        CHAR_BANK_BOL, // Bank Bell Icon
-        CHAR_MINOTAUR, // Minotaur Icon
-        CHAR_EPSILON, // Epsilon E
-        CHAR_MILSITE, // Warstock W
-        CHAR_CARSITE, // Legendary Motorsports Icon
-        CHAR_DR_FRIEDLANDER, // Dr Freidlander Face
-        CHAR_BIKESITE, // P&M Logo
-        CHAR_LIFEINVADER, // Liveinvader
-        CHAR_PLANESITE, // Plane Site E
-        CHAR_MICHAEL, // Michael's Face
-        CHAR_FRANKLIN, // Franklin's Face
-        CHAR_TREVOR, // Trevor's Face
-        CHAR_SIMEON, // Simeon's Face
-        CHAR_RON, // Ron's Face
-        CHAR_JIMMY, // Jimmy's Face
-        CHAR_LESTER, // Lester's Shadowed Face
-        CHAR_DAVE, // Dave Norton's Face
-        CHAR_LAMAR, // Chop's Face
-        CHAR_DEVIN, // Devin Weston's Face
-        CHAR_AMANDA, // Amanda's Face
-        CHAR_TRACEY, // Tracey's Face
-        CHAR_STRETCH, // Stretch's Face
-        CHAR_WADE, // Wade's Face
-        CHAR_MARTIN, // Martin Madrazo's Face
+        /// <summary>
+        /// Default profile pic
+        /// </summary>
+        CHAR_DEFAULT,
+        /// <summary>
+        /// Facebook icon
+        /// </summary>
+        CHAR_FACEBOOK,
+        /// <summary>
+        /// Social club star profile pic
+        /// </summary>
+        CHAR_SOCIAL_CLUB,
+        /// <summary>
+        /// Super Auto San Andreas car site
+        /// </summary>
+        CHAR_CARSITE2,
+        /// <summary>
+        /// Boat site anchor
+        /// </summary>
+        CHAR_BOATSITE,
+        /// <summary>
+        /// Maze bank logo
+        /// </summary>
+        CHAR_BANK_MAZE,
+        /// <summary>
+        /// Fleeca bank
+        /// </summary>
+        CHAR_BANK_FLEECA,
+        /// <summary>
+        /// Bank bell
+        /// </summary>
+        CHAR_BANK_BOL,
+        /// <summary>
+        /// Minotaur icon
+        /// </summary>
+        CHAR_MINOTAUR,
+        /// <summary>
+        /// Epsilon E
+        /// </summary>
+        CHAR_EPSILON,
+        /// <summary>
+        /// Warstock W
+        /// </summary>
+        CHAR_MILSITE,
+        /// <summary>
+        /// Legendary Motorsports icon
+        /// </summary>
+        CHAR_CARSITE,
+        /// <summary>
+        /// Dr. Freidlander Face
+        /// </summary>
+        CHAR_DR_FRIEDLANDER,
+        /// <summary>
+        /// P and M Logo
+        /// </summary>
+        CHAR_BIKESITE,
+        /// <summary>
+        /// Lifeinvader
+        /// </summary>
+        CHAR_LIFEINVADER,
+        /// <summary>
+        /// Plane site
+        /// </summary>
+        CHAR_PLANESITE,
+        /// <summary>
+        /// Michael's Face
+        /// </summary>
+        CHAR_MICHAEL,
+        /// <summary>
+        /// Franklin's Face
+        /// </summary>
+        CHAR_FRANKLIN,
+        /// <summary>
+        /// Trevor's Face
+        /// </summary>
+        CHAR_TREVOR,
+        /// <summary>
+        /// Simeon's Face
+        /// </summary>
+        CHAR_SIMEON,
+        /// <summary>
+        /// Ron's Face
+        /// </summary>
+        CHAR_RON,
+        /// <summary>
+        /// Jimmy's Face
+        /// </summary>
+        CHAR_JIMMY,
+        /// <summary>
+        /// Lester's Face
+        /// </summary>
+        CHAR_LESTER,
+        /// <summary>
+        /// Dave's Face
+        /// </summary>
+        CHAR_DAVE,
+        /// <summary>
+        /// Chop's Face (...Do dogs have a face?)
+        /// </summary>
+        CHAR_LAMAR,
+        /// <summary>
+        /// Devin's Face
+        /// </summary>
+        CHAR_DEVIN,
+        /// <summary>
+        /// Amanda's Face
+        /// </summary>
+        CHAR_AMANDA,
+        /// <summary>
+        /// Tracey's Face
+        /// </summary>
+        CHAR_TRACEY,
+        /// <summary>
+        /// Stretch's Face
+        /// </summary>
+        CHAR_STRETCH,
+        /// <summary>
+        /// Wade's Face
+        /// </summary>
+        CHAR_WADE,
+        /// <summary>
+        /// Martin's Face
+        /// </summary>
+        CHAR_MARTIN,
 
     }
 
+    /// <summary>
+    /// Game server class
+    /// </summary>
     public class GameServer
     {
         public GameServer(int port, string name, string gamemodeName)
@@ -120,35 +326,103 @@ namespace GTAServer
             config.EnableMessageType(NetIncomingMessageType.ConnectionLatencyUpdated);
             Server = new NetServer(config);
         }
-
+        /// <summary>
+        /// Server socket
+        /// </summary>
         public NetServer Server;
 
+        /// <summary>
+        /// Maximum players
+        /// </summary>
         public int MaxPlayers { get; set; }
+        /// <summary>
+        /// Port the server is on
+        /// </summary>
         public int Port { get; set; }
+        /// <summary>
+        /// List of clients on the server
+        /// </summary>
         public List<Client> Clients { get; set; }
+        /// <summary>
+        /// Name of the server
+        /// </summary>
         public string Name { get; set; }
+        /// <summary>
+        /// Server password
+        /// </summary>
         public string Password { get; set; }
+        /// <summary>
+        /// Password protected
+        /// </summary>
         public bool PasswordProtected { get; set; }
+        /// <summary>
+        /// Server gamemode
+        /// </summary>
         public string GamemodeName { get; set; }
+        /// <summary>
+        /// Master server address
+        /// </summary>
         public string MasterServer { get; set; }
+        /// <summary>
+        /// Backup master server address
+        /// </summary>
         public string BackupMasterServer { get; set; }
+        /// <summary>
+        /// If the server announces itself to the master server
+        /// </summary>
         public bool AnnounceSelf { get; set; }
 
+        /// <summary>
+        /// If the server allows nicknames
+        /// </summary>
         public bool AllowNickNames { get; set; }
+        /// <summary>
+        /// If the server allows outdated clients
+        /// </summary>
         public bool AllowOutdatedClients { get; set; }
-
+        /// <summary>
+        /// Server-side script version
+        /// </summary>
         public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_9_3;
-
+        /// <summary>
+        /// Gamemode ServerScript object
+        /// Note: ReSharper is suggesting we change this variable's name to 'Gamemode'
+        /// </summary>
         private ServerScript _gamemode { get; set; }
 
+        /// <summary>
+        /// List of loaded filterscripts
+        /// </summary>
         private List<ServerScript> _filterscripts;
+        /// <summary>
+        /// Public IP of the server
+        /// Note: ReSharper is suggesting we change this variable's name to 'WanIp'
+        /// </summary>
         public string WanIP { get; set; }
+        /// <summary>
+        /// Private IP of the server
+        /// Note: ReSharper is suggesting we change this variable's name to 'LanIp'
+        /// </summary>
         public string LanIP { get; set; }
+        /// <summary>
+        /// IP of the last kicked player
+        /// </summary>
         public string LastKicked { get; set; }
+        /// <summary>
+        /// CountryResponse of the last player to join
+        /// Note: ReSharper is suggesting we change this variable's name to 'GeoIp'
+        /// </summary>
         public MaxMind.GeoIP2.Responses.CountryResponse geoIP { get; set; }
 
+        /// <summary>
+        /// Time since last announcing self to master
+        /// </summary>
         private DateTime _lastAnnounceDateTime;
 
+        /// <summary>
+        /// Start the game server
+        /// </summary>
+        /// <param name="filterscripts"></param>
         public void Start(string[] filterscripts)
         {
             Server.Start();
@@ -231,6 +505,9 @@ namespace GTAServer
             PrintServerInfo(); PrintPlayerList();
         }
 
+        /// <summary>
+        /// Announce server to master
+        /// </summary>
         public void AnnounceSelfToMaster()
         {
             using (var wb = new WebClient())
@@ -255,6 +532,11 @@ namespace GTAServer
             }
         }
 
+        /// <summary>
+        /// Load a new .dll of server scripts into the server
+        /// </summary>
+        /// <param name="targetAssembly">Assembly reference to the dll</param>
+        /// <returns>A list of ServerScript objects </returns>
         private IEnumerable<ServerScript> InstantiateScripts(Assembly targetAssembly)
         {
             var types = targetAssembly.GetExportedTypes();
@@ -273,6 +555,13 @@ namespace GTAServer
                     yield return obj;
             }
         }
+        /// <summary>
+        /// Log something to the console
+        /// </summary>
+        /// <param name="flag">Flag (TODO: Make a LogFlags enum)</param>
+        /// <param name="debug">If the message is a debug mode</param>
+        /// <param name="module">Module/plugin the log message is from</param>
+        /// <param name="message">Message to log</param>
         static void LogToConsole(int flag, bool debug, string module, string message)
         {
             if (module == null || module.Equals("")) { module = "SERVER"; }
@@ -303,6 +592,9 @@ namespace GTAServer
             }
             Console.ForegroundColor = ConsoleColor.White;
         }
+        /// <summary>
+        /// Run every tick
+        /// </summary>
         public void Tick()
         {
             try
@@ -752,6 +1044,10 @@ namespace GTAServer
                 if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnTick());
             }catch(Exception ex) { LogToConsole(4, false, "", "Can't handle tick: "+ex.ToString()); }
         }
+
+        /// <summary>
+        /// Prints info about the server
+        /// </summary>
         public void Infoscreen()
         {
             while (true)
@@ -761,7 +1057,10 @@ namespace GTAServer
                 Thread.Sleep(60000);
             }
         }
-
+        /// <summary>
+        /// Prints a list of players
+        /// </summary>
+        /// <param name="message"></param>
         public void PrintPlayerList(string message = "Online Players: ")
         {
             for (var i = 0; i < Program.ServerInstance.Clients.Count; i++)
@@ -769,7 +1068,11 @@ namespace GTAServer
                 PrintPlayerInfo(Program.ServerInstance.Clients[i], "#"+i.ToString()+ " ");
             }
         }
-
+        /// <summary>
+        /// Prints info about a player to the console
+        /// </summary>
+        /// <param name="client">Client to print info for</param>
+        /// <param name="message">Prefix to the info</param>
         public void PrintPlayerInfo( Client client, string message = "Player Info: ")
         {
             Console.Write(message);
@@ -796,7 +1099,10 @@ namespace GTAServer
             try { Console.Write("Recieved Bytes: " + client.NetConnection.Statistics.ReceivedBytes.ToString() + " | "); } catch (Exception) { }*/
             Console.Write("\n");//Console.Write("\n");
         }
-
+        /// <summary>
+        /// Prints server info
+        /// </summary>
+        /// <param name="message">Message prefix</param>
         public void PrintServerInfo( string message = "Server Info: ")
         {
             Console.Write(message);
@@ -808,6 +1114,9 @@ namespace GTAServer
             Console.Write("\n");
         }
 
+        /// <summary>
+        /// Stop the server
+        /// </summary>
         public void Stop()
         {
             foreach (Client player in Clients)
@@ -817,6 +1126,12 @@ namespace GTAServer
             Server.Shutdown("Stopping server");
         }
 
+        /// <summary>
+        /// Send a packet to all players
+        /// </summary>
+        /// <param name="newData">Object to send</param>
+        /// <param name="packetType">Packet type</param>
+        /// <param name="important">If the packet is important (does it need to be sent in a specific order)</param>
         public void SendToAll(object newData, PacketType packetType, bool important)
         {
             try
@@ -830,6 +1145,13 @@ namespace GTAServer
             }catch(Exception ex) { LogToConsole(5, false, "Network", "Error in SendToAll: " + ex.Message); }
         }
 
+        /// <summary>
+        /// Send a packet to all but one
+        /// </summary>
+        /// <param name="newData">Object to send</param>
+        /// <param name="packetType">Packet type</param>
+        /// <param name="important">If the packet is important</param>
+        /// <param name="exclude">Client to exclude from the message</param>
         public void SendToAll(object newData, PacketType packetType, bool important, Client exclude)
         {
             var data = SerializeBinary(newData);
@@ -840,6 +1162,12 @@ namespace GTAServer
             Server.SendToAll(msg, exclude.NetConnection, important ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced, GetChannelIdForConnection(exclude));
         }
 
+        /// <summary>
+        /// Deserialize a binary packet
+        /// </summary>
+        /// <typeparam name="T">Type expected from the packet</typeparam>
+        /// <param name="data">Byte array of packet data</param>
+        /// <returns>Deserialized object for packet</returns>
         public object DeserializeBinary<T>(byte[] data)
         {
             using (var stream = new MemoryStream(data))
@@ -856,6 +1184,11 @@ namespace GTAServer
             }
         }
 
+        /// <summary>
+        /// Serialize an object into a byte array
+        /// </summary>
+        /// <param name="data">Object to serialize</param>
+        /// <returns>What the data returns</returns>
         public byte[] SerializeBinary(object data)
         {
             using (var stream = new MemoryStream())
@@ -864,12 +1197,21 @@ namespace GTAServer
                 return stream.ToArray();
             }
         }
-
+        /// <summary>
+        /// Get channel ID for a client connection
+        /// </summary>
+        /// <param name="conn">Client to get the channel ID for</param>
+        /// <returns>Channel ID of client</returns>
         public int GetChannelIdForConnection(Client conn)
         {
             lock (Clients) return (Clients.IndexOf(conn) % 31) + 1;
         }
 
+        /// <summary>
+        /// Parse native arguments sent from client
+        /// </summary>
+        /// <param name="args">Object array of native args</param>
+        /// <returns>List of NativeArguments</returns>
         private List<NativeArgument> ParseNativeArguments(params object[] args)
         {
             var list = new List<NativeArgument>();
@@ -922,11 +1264,19 @@ namespace GTAServer
             return list;
         }
 
+        /// <summary>
+        /// Send a native call to a player
+        /// </summary>
+        /// <param name="player">Client to send the call to</param>
+        /// <param name="hash">Native call hash</param>
+        /// <param name="arguments">Arguments to native call</param>
         public void SendNativeCallToPlayer(Client player, ulong hash, params object[] arguments)
         {
-            var obj = new NativeData();
-            obj.Hash = hash;
-            obj.Arguments = ParseNativeArguments(arguments);
+            var obj = new NativeData
+            {
+                Hash = hash,
+                Arguments = ParseNativeArguments(arguments)
+            };
 
             var bin = SerializeBinary(obj);
 
@@ -939,13 +1289,20 @@ namespace GTAServer
             player.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(player));
         }
 
+        /// <summary>
+        /// Send a native call to all players
+        /// </summary>
+        /// <param name="hash">Hash of the native call</param>
+        /// <param name="arguments">Arguments to the native call</param>
         public void SendNativeCallToAllPlayers(ulong hash, params object[] arguments)
         {
-            var obj = new NativeData();
-            obj.Hash = hash;
-            obj.Arguments = ParseNativeArguments(arguments);
-            obj.ReturnType = null;
-            obj.Id = null;
+            var obj = new NativeData
+            {
+                Hash = hash,
+                Arguments = ParseNativeArguments(arguments),
+                ReturnType = null,
+                Id = null
+            };
 
             var bin = SerializeBinary(obj);
 
@@ -958,12 +1315,21 @@ namespace GTAServer
             Server.SendToAll(msg, NetDeliveryMethod.ReliableOrdered);
         }
 
+        /// <summary>
+        /// Set a native call to be run on a tick
+        /// </summary>
+        /// <param name="player">Player to run the call</param>
+        /// <param name="identifier">Unique ID for the call</param>
+        /// <param name="hash">Hash of the native</param>
+        /// <param name="arguments">Arguments to the native</param>
         public void SetNativeCallOnTickForPlayer(Client player, string identifier, ulong hash, params object[] arguments)
         {
-            var obj = new NativeData();
-            obj.Hash = hash;
+            var obj = new NativeData
+            {
+                Hash = hash,
+                Arguments = ParseNativeArguments(arguments)
+            };
 
-            obj.Arguments = ParseNativeArguments(arguments);
 
             var wrapper = new NativeTickCall();
             wrapper.Identifier = identifier;
@@ -980,16 +1346,26 @@ namespace GTAServer
             player.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(player));
         }
 
+        /// <summary>
+        /// Set a native call to be run on a tick for all players
+        /// </summary>
+        /// <param name="identifier">Unique ID for the call</param>
+        /// <param name="hash">Hash of the native</param>
+        /// <param name="arguments">Arguments to the native call</param>
         public void SetNativeCallOnTickForAllPlayers(string identifier, ulong hash, params object[] arguments)
         {
-            var obj = new NativeData();
-            obj.Hash = hash;
+            var obj = new NativeData
+            {
+                Hash = hash,
+                Arguments = ParseNativeArguments(arguments)
+            };
 
-            obj.Arguments = ParseNativeArguments(arguments);
 
-            var wrapper = new NativeTickCall();
-            wrapper.Identifier = identifier;
-            wrapper.Native = obj;
+            var wrapper = new NativeTickCall
+            {
+                Identifier = identifier,
+                Native = obj
+            };
 
             var bin = SerializeBinary(wrapper);
 
@@ -1001,11 +1377,14 @@ namespace GTAServer
 
             Server.SendToAll(msg, NetDeliveryMethod.ReliableOrdered);
         }
-
+        /// <summary>
+        /// Remove a native call from being run on a tick for a specific player
+        /// </summary>
+        /// <param name="player">Client the native was being run on</param>
+        /// <param name="identifier">Identifier for the native call</param>
         public void RecallNativeCallOnTickForPlayer(Client player, string identifier)
         {
-            var wrapper = new NativeTickCall();
-            wrapper.Identifier = identifier;
+            var wrapper = new NativeTickCall {Identifier = identifier};
 
             var bin = SerializeBinary(wrapper);
 
@@ -1016,11 +1395,13 @@ namespace GTAServer
 
             player.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(player));
         }
-
+        /// <summary>
+        /// Remove a native call from being run on a tick for all players
+        /// </summary>
+        /// <param name="identifier">Identifier for the native call</param>
         public void RecallNativeCallOnTickForAllPlayers(string identifier)
         {
-            var wrapper = new NativeTickCall();
-            wrapper.Identifier = identifier;
+            var wrapper = new NativeTickCall {Identifier = identifier};
 
             var bin = SerializeBinary(wrapper);
 
@@ -1031,15 +1412,23 @@ namespace GTAServer
 
             Server.SendToAll(msg, NetDeliveryMethod.ReliableOrdered);
         }
-
+        /// <summary>
+        /// Set a native call to be run on disconnect for a player
+        /// </summary>
+        /// <param name="player">Player to run the native on</param>
+        /// <param name="identifier">Identifier for the native</param>
+        /// <param name="hash">Hash of the native call</param>
+        /// <param name="arguments">Arguments to the native call</param>
         public void SetNativeCallOnDisconnectForPlayer(Client player, string identifier, ulong hash, params object[] arguments)
         {
-            var obj = new NativeData();
-            obj.Hash = hash;
-            obj.Id = identifier;
-            obj.Arguments = ParseNativeArguments(arguments);
+            var obj = new NativeData
+            {
+                Hash = hash,
+                Id = identifier,
+                Arguments = ParseNativeArguments(arguments)
+            };
 
-            
+
             var bin = SerializeBinary(obj);
 
             var msg = Server.CreateMessage();
@@ -1050,13 +1439,20 @@ namespace GTAServer
 
             player.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(player));
         }
-
+        /// <summary>
+        /// Set a native call to be run no disconnect for all players
+        /// </summary>
+        /// <param name="identifier">Identifier for the native call</param>
+        /// <param name="hash">Hash for the native call</param>
+        /// <param name="arguments">Arguments for the native</param>
         public void SetNativeCallOnDisconnectForAllPlayers(string identifier, ulong hash, params object[] arguments)
         {
-            var obj = new NativeData();
-            obj.Hash = hash;
-            obj.Id = identifier;
-            obj.Arguments = ParseNativeArguments(arguments);
+            var obj = new NativeData
+            {
+                Hash = hash,
+                Id = identifier,
+                Arguments = ParseNativeArguments(arguments)
+            };
 
             var bin = SerializeBinary(obj);
 
@@ -1068,11 +1464,14 @@ namespace GTAServer
 
             Server.SendToAll(msg, NetDeliveryMethod.ReliableOrdered);
         }
-
+        /// <summary>
+        /// Remove a native call from being run on disconnect for a player
+        /// </summary>
+        /// <param name="player">Player to remove it from</param>
+        /// <param name="identifier">Identifier for the native call</param>
         public void RecallNativeCallOnDisconnectForPlayer(Client player, string identifier)
         {
-            var obj = new NativeData();
-            obj.Id = identifier;
+            var obj = new NativeData {Id = identifier};
 
             var bin = SerializeBinary(obj);
 
@@ -1083,11 +1482,13 @@ namespace GTAServer
 
             player.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelIdForConnection(player));
         }
-
+        /// <summary>
+        /// Remove a native call from being run on disconnect for all players
+        /// </summary>
+        /// <param name="identifier">Identifier for the native call</param>
         public void RecallNativeCallOnDisconnectForAllPlayers(string identifier)
         {
-            var obj = new NativeData();
-            obj.Id = identifier;
+            var obj = new NativeData {Id = identifier};
 
             var bin = SerializeBinary(obj);
 
@@ -1099,14 +1500,28 @@ namespace GTAServer
             Server.SendToAll(msg, NetDeliveryMethod.ReliableOrdered);
         }
 
+        /// <summary>
+        /// List of callbacks for data returned from native calls
+        /// </summary>
         private Dictionary<string, Action<object>> _callbacks = new Dictionary<string, Action<object>>();
 
+        /// <summary>
+        /// Run a native on a player, then get the response
+        /// </summary>
+        /// <param name="player">Player to run the native on</param>
+        /// <param name="salt">Salt for the native call</param>
+        /// <param name="hash">Hash of the native call</param>
+        /// <param name="returnType">NativeArgument return type</param>
+        /// <param name="callback">Callback to call with the native response.</param>
+        /// <param name="arguments">Arguments to the native call</param>
         public void GetNativeCallFromPlayer(Client player, string salt, ulong hash, NativeArgument returnType, Action<object> callback,
             params object[] arguments)
         {
-            var obj = new NativeData();
-            obj.Hash = hash;
-            obj.ReturnType = returnType;
+            var obj = new NativeData
+            {
+                Hash = hash,
+                ReturnType = returnType
+            };
             salt = Environment.TickCount.ToString() +
                    salt +
                    player.NetConnection.RemoteUniqueIdentifier.ToString() +
@@ -1127,12 +1542,19 @@ namespace GTAServer
         }
 
         // SCRIPTING
-
+        /// <summary>
+        /// Send a chat message to all players
+        /// </summary>
+        /// <param name="message">Message to send</param>
         public void SendChatMessageToAll(string message)
         {
             SendChatMessageToAll("", message);
         }
-
+        /// <summary>
+        /// Send a chat message to all players
+        /// </summary>
+        /// <param name="sender">Who sent the message</param>
+        /// <param name="message">Message contents</param>
         public void SendChatMessageToAll(string sender, string message)
         {
             var chatObj = new ChatData()
@@ -1143,12 +1565,21 @@ namespace GTAServer
 
             SendToAll(chatObj, PacketType.ChatData, true);
         }
-
+        /// <summary>
+        /// Send a chat message to a player
+        /// </summary>
+        /// <param name="player">Player to send the chat message to</param>
+        /// <param name="message">Message contents</param>
         public void SendChatMessageToPlayer(Client player, string message)
         {
             SendChatMessageToPlayer(player, "", message);
         }
-
+        /// <summary>
+        /// Send a chat message to a player
+        /// </summary>
+        /// <param name="player">Player to send chat message to</param>
+        /// <param name="sender">Who sent the message</param>
+        /// <param name="message">Message contents</param>
         public void SendChatMessageToPlayer(Client player, string sender, string message)
         {
             var chatObj = new ChatData()
@@ -1165,29 +1596,60 @@ namespace GTAServer
             msg.Write(data);
             player.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, 0);
         }
-
+        /// <summary>
+        /// Give a player a weapon
+        /// </summary>
+        /// <param name="player">Player to give weapon to</param>
+        /// <param name="weaponHash">Hash of the weapon</param>
+        /// <param name="ammo">How much ammo to give them</param>
+        /// <param name="equipNow">Whether we want the player to equip the weapon now</param>
+        /// <param name="ammoLoaded">Whether we want the ammo to be loaded now or not</param>
         public void GivePlayerWeapon(Client player, uint weaponHash, int ammo, bool equipNow, bool ammoLoaded)
         {
             SendNativeCallToPlayer(player, 0xBF0FD6E56C964FCB, new LocalPlayerArgument(), weaponHash, ammo, equipNow, ammo);
         }
-
+        /// <summary>
+        /// Kick a player from the server
+        /// </summary>
+        /// <param name="player">Player to kick from the server</param>
+        /// <param name="reason">Reason for kicking the player</param>
+        /// <param name="silent">Whether or not the kick is silent</param>
+        /// <param name="sender"></param>
         public void KickPlayer(Client player, string reason, bool silent = false, Client sender = null)
         {
-            player.Kicked = true;player.KickReason = reason.ToString();player.Silent = silent;player.KickedBy = sender;
+            player.Kicked = true; // Wtf Bluscream, are you allergic to newlines? This was all one line before...
+            player.KickReason = reason.ToString();
+            player.Silent = silent;
+            player.KickedBy = sender;
             player.NetConnection.Disconnect("Kicked: " + reason);
         }
-
+        /// <summary>
+        /// Deny a player from connecting
+        /// </summary>
+        /// <param name="player">Player to deny from connecting</param>
+        /// <param name="reason">Reason for connection denial</param>
+        /// <param name="silent">Whether to silently deny the player</param>
+        /// <param name="msg">Message the player was denied with (only passed for recycling)</param>
+        /// <param name="duration">How long to deny the player (default: 60, currently unused)</param>
         public void DenyPlayer(Client player, string reason, bool silent = true, NetIncomingMessage msg = null, int duration = 60)
         {
-            if (_gamemode != null) _gamemode.OnConnectionRefused(player, reason);
-            if (_filterscripts != null) _filterscripts.ForEach(fs => fs.OnConnectionRefused(player, reason));
+            _gamemode?.OnConnectionRefused(player, reason);
+            _filterscripts?.ForEach(fs => fs.OnConnectionRefused(player, reason));
             player.NetConnection.Deny(reason);
-            Console.ForegroundColor = ConsoleColor.DarkRed; PrintPlayerInfo(player, "Connection Denied: "+ reason + " || "); Console.ResetColor();
-            if (!silent) { SendNotificationToAll(player.DisplayName + " was rejected by the server: " + reason); }
+
+            Console.ForegroundColor = ConsoleColor.DarkRed;
+            PrintPlayerInfo(player, "Connection Denied: "+ reason + " || ");
+            Console.ResetColor();
+
+            if (!silent)
+                SendNotificationToAll(player.DisplayName + " was rejected by the server: " + reason);
+            
             string _ip = player.NetConnection.RemoteEndPoint.Address.ToString();
-            Clients.Remove(player); if (msg != null) Server.Recycle(msg);
+            Clients.Remove(player);
+            if (msg != null) Server.Recycle(msg);
             //BlockIP(_ip, "GTAServer Block (" + _ip + ")", duration);
         }
+
         /*public void DenyConnection(Client player, string reason, bool silent = true, NetIncomingMessage msg = null)
         {
             player. (reason);
@@ -1195,12 +1657,22 @@ namespace GTAServer
             if (!silent) SendNotificationToAll(player.DisplayName + " was rejected by the server: " + reason);
             Clients.Remove(player);if (msg != null) Server.Recycle(msg);
         }*/
-
+        /// <summary>
+        /// Teleport a player
+        /// </summary>
+        /// <param name="player">Player to teleport</param>
+        /// <param name="newPosition">New player position</param>
         public void SetPlayerPosition(Client player, Vector3 newPosition)
         {
             SendNativeCallToPlayer(player, 0x06843DA7060A026B, new LocalPlayerArgument(), newPosition.X, newPosition.Y, newPosition.Z, 0, 0, 0, 1);
         }
 
+        /// <summary>
+        /// Get a player's position
+        /// </summary>
+        /// <param name="player">Player to get position of</param>
+        /// <param name="callback">Callback to call with the result</param>
+        /// <param name="salt">Salt of the native call</param>
         public void GetPlayerPosition(Client player, Action<object> callback, string salt = "salt")
         {
             GetNativeCallFromPlayer(player,
@@ -1208,17 +1680,35 @@ namespace GTAServer
                 0x3FEF770D40960D5A, new Vector3Argument(), callback, new LocalPlayerArgument(), 0);
         }
 
+        /// <summary>
+        /// Checks if a player control has been pressed
+        /// </summary>
+        /// <param name="player">Player to check if a control has been pressed on</param>
+        /// <param name="controlId">Control ID</param>
+        /// <param name="callback">Callback to call with the result</param>
+        /// <param name="salt">Salt of the native call</param>
         public void HasPlayerControlBeenPressed(Client player, int controlId, Action<object> callback, string salt = "salt")
         {
             GetNativeCallFromPlayer(player, salt,
                 0x580417101DDB492F, new BooleanArgument(), callback, 0, controlId);
         }
 
+        /// <summary>
+        /// Set a player's health
+        /// </summary>
+        /// <param name="player">Player</param>
+        /// <param name="health">New health</param>
         public void SetPlayerHealth(Client player, int health)
         {
             SendNativeCallToPlayer(player, 0x6B76DC1F3AE6E6A3, new LocalPlayerArgument(), health + 100);
         }
 
+        /// <summary>
+        /// Send a notification to a player
+        /// </summary>
+        /// <param name="player">Player to send notification to</param>
+        /// <param name="message">Message in the notification</param>
+        /// <param name="flashing">Whether to flash the notification</param>
         public void SendNotificationToPlayer(Client player, string message, bool flashing = false)
         {
             for (int i = 0; i < message.Length; i += 99)
@@ -1228,7 +1718,11 @@ namespace GTAServer
                 SendNativeCallToPlayer(player, 0xF020C96915705B3A, flashing, true);
             }
         }
-
+        /// <summary>
+        /// Send a notification to all players
+        /// </summary>
+        /// <param name="message">Message in the notification</param>
+        /// <param name="flashing">Whether to flash the notification</param>
         public void SendNotificationToAll(string message, bool flashing = false)
         {
             for (int i = 0; i < message.Length; i += 99)
@@ -1239,6 +1733,16 @@ namespace GTAServer
             }
         }
 
+        /// <summary>
+        /// Send a picture notification to a player
+        /// </summary>
+        /// <param name="player">Player to send the notification to</param>
+        /// <param name="body">Body of message</param>
+        /// <param name="pic">NotificationPicType for message</param>
+        /// <param name="flash">Times to flash the message</param>
+        /// <param name="iconType">NotificationIconType of the message</param>
+        /// <param name="sender">Sender of the message</param>
+        /// <param name="subject">Subject of them essage</param>
         public void SendPictureNotificationToPlayer(Client player, string body, NotificationPicType pic, int flash, NotificationIconType iconType, string sender, string subject)
         {
             //Crash with new LocalPlayerArgument()!
@@ -1247,8 +1751,16 @@ namespace GTAServer
             SendNativeCallToPlayer(player, 0x1CCD9A37359072CF, pic.ToString(), pic.ToString(), flash, (int)iconType, sender, subject);
             SendNativeCallToPlayer(player, 0xF020C96915705B3A, false, true);
         }
-
-        public void SendPictureNotificationToAll(Client player, string body, NotificationPicType pic, int flash, NotificationIconType iconType, string sender, string subject)
+        /// <summary>
+        /// Send a picture notification to all players
+        /// </summary>
+        /// <param name="body">Body of message</param>
+        /// <param name="pic">NotificationPicType for message</param>
+        /// <param name="flash">Times to flash the message</param>
+        /// <param name="iconType">NotificationIconType of the message</param>
+        /// <param name="sender">Sender of the message</param>
+        /// <param name="subject">Subject of them essage</param>
+        public void SendPictureNotificationToAll(string body, NotificationPicType pic, int flash, NotificationIconType iconType, string sender, string subject)
         {
             //Crash with new LocalPlayerArgument()!
             SendNativeCallToAllPlayers(0x202709F4C58A0424, "STRING");
@@ -1256,8 +1768,16 @@ namespace GTAServer
             SendNativeCallToAllPlayers(0x1CCD9A37359072CF, pic.ToString(), pic.ToString(), flash, (int)iconType, sender, subject);
             SendNativeCallToAllPlayers(0xF020C96915705B3A, false, true);
         }
-
-        public void SendPictureNotificationToAll(Client player, string body, string pic, int flash, int iconType, string sender, string subject)
+        /// <summary>
+        /// Send a picture notification to all players
+        /// </summary>
+        /// <param name="body">Body of message</param>
+        /// <param name="pic">NotificationPicType for message</param>
+        /// <param name="flash">Times to flash the message</param>
+        /// <param name="iconType">NotificationIconType of the message</param>
+        /// <param name="sender">Sender of the message</param>
+        /// <param name="subject">Subject of them essage</param>
+        public void SendPictureNotificationToAll(string body, string pic, int flash, int iconType, string sender, string subject)
         {
             //Crash with new LocalPlayerArgument()!
             SendNativeCallToAllPlayers(0x202709F4C58A0424, "STRING");
@@ -1266,22 +1786,40 @@ namespace GTAServer
             SendNativeCallToAllPlayers(0xF020C96915705B3A, false, true);
         }
 
+        /// <summary>
+        /// Get a player's health
+        /// </summary>
+        /// <param name="player">Player to get health of</param>
+        /// <param name="callback">Callback to call with result</param>
+        /// <param name="salt">Salt of native call</param>
         public void GetPlayerHealth(Client player, Action<object> callback, string salt = "salt")
         {
             GetNativeCallFromPlayer(player, salt,
                 0xEEF059FAD016D209, new IntArgument(), callback, new LocalPlayerArgument());
         }
-		
+		/// <summary>
+        /// Set night vision status of player
+        /// </summary>
+        /// <param name="player">Player to set night vision of</param>
+        /// <param name="status">Night vision true/false</param>
 	    public void ToggleNightVisionForPlayer(Client player, bool status)
         {
             SendNativeCallToPlayer(player, 0x18F621F7A5B1F85D, status);
         }
-		
-        public void ToggleNightVisionForAll(Client player, bool status)
+		/// <summary>
+        /// Toggle night vision for all players
+        /// </summary>
+        /// <param name="status">Night vision true/false</param>
+        public void ToggleNightVisionForAll(bool status)
         {
             SendNativeCallToAllPlayers(0x18F621F7A5B1F85D, status);
         }
-
+        /// <summary>
+        /// Checks if night vision is active
+        /// </summary>
+        /// <param name="player">Player to check if night vision is active on</param>
+        /// <param name="callback">Callback to call with result</param>
+        /// <param name="salt">Salt for native call</param>
         public void IsNightVisionActive(Client player, Action<object> callback, string salt = "salt")
         {
             GetNativeCallFromPlayer(player, salt, 0x2202A3F42C8E5F79, new BooleanArgument(), callback, new LocalPlayerArgument());
@@ -1313,6 +1851,15 @@ namespace GTAServer
             }
     }*/
 
+        /// <summary>
+        /// Block an IP in the firewall
+        /// TODO: Make this not use the firewall and instead do an IP ban on the application side, like most software.
+        /// TODO: Make this work with more than just windows if we decide for some reason to keep using the firewall...
+        /// </summary>
+        /// <param name="ip">IP to block</param>
+        /// <param name="name">Name of firewall rule</param>
+        /// <param name="duration">Length to block IP</param>
+        /// <param name="port">Port to block them on</param>
         private void BlockIP(string ip, string name = "Blocked by GTAServer", int duration = -1, string port = "")
         {
             if (!IsAdministrator()) { LogToConsole(3, false, "Firewall", "Not blocking " + ip + " cause the app is not started as admin."); return; }
@@ -1328,6 +1875,12 @@ namespace GTAServer
                 LogToConsole(2, false, "Firewall", "Blocked " + ip + " permanently!");
             }
         }
+        /// <summary>
+        /// Checks if server is running as admin.
+        /// IMO the only reason that this should be used is to check if the user is _not_ admin when they start a server... servers running as admin is a terrible idea in general 
+        /// (think: any exploits in the server? person who exploits them gets admin.)
+        /// </summary>
+        /// <returns>If the server is running as admin</returns>
         public static bool IsAdministrator()
         {
             return (new WindowsPrincipal(WindowsIdentity.GetCurrent()))
@@ -1344,6 +1897,13 @@ namespace GTAServer
                 process.WaitForExit();
             }
         }*/
+        /// <summary>
+        /// Run a command on the system
+        /// </summary>
+        /// <param name="exec">Command to run</param>
+        /// <param name="arg">Command arguments</param>
+        /// <param name="app">Application to run the command in (default: cmd.exe)</param>
+        /// <param name="waitForExit">Wait for the command to exit</param>
         public static void cmdExec(string exec, string arg = null, string app = @"C:\Windows\System32\cmd.exe", bool waitForExit = false)
         {
             ProcessStartInfo cmdStartInfo = new ProcessStartInfo();
@@ -1368,6 +1928,12 @@ namespace GTAServer
                 cmdProcess.WaitForExit();
             }
         }
+        /// <summary>
+        /// Read from a command
+        /// </summary>
+        /// <param name="exec">Command to run</param>
+        /// <param name="arg">Arguments to command</param>
+        /// <param name="app">Application to run the command in (default: cmd.exe)</param>
         public static void ReadFromCMD(string exec, string arg = null, string app = @"C:\Windows\System32\cmd.exe")
         {
             ProcessStartInfo cmdStartInfo = new ProcessStartInfo();
@@ -1395,13 +1961,23 @@ namespace GTAServer
             //cmdProcess.WaitForExit();
         }
 
+        /// <summary>
+        /// No idea, to be honest. Called with a DataReceivedEventArgs...
+        /// </summary>
+        /// <param name="sender">Unused...</param>
+        /// <param name="e">DataReceivedEventArgs</param>
         static void cmd_DataReceived(object sender, DataReceivedEventArgs e)
         {
             Console.WriteLine("Output from other process");
             Console.WriteLine(e.Data);
         }
 
-            static void cmd_Error(object sender, DataReceivedEventArgs e)
+        /// <summary>
+        /// No idea, to be honest. Called with a DataReceivedEventArgs...
+        /// </summary>
+        /// <param name="sender">Unused...</param>
+        /// <param name="e">DataReceivedEventArgs</param>
+        static void cmd_Error(object sender, DataReceivedEventArgs e)
         {
             Console.WriteLine("Error from other process");
             Console.WriteLine(e.Data);
