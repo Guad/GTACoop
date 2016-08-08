@@ -13,20 +13,51 @@ namespace GTAServer
 {
     public static class Program
     {
+        /// <summary>
+        /// Current program location
+        /// </summary>
         public static string Location { get { return AppDomain.CurrentDomain.BaseDirectory; } }
+        /// <summary>
+        /// Game server instance
+        /// </summary>
         public static GameServer ServerInstance { get; set; }
+        /// <summary>
+        /// WAN IP of the server
+        /// </summary>
         public static string WANIP { get; private set; }
+        /// <summary>
+        /// LAN IP of the server
+        /// </summary>
         public static string LANIP { get; private set; }
+        /// <summary>
+        /// If the server is in debug mode
+        /// </summary>
         public static bool Debug { get; internal set; }
+        /// <summary>
+        /// Whether to allow allow outdated clients.
+        /// </summary>
         private static bool AllowAllowOutdatedClients { get; set; }
 
+        /// <summary>
+        /// Delete a file
+        /// </summary>
+        /// <param name="name">Filename</param>
+        /// <returns>If the file was deleted</returns>
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool DeleteFile(string name);
+
+        /// <summary>
+        /// Master server list
+        /// </summary>
         public class MasterServerList
         {
             public List<string> list { get; set; }
         }
+        /// <summary>
+        /// Main method. Need I say more?
+        /// </summary>
+        /// <param name="args">Arguments to the program.</param>
         static void Main(string[] args)
         {
             try
@@ -175,6 +206,14 @@ namespace GTAServer
                 System.Threading.Thread.Sleep(10); // Reducing CPU Usage (Win7 from average 15 % to 0-1 %, Linux from 100 % to 0-2 %)
             }
         }
+        /// <summary>
+        /// Log something to the console
+        /// TODO: Either logging namespaces/logging objects to see if a message is coming from either the server instance or a virtual server
+        /// </summary>
+        /// <param name="flag">Flag (TODO: Make a LogFlags enum) </param>
+        /// <param name="debug">If the message is a debug mode</param>
+        /// <param name="module">Module/plugin the log message is from</param>
+        /// <param name="message">Message to log</param>
         static void LogToConsole(int flag, bool debug, string module, string message)
         {
             if (module == null || module.Equals("")) { module = "SERVER"; }
@@ -191,7 +230,11 @@ namespace GTAServer
             }
             Console.ForegroundColor = ConsoleColor.White;
         }
-
+        /// <summary>
+        /// Read server settings from XML
+        /// </summary>
+        /// <param name="path">Server settings path</param>
+        /// <returns>ServerSettings instance</returns>
         static ServerSettings ReadSettings(string path)
         {
             var ser = new XmlSerializer(typeof(ServerSettings));
