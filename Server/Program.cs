@@ -16,19 +16,11 @@ namespace GTAServer
         /// <summary>
         /// Current program location
         /// </summary>
-        public static string Location { get { return AppDomain.CurrentDomain.BaseDirectory; } }
+        public static string Location => AppDomain.CurrentDomain.BaseDirectory;
         /// <summary>
         /// Game server instance
         /// </summary>
         public static GameServer ServerInstance { get; set; }
-        /// <summary>
-        /// WAN IP of the server
-        /// </summary>
-        public static string WANIP { get; private set; }
-        /// <summary>
-        /// LAN IP of the server
-        /// </summary>
-        public static string LANIP { get; private set; }
         /// <summary>
         /// If the server is in debug mode
         /// </summary>
@@ -86,58 +78,10 @@ namespace GTAServer
                         settings = ReadSettings(Program.Location + "Settings.xml");
                     }
                 }
-                catch (Exception) { settings = ReadSettings(Program.Location + "Settings.xml"); }
-                try { Console.Write("IPs: "); } catch (Exception) { }
-                try
+                catch
                 {
-                    ServerInstance.WanIP = ""; ServerInstance.LanIP = "";
+                    settings = ReadSettings(Program.Location + "Settings.xml");
                 }
-                catch (Exception) { }
-                try
-                {
-                    string url = "http://checkip.dyndns.org/"; //http://ip-api.com/json
-                    WebRequest req = WebRequest.Create(url);
-                    req.Timeout = 2500;
-                    WebResponse resp = req.GetResponse();
-                    StreamReader sr = new StreamReader(resp.GetResponseStream());
-                    string res = sr.ReadToEnd().Trim();
-                    string[] a = res.Split(':');
-                    string a2 = a[1].Substring(1);
-                    string[] a3 = a2.Split('<');
-                    ServerInstance.WanIP = a3[0];
-                    Console.Write(ServerInstance.WanIP + "/");
-                }
-                catch { }
-                try
-                {
-                    var host = Dns.GetHostEntry(Dns.GetHostName());
-                    foreach (var ip in host.AddressList)
-                    {
-                        if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-                        {
-                            ServerInstance.LanIP = ip.ToString();
-                            Console.Write(ServerInstance.LanIP + "/"); break;
-                        }
-                    }
-                }
-                catch { }
-                Console.WriteLine("127.0.0.1:" + settings.Port);
-                try
-                {
-                    if (!string.IsNullOrWhiteSpace(ServerInstance.WanIP))
-                    {
-                        var path = Program.Location + "geoip.mmdb";
-                        try
-                        {
-                            using (var reader = new MaxMind.GeoIP2.DatabaseReader(path))
-                            {
-                                ServerInstance.geoIP = reader.Country(ServerInstance.WanIP);
-                            }
-                        }
-                        catch (Exception ex) { Console.WriteLine("Can't set GeoIP: " + ex.Message); }
-                    }
-                }
-                catch (Exception) { }
                 Console.WriteLine("Name: " + settings.Name);
                 Console.WriteLine("Player Limit: " + settings.MaxPlayers);
                 Console.WriteLine("Starting...");
