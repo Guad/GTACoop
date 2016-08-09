@@ -43,8 +43,10 @@ namespace Race
         public Dictionary<int, int> Votes { get; set; }
         public Dictionary<int, Race> AvailableChoices { get; set; }
 
-        public override void Start()
+        public static GameServer ServerInstance;
+        public override void Start(GameServer serverInstance)
         {
+            ServerInstance = serverInstance;
             AvailableRaces = new List<Race>();
             Opponents = new List<Opponent>();
             RememberedBlips = new Dictionary<long, int>();
@@ -81,9 +83,9 @@ namespace Race
                                 var t = new Thread((ThreadStart) delegate
                                 {
                                     Thread.Sleep(10000);
-                                    Program.ServerInstance.SendChatMessageToAll("Vote for next map will start in 60 seconds!");
+                                    ServerInstance.SendChatMessageToAll("Vote for next map will start in 60 seconds!");
                                     Thread.Sleep(30000);
-                                    Program.ServerInstance.SendChatMessageToAll("Vote for next map will start in 30 seconds!");
+                                    ServerInstance.SendChatMessageToAll("Vote for next map will start in 30 seconds!");
                                     Thread.Sleep(30000);
                                     if (!IsVoteActive())
                                         StartVote();
@@ -96,19 +98,19 @@ namespace Race
                             var suffix = pos.ToString().EndsWith("1")
                                 ? "st"
                                 : pos.ToString().EndsWith("2") ? "nd" : pos.ToString().EndsWith("3") ? "rd" : "th";
-                            Program.ServerInstance.SendNotificationToAll("~h~" + opponent.Client.DisplayName + "~h~ has finished " + pos + suffix);
-                            Program.ServerInstance.SendNativeCallToPlayer(opponent.Client, 0x45FF974EEE1C8734, opponent.Blip, 0);
-                            Program.ServerInstance.RecallNativeCallOnTickForPlayer(opponent.Client, "RACE_CHECKPOINT_MARKER");
-                            Program.ServerInstance.RecallNativeCallOnTickForPlayer(opponent.Client, "RACE_CHECKPOINT_MARKER_DIR");
+                            ServerInstance.SendNotificationToAll("~h~" + opponent.Client.DisplayName + "~h~ has finished " + pos + suffix);
+                            ServerInstance.SendNativeCallToPlayer(opponent.Client, 0x45FF974EEE1C8734, opponent.Blip, 0);
+                            ServerInstance.RecallNativeCallOnTickForPlayer(opponent.Client, "RACE_CHECKPOINT_MARKER");
+                            ServerInstance.RecallNativeCallOnTickForPlayer(opponent.Client, "RACE_CHECKPOINT_MARKER_DIR");
                             continue;
                         }
 
-                        Program.ServerInstance.SendNativeCallToPlayer(opponent.Client, 0xAE2AF67E9D9AF65D, opponent.Blip,
+                        ServerInstance.SendNativeCallToPlayer(opponent.Client, 0xAE2AF67E9D9AF65D, opponent.Blip,
                             CurrentRaceCheckpoints[opponent.CheckpointsPassed].X,
                             CurrentRaceCheckpoints[opponent.CheckpointsPassed].Y,
                             CurrentRaceCheckpoints[opponent.CheckpointsPassed].Z);
 
-                        Program.ServerInstance.SetNativeCallOnTickForPlayer(opponent.Client, "RACE_CHECKPOINT_MARKER",
+                        ServerInstance.SetNativeCallOnTickForPlayer(opponent.Client, "RACE_CHECKPOINT_MARKER",
                         0x28477EC23D892089, 1, CurrentRaceCheckpoints[opponent.CheckpointsPassed], new Vector3(), new Vector3(),
                         new Vector3() { X = 10f, Y = 10f, Z = 2f }, 241, 247, 57, 180, false, false, 2, false, false,
                         false, false);
@@ -123,7 +125,7 @@ namespace Race
                                 Vector3 dir = nextCp.Subtract(curCp);
                                 dir = dir.Normalize();
 
-                                Program.ServerInstance.SetNativeCallOnTickForPlayer(opponent.Client,
+                                ServerInstance.SetNativeCallOnTickForPlayer(opponent.Client,
                                     "RACE_CHECKPOINT_MARKER_DIR",
                                     0x28477EC23D892089, 20, curCp.Subtract(new Vector3() {X = 0f, Y = 0f, Z = -2f}), dir,
                                     new Vector3() {X = 60f, Y = 0f, Z = 0f},
@@ -134,7 +136,7 @@ namespace Race
                         }
                         else
                         {
-                            Program.ServerInstance.RecallNativeCallOnTickForPlayer(opponent.Client, "RACE_CHECKPOINT_MARKER_DIR");
+                            ServerInstance.RecallNativeCallOnTickForPlayer(opponent.Client, "RACE_CHECKPOINT_MARKER_DIR");
                         }
                     }
                 }
@@ -154,13 +156,13 @@ namespace Race
 
             if (curOp.Vehicle != 0)
             {
-                Program.ServerInstance.SendNativeCallToPlayer(player, 0xAD738C3085FE7E11, curOp.Vehicle, true, false);
-                Program.ServerInstance.SendNativeCallToPlayer(player, 0xAE3CBE5BF394C9C9, curOp.Vehicle);
+                ServerInstance.SendNativeCallToPlayer(player, 0xAD738C3085FE7E11, curOp.Vehicle, true, false);
+                ServerInstance.SendNativeCallToPlayer(player, 0xAE3CBE5BF394C9C9, curOp.Vehicle);
             }
 
             if (curOp.Blip != 0)
             {
-                Program.ServerInstance.SendNativeCallToPlayer(player, 0x45FF974EEE1C8734, curOp.Blip, 0);
+                ServerInstance.SendNativeCallToPlayer(player, 0x45FF974EEE1C8734, curOp.Blip, 0);
             }
 
             lock (Opponents) Opponents.Remove(curOp);
@@ -183,7 +185,7 @@ namespace Race
             {
                 if (DateTime.Now.Subtract(VoteStart).TotalSeconds > 60)
                 {
-                    Program.ServerInstance.SendChatMessageToPlayer(sender, "No current vote is in progress.");
+                    ServerInstance.SendChatMessageToPlayer(sender, "No current vote is in progress.");
                     msg.Supress = true;
                     return msg;
                 }
@@ -192,14 +194,14 @@ namespace Race
 
                 if (args.Length <= 1)
                 {
-                    Program.ServerInstance.SendChatMessageToPlayer(sender, "USAGE", "/vote [id]");
+                    ServerInstance.SendChatMessageToPlayer(sender, "USAGE", "/vote [id]");
                     msg.Supress = true;
                     return msg;
                 }
 
                 if (Voters.Contains(sender))
                 {
-                    Program.ServerInstance.SendChatMessageToPlayer(sender, "ERROR", "You have already voted!");
+                    ServerInstance.SendChatMessageToPlayer(sender, "ERROR", "You have already voted!");
                     msg.Supress = true;
                     return msg;
                 }
@@ -207,13 +209,13 @@ namespace Race
                 int choice;
                 if (!int.TryParse(args[1], out choice) || choice <= 0 || choice > AvailableChoices.Count)
                 {
-                    Program.ServerInstance.SendChatMessageToPlayer(sender, "USAGE", "/vote [id]");
+                    ServerInstance.SendChatMessageToPlayer(sender, "USAGE", "/vote [id]");
                     msg.Supress = true;
                     return msg;
                 }
 
                 Votes[choice]++;
-                Program.ServerInstance.SendChatMessageToPlayer(sender, "You have voted for " + AvailableChoices[choice].Name); 
+                ServerInstance.SendChatMessageToPlayer(sender, "You have voted for " + AvailableChoices[choice].Name); 
                 Voters.Add(sender);
                 msg.Supress = true;
                 return msg;
@@ -226,14 +228,14 @@ namespace Race
                 {
                     if (curOp.Blip != 0)
                     {
-                        Program.ServerInstance.SendNativeCallToPlayer(sender, 0x45FF974EEE1C8734, curOp.Blip, 0);
-                        //Program.ServerInstance.SendNativeCallToPlayer(sender, 0x86A652570E5F25DD, new PointerArgumentInt() {Data = curOp.Blip});
+                        ServerInstance.SendNativeCallToPlayer(sender, 0x45FF974EEE1C8734, curOp.Blip, 0);
+                        //ServerInstance.SendNativeCallToPlayer(sender, 0x86A652570E5F25DD, new PointerArgumentInt() {Data = curOp.Blip});
                     }
 
                     lock (Opponents) Opponents.Remove(curOp);
                 }
 
-                Program.ServerInstance.KickPlayer(sender, "requested");
+                ServerInstance.KickPlayer(sender, "requested");
                 msg.Supress = true;
                 return msg;
             }
@@ -242,8 +244,8 @@ namespace Race
 
         public override bool OnPlayerConnect(Client player)
         {
-            Program.ServerInstance.SetNativeCallOnTickForPlayer(player, "RACE_DISABLE_VEHICLE_EXIT", 0xFE99B66D079CF6BC, 0, 75, true);
-            Program.ServerInstance.SendNotificationToPlayer(player, "~r~IMPORTANT~w~~n~" + "Quit the server using the ~h~/q~h~ command to remove the blip.");
+            ServerInstance.SetNativeCallOnTickForPlayer(player, "RACE_DISABLE_VEHICLE_EXIT", 0xFE99B66D079CF6BC, 0, 75, true);
+            ServerInstance.SendNotificationToPlayer(player, "~r~IMPORTANT~w~~n~" + "Quit the server using the ~h~/q~h~ command to remove the blip.");
 
             if (IsRaceOngoing)
             {
@@ -252,7 +254,7 @@ namespace Race
 
             if (DateTime.Now.Subtract(VoteStart).TotalSeconds < 60)
             {
-                Program.ServerInstance.SendNotificationToPlayer(player, GetVoteHelpString());
+                ServerInstance.SendNotificationToPlayer(player, GetVoteHelpString());
             }
 
             if (RememberedBlips.ContainsKey(player.NetConnection.RemoteUniqueIdentifier))
@@ -303,10 +305,10 @@ namespace Race
             });
             
             
-            lock (Program.ServerInstance.Clients)
-                for (int i = 0; i < Program.ServerInstance.Clients.Count; i++)
+            lock (ServerInstance.Clients)
+                for (int i = 0; i < ServerInstance.Clients.Count; i++)
                 {
-                    SetUpPlayerForRace(Program.ServerInstance.Clients[i], CurrentRace, true, i);
+                    SetUpPlayerForRace(ServerInstance.Clients[i], CurrentRace, true, i);
                 }
 
             CurrentRaceCheckpoints = race.Checkpoints.ToList();
@@ -317,20 +319,20 @@ namespace Race
             var t = new Thread((ThreadStart) delegate
             {
                 Thread.Sleep(10000);
-                Program.ServerInstance.SendNotificationToAll("3"); // I should probably automate this
+                ServerInstance.SendNotificationToAll("3"); // I should probably automate this
                 Thread.Sleep(1000);
-                Program.ServerInstance.SendNotificationToAll("2");
+                ServerInstance.SendNotificationToAll("2");
                 Thread.Sleep(1000);
-                Program.ServerInstance.SendNotificationToAll("1");
+                ServerInstance.SendNotificationToAll("1");
                 Thread.Sleep(1000);
-                Program.ServerInstance.SendNotificationToAll("Go!");
+                ServerInstance.SendNotificationToAll("Go!");
                 IsRaceOngoing = true;
 
 
                 lock (Opponents)
                 foreach (var opponent in Opponents)
                 {
-                    Program.ServerInstance.SendNativeCallToPlayer(opponent.Client, 0x428CA6DBD1094446, opponent.Vehicle, false);
+                    ServerInstance.SendNativeCallToPlayer(opponent.Client, 0x428CA6DBD1094446, opponent.Vehicle, false);
                     opponent.HasStarted = true;
                 }
             });
@@ -350,12 +352,12 @@ namespace Race
 
                 if (opponent.Blip != 0)
                 {
-                    Program.ServerInstance.SendNativeCallToPlayer(opponent.Client, 0x45FF974EEE1C8734, opponent.Blip, 0);
+                    ServerInstance.SendNativeCallToPlayer(opponent.Client, 0x45FF974EEE1C8734, opponent.Blip, 0);
                 }
             }
 
-            Program.ServerInstance.RecallNativeCallOnTickForAllPlayers("RACE_CHECKPOINT_MARKER");
-            Program.ServerInstance.RecallNativeCallOnTickForAllPlayers("RACE_CHECKPOINT_MARKER_DIR");
+            ServerInstance.RecallNativeCallOnTickForAllPlayers("RACE_CHECKPOINT_MARKER");
+            ServerInstance.RecallNativeCallOnTickForAllPlayers("RACE_CHECKPOINT_MARKER_DIR");
 
             CurrentRaceCheckpoints.Clear();
         }
@@ -368,7 +370,7 @@ namespace Race
             var selectedModel = unchecked((int)((uint)race.AvailableVehicles[randGen.Next(race.AvailableVehicles.Length)]));
             var position = race.SpawnPoints[spawnpoint % race.SpawnPoints.Length].Position;
             var heading = race.SpawnPoints[spawnpoint % race.SpawnPoints.Length].Heading;
-            Program.ServerInstance.SendNativeCallToPlayer(client, 0x06843DA7060A026B, new LocalPlayerArgument(),
+            ServerInstance.SendNativeCallToPlayer(client, 0x06843DA7060A026B, new LocalPlayerArgument(),
                 position.X, position.Y, position.Z, 0, 0, 0, 1);
             
             if (race.Checkpoints.Length >= 2)
@@ -376,14 +378,14 @@ namespace Race
                 Vector3 dir = race.Checkpoints[1].Subtract(race.Checkpoints[0]);
                 dir = dir.Normalize();
 
-                Program.ServerInstance.SetNativeCallOnTickForPlayer(client, "RACE_CHECKPOINT_MARKER_DIR",
+                ServerInstance.SetNativeCallOnTickForPlayer(client, "RACE_CHECKPOINT_MARKER_DIR",
                 0x28477EC23D892089, 20, race.Checkpoints[0].Subtract(new Vector3() { X = 0f, Y = 0f, Z = -2f }), dir, new Vector3() { X = 60f, Y = 0f, Z = 0f },
                 new Vector3() { X = 4f, Y = 4f, Z = 4f }, 87, 193, 250, 200, false, false, 2, false, false,
                 false, false);
             }
 
 
-            Program.ServerInstance.SetNativeCallOnTickForPlayer(client, "RACE_CHECKPOINT_MARKER",
+            ServerInstance.SetNativeCallOnTickForPlayer(client, "RACE_CHECKPOINT_MARKER",
                 0x28477EC23D892089, 1, race.Checkpoints[0], new Vector3(), new Vector3(),
                 new Vector3() { X = 10f, Y = 10f, Z = 2f }, 241, 247, 57, 180, false, false, 2, false, false,
                 false, false);
@@ -398,7 +400,7 @@ namespace Race
             Opponent curOp = Opponents.FirstOrDefault(op => op.Client == client);
             if (curOp == null || curOp.Blip == 0)
             {
-                Program.ServerInstance.GetNativeCallFromPlayer(client, "start_blip", 0x5A039BB0BCA604B6,
+                ServerInstance.GetNativeCallFromPlayer(client, "start_blip", 0x5A039BB0BCA604B6,
                     new IntArgument(), // ADD_BLIP_FOR_COORD
                     delegate (object o)
                     {
@@ -417,8 +419,8 @@ namespace Race
             }
             else
             {
-                Program.ServerInstance.SendNativeCallToPlayer(client, 0x45FF974EEE1C8734, curOp.Blip, 255);
-                Program.ServerInstance.SendNativeCallToPlayer(client, 0xAE2AF67E9D9AF65D, curOp.Blip, race.Checkpoints[0].X, race.Checkpoints[0].Y, race.Checkpoints[0].Z);
+                ServerInstance.SendNativeCallToPlayer(client, 0x45FF974EEE1C8734, curOp.Blip, 255);
+                ServerInstance.SendNativeCallToPlayer(client, 0xAE2AF67E9D9AF65D, curOp.Blip, race.Checkpoints[0].X, race.Checkpoints[0].Y, race.Checkpoints[0].Z);
             }
         }
 
@@ -442,16 +444,16 @@ namespace Race
 
         private void SetPlayerInVehicle(Client player, int model, Vector3 pos, float heading, bool freeze)
         {
-            Program.ServerInstance.SetNativeCallOnTickForPlayer(player, "RACE_REQUEST_MODEL", 0x963D27A58DF860AC, model);
+            ServerInstance.SetNativeCallOnTickForPlayer(player, "RACE_REQUEST_MODEL", 0x963D27A58DF860AC, model);
             Thread.Sleep(5000);
-            Program.ServerInstance.RecallNativeCallOnTickForPlayer(player, "RACE_REQUEST_MODEL");
+            ServerInstance.RecallNativeCallOnTickForPlayer(player, "RACE_REQUEST_MODEL");
 
-            Program.ServerInstance.GetNativeCallFromPlayer(player, "spawn", 0xAF35D0D2583051B0, new IntArgument(),
+            ServerInstance.GetNativeCallFromPlayer(player, "spawn", 0xAF35D0D2583051B0, new IntArgument(),
                 delegate (object o)
                 {
-                    Program.ServerInstance.SendNativeCallToPlayer(player, 0xF75B0D629E1C063D, new LocalPlayerArgument(), (int)o, -1);
+                    ServerInstance.SendNativeCallToPlayer(player, 0xF75B0D629E1C063D, new LocalPlayerArgument(), (int)o, -1);
                     if (freeze)
-                        Program.ServerInstance.SendNativeCallToPlayer(player, 0x428CA6DBD1094446, (int)o, true);
+                        ServerInstance.SendNativeCallToPlayer(player, 0x428CA6DBD1094446, (int)o, true);
 
                     Opponent inOp = Opponents.FirstOrDefault(op => op.Client == player);
 
@@ -466,7 +468,7 @@ namespace Race
                             Opponents.Add(new Opponent(player) { Vehicle = (int)o, HasStarted = true});
                     }
 
-                    Program.ServerInstance.SendNativeCallToPlayer(player, 0xE532F5D78798DAAB, model);
+                    ServerInstance.SendNativeCallToPlayer(player, 0xE532F5D78798DAAB, model);
                 }, model, pos.X, pos.Y, pos.Z, heading, false, false);
         }
 
@@ -500,14 +502,14 @@ namespace Race
             }
 
             VoteStart = DateTime.Now;
-            Program.ServerInstance.SendNotificationToAll(build.ToString());
+            ServerInstance.SendNotificationToAll(build.ToString());
 
             var t = new Thread((ThreadStart)delegate
             {
                 Thread.Sleep(60*1000);
                 EndRace();
                 var raceWon = AvailableChoices[Votes.OrderByDescending(pair => pair.Value).ToList()[0].Key];
-                Program.ServerInstance.SendNotificationToAll(raceWon.Name + " has won the vote!");
+                ServerInstance.SendNotificationToAll(raceWon.Name + " has won the vote!");
 
                 Thread.Sleep(1000);
                 StartRace(raceWon);
