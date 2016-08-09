@@ -323,8 +323,7 @@ namespace GTAServer
             LanIP = "";
             geoIP = null;
             SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
-            NetPeerConfiguration config = new NetPeerConfiguration("GTAVOnlineRaces");
-            config.Port = port;
+            NetPeerConfiguration config = new NetPeerConfiguration("GTAVOnlineRaces") {Port = port};
             config.EnableMessageType(NetIncomingMessageType.ConnectionApproval);
             config.EnableMessageType(NetIncomingMessageType.DiscoveryRequest);
             config.EnableMessageType(NetIncomingMessageType.UnconnectedData);
@@ -458,13 +457,14 @@ namespace GTAServer
                         !t.IsInterface &&
                         !t.IsAbstract)
                         .Where(t => typeof(ServerScript).IsAssignableFrom(t));
-                    if (!validTypes.Any())
+                    var enumerable = validTypes as Type[] ?? validTypes.ToArray();
+                    if (!enumerable.Any())
                     {
                         Console.WriteLine("ERROR: No classes that inherit from ServerScript have been found in the assembly. Starting freeroam.");
                         return;
                     }
 
-                    _gamemode = Activator.CreateInstance(validTypes.ToArray()[0]) as ServerScript;
+                    _gamemode = Activator.CreateInstance(enumerable.ToArray()[0]) as ServerScript;
                     if (_gamemode == null) Console.WriteLine("Could not create gamemode: it is null.");
                     else _gamemode.Start(this);
                 }
