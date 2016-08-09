@@ -87,7 +87,7 @@ namespace GTAServer
                     }
                 }
                 catch (Exception) { settings = ReadSettings(Program.Location + "Settings.xml"); }
-                try { Console.Write("IPs: "); } catch (Exception) { }
+                Console.Write("IPs: ");
                 try
                 {
                     ServerInstance.WanIP = "";ServerInstance.LanIP = "";
