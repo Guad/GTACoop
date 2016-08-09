@@ -59,6 +59,11 @@
         /// Server WAN IP
         /// </summary>
         public string WANIP { get; set; }
+        /// <summary>
+        /// Internal server handle
+        /// </summary>
+        public string Handle { get; set; }
+
 
         public ServerSettings()
         {
@@ -73,6 +78,7 @@
             AllowOutdatedClients = false;
             MasterServer = "http://46.101.1.92/";
             Filterscripts = new string[] { "" };
+            Handle = "default";
         }
     }
 }

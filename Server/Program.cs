@@ -1,194 +1,43 @@
 ﻿using System;
-using System.Net;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Serialization;
-using Newtonsoft.Json;
+using log4net;
+using log4net.Config;
 
-namespace GTAServer
+namespace GTAServer 
 {
     public static class Program
     {
         /// <summary>
-        /// Current program location
+        /// Location of the virtual server host
         /// </summary>
-        public static string Location => AppDomain.CurrentDomain.BaseDirectory;
+        public static string ServerHostLocation => AppDomain.CurrentDomain.BaseDirectory;
         /// <summary>
-        /// Game server instance
+        /// List of all the virtual servers currently running
         /// </summary>
-        public static GameServer ServerInstance { get; set; }
+        public static Dictionary<string, AppDomain> VirtualServerDomains = new Dictionary<string, AppDomain>();
+        public static Dictionary<string, GameServer> VirtualServers = new Dictionary<string, GameServer>();
         /// <summary>
-        /// If the server is in debug mode
+        /// Server debug mode
         /// </summary>
-        public static bool Debug { get; internal set; }
+        public static bool Debug = false;
         /// <summary>
-        /// Whether to allow allow outdated clients.
+        /// If the server should allow the config option to allow old clients
         /// </summary>
-        private static bool AllowAllowOutdatedClients { get; set; }
+        public static bool AllowOutdatedClients = false;
 
         /// <summary>
         /// Delete a file
         /// </summary>
-        /// <param name="name">Filename</param>
+        /// <param name="name">File to delete</param>
         /// <returns>If the file was deleted</returns>
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool DeleteFile(string name);
 
-        /// <summary>
-        /// Master server list
-        /// </summary>
-        public class MasterServerList
-        {
-            public List<string> list { get; set; }
-        }
-        /// <summary>
-        /// Main method. Need I say more?
-        /// </summary>
-        /// <param name="args">Arguments to the program.</param>
-        static void Main(string[] args)
-        {
-            try
-            {
-                AllowAllowOutdatedClients = false;
-                /*System.Diagnostics.Process cmd = new System.Diagnostics.Process();
-                cmd.StartInfo.FileName = "cmd.exe";
-                cmd.StartInfo.RedirectStandardInput = true;
-                cmd.StartInfo.RedirectStandardOutput = true;
-                cmd.StartInfo.CreateNoWindow = true;
-                cmd.StartInfo.UseShellExecute = false;
-                cmd.Start();
-                cmd.StandardInput.WriteLine("chcp 65001");
-                cmd.StandardInput.Flush();
-                cmd.StandardInput.Close();
-                Console.WriteLine(cmd.StandardOutput.ReadToEnd());*/
-                ServerSettings settings;
-                try
-                {
-                    if (args.Length > 0)
-                    {
-                        settings = ReadSettings(Program.Location + args[0]);
-                    }
-                    else
-                    {
-                        settings = ReadSettings(Program.Location + "Settings.xml");
-                    }
-                }
-                catch
-                {
-                    settings = ReadSettings(Program.Location + "Settings.xml");
-                }
-                Console.WriteLine("Name: " + settings.Name);
-                Console.WriteLine("Player Limit: " + settings.MaxPlayers);
-                Console.WriteLine("Starting...");
-                ServerInstance = new GameServer(settings.Port, settings.Name, settings.Gamemode);
-                ServerInstance.PasswordProtected = settings.PasswordProtected;
-                ServerInstance.Password = settings.Password;
-                ServerInstance.AnnounceSelf = settings.Announce;
-                ServerInstance.MasterServer = settings.MasterServer;
-                ServerInstance.MaxPlayers = settings.MaxPlayers;
-                ServerInstance.AllowNickNames = settings.AllowDisplayNames;
-                ServerInstance.AllowOutdatedClients = settings.AllowOutdatedClients;
-                if (ServerInstance.AllowOutdatedClients && !AllowAllowOutdatedClients)
-                {
-                    ServerInstance.AllowOutdatedClients = false;
-                    Console.WriteLine("AllowOutdatedClients was disabled on this release for security reasons! Ignoring...");
-                }
-
-                ServerInstance.Start(settings.Filterscripts);
-
-                string response = String.Empty;
-                try
-                {
-                    using (var webClient = new WebClient())
-                    {
-                        response = webClient.DownloadString("http://46.101.1.92/");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("Could not contact master server: " + ex.Message); //return;
-                }
-                if (!string.IsNullOrWhiteSpace(response))
-                {
-                    var dejson = JsonConvert.DeserializeObject<MasterServerList>(response) as MasterServerList;
-                    if (dejson == null) return;
-                    Console.WriteLine("Servers returned by master server: " + dejson.list.Count().ToString());
-                    if (!ServerInstance.WanIP.Equals(""))
-                    {
-                        foreach (var server in dejson.list)
-                        {
-                            var split = server.Split(':');
-                            if (split.Length != 2) continue;
-                            int port;
-                            if (!int.TryParse(split[1], out port))
-                            {
-                                if (split[0].Equals(ServerInstance.WanIP) && port.Equals(settings.Port))
-                                {
-                                    LogToConsole(2, false, null, "We found our server on the serverlist :)"); break;
-                                }
-                                else if (split[0].Equals(ServerInstance.WanIP))
-                                {
-                                    LogToConsole(4, false, null, "We found our server IP on the serverlist, but without the right port :|"); break;
-                                }
-                                else
-                                {
-                                    LogToConsole(5, false, null, "We can't find our server on the serverlist :("); break;
-                                }
-                            }
-                            //Console.Write(split[0] + ":" + port + ", ");
-                        }
-                    }
-                }
-            }
-            catch (Exception ex) { Console.WriteLine("Can't start server: " + ex.Message); }
-
-
-            Console.WriteLine("Started! Waiting for connections.");
-
-            while (true)
-            {
-                ServerInstance.Tick();
-                System.Threading.Thread.Sleep(10); // Reducing CPU Usage (Win7 from average 15 % to 0-1 %, Linux from 100 % to 0-2 %)
-            }
-        }
-        /// <summary>
-        /// Log something to the console
-        /// TODO: Either logging namespaces/logging objects to see if a message is coming from either the server instance or a virtual server
-        /// </summary>
-        /// <param name="flag">Flag (TODO: Make a LogFlags enum) </param>
-        /// <param name="debug">If the message is a debug mode</param>
-        /// <param name="module">Module/plugin the log message is from</param>
-        /// <param name="message">Message to log</param>
-        static void LogToConsole(int flag, bool debug, string module, string message)
-        {
-            if (module == null || module.Equals("")) { module = "SERVER"; }
-            if (flag == 1)
-            {
-                Console.ForegroundColor = ConsoleColor.Cyan; Console.WriteLine("[" + DateTime.Now + "] (DEBUG) " + module.ToUpper() + ": " + message);
-            }
-            else if (flag == 2)
-            {
-                Console.ForegroundColor = ConsoleColor.Green; Console.WriteLine("[" + DateTime.Now + "] (SUCCESS) " + module.ToUpper() + ": " + message);
-            }
-            else if (flag == 3)
-            {
-                Console.ForegroundColor = ConsoleColor.DarkYellow; Console.WriteLine("[" + DateTime.Now + "] (WARNING) " + module.ToUpper() + ": " + message);
-            }
-            else if (flag == 4)
-            {
-                Console.ForegroundColor = ConsoleColor.Red; Console.WriteLine("[" + DateTime.Now + "] (ERROR) " + module.ToUpper() + ": " + message);
-            }
-            else
-            {
-                Console.WriteLine("[" + DateTime.Now + "] " + module.ToUpper() + ": " + message);
-            }
-            Console.ForegroundColor = ConsoleColor.White;
-        }
+        public static readonly ILog log = LogManager.GetLogger("ServerManager");
         /// <summary>
         /// Read server settings from XML
         /// </summary>
@@ -210,8 +59,33 @@ namespace GTAServer
             {
                 using (var stream = File.OpenWrite(path)) ser.Serialize(stream, settings = new ServerSettings());
             }
-            LogToConsole(1, false, "FILE", "Settings loaded from " + path);
+            //LogToConsole(1, false, "FILE", "Settings loaded from " + path);
             return settings;
+        }
+
+        public static ServerSettings GlobalSettings;
+        /// <summary>
+        /// Master server list
+        /// </summary>
+        public class MasterServerList
+        {
+            public List<string> List { get; set; }
+        }
+
+        public static void Main(string[] args)
+        {
+            XmlConfigurator.Configure(new System.IO.FileInfo("logging.xml"));
+            log.Debug("Loading settings.xml...");
+            GlobalSettings = ReadSettings(Program.ServerHostLocation + ((args.Length > 0) ? args[0] : "Settings.xml"));
+            log.Info("Creating new server instance: ");
+            log.Info("  - Handle: " + GlobalSettings.Handle);
+            log.Info("  - Name: " + GlobalSettings.Name);
+            log.Info("  - Player Limit: " + GlobalSettings.MaxPlayers);
+            
+            VirtualServerDomains.Add(GlobalSettings.Handle, AppDomain.CreateDomain(GlobalSettings.Handle));
+            VirtualServers[GlobalSettings.Handle] =
+                (GameServer)
+                    VirtualServerDomains[GlobalSettings.Handle].CreateInstanceAndUnwrap(AppDomain.CurrentDomain.FriendlyName, "GameServer");
         }
     }
 }

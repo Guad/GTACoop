@@ -14,7 +14,7 @@ namespace GTAServer
         /// <summary>
         /// Init functon for script
         /// </summary>
-        public virtual void Start() { }
+        public virtual void Start(GameServer serverInstance) { }
 
         /// <summary>
         /// Called on an incoming connection.

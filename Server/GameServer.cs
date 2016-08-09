@@ -307,6 +307,11 @@ namespace GTAServer
     /// </summary>
     public class GameServer
     {
+        /// <summary>
+        /// Location of the current server instance
+        /// </summary>
+        public string Location => AppDomain.CurrentDomain.BaseDirectory;
+
         public GameServer(int port, string name, string gamemodeName)
         {
             Clients = new List<Client>();
@@ -441,13 +446,13 @@ namespace GTAServer
 
                     try
                     {
-                        Program.DeleteFile(Program.Location + "gamemodes" + Path.DirectorySeparatorChar + GamemodeName + ".dll:Zone.Identifier");
+                        Program.DeleteFile(Location + "gamemodes" + Path.DirectorySeparatorChar + GamemodeName + ".dll:Zone.Identifier");
                     }
                     catch
                     {
                     }
 
-                    var asm = Assembly.LoadFrom(Program.Location + "gamemodes" + Path.DirectorySeparatorChar + GamemodeName + ".dll");
+                    var asm = Assembly.LoadFrom(Location + "gamemodes" + Path.DirectorySeparatorChar + GamemodeName + ".dll");
                     var types = asm.GetExportedTypes();
                     var validTypes = types.Where(t =>
                         !t.IsInterface &&
@@ -461,7 +466,7 @@ namespace GTAServer
 
                     _gamemode = Activator.CreateInstance(validTypes.ToArray()[0]) as ServerScript;
                     if (_gamemode == null) Console.WriteLine("Could not create gamemode: it is null.");
-                    else _gamemode.Start();
+                    else _gamemode.Start(this);
                 }
                 catch (Exception e)
                 {
@@ -485,10 +490,10 @@ namespace GTAServer
 
                 try {
                     try {
-                        Program.DeleteFile(Program.Location + "filterscripts" + Path.DirectorySeparatorChar + GamemodeName + ".dll:Zone.Identifier");
+                        Program.DeleteFile(Location + "filterscripts" + Path.DirectorySeparatorChar + GamemodeName + ".dll:Zone.Identifier");
                     } catch { }
 
-                    var fsAsm = Assembly.LoadFrom(Program.Location + "filterscripts" + Path.DirectorySeparatorChar + path + ".dll");
+                    var fsAsm = Assembly.LoadFrom(Location + "filterscripts" + Path.DirectorySeparatorChar + path + ".dll");
                     var fsObj = InstantiateScripts(fsAsm);
                     list.AddRange(fsObj);
                 } catch (Exception ex) {
@@ -498,7 +503,7 @@ namespace GTAServer
 
             list.ForEach(fs =>
             {
-                fs.Start();
+                fs.Start(this);
                 Console.WriteLine("Starting filterscript " + fs.Name + "...");
             });
             _filterscripts = list;
@@ -746,7 +751,7 @@ namespace GTAServer
                                 bool sendMsg = true;
 
                                 Console.ForegroundColor = ConsoleColor.DarkGreen; PrintPlayerInfo(client, "Connected: "); Console.ResetColor();
-                                var path = Program.Location + "geoip.mmdb";
+                                var path = Location + "geoip.mmdb";
                                 try
                                 {
                                     using (var reader = new DatabaseReader(path))
@@ -756,7 +761,7 @@ namespace GTAServer
                                 }
                                 catch (Exception ex) { LogToConsole(3, false, "GeoIP", ex.Message); }
                                 if (_gamemode != null) sendMsg = sendMsg && _gamemode.OnPlayerConnect(client);
-                                if (_filterscripts != null) _filterscripts.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerConnect(client));
+                                _filterscripts?.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerConnect(client));
                                 if (sendMsg && !client.Silent)
                                     try
                                     {
@@ -776,7 +781,7 @@ namespace GTAServer
                                         var sendMsg = true;
 
                                         if (_gamemode != null) sendMsg = sendMsg && _gamemode.OnPlayerDisconnect(client);
-                                        if (_filterscripts != null) _filterscripts.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerDisconnect(client));
+                                        _filterscripts?.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerDisconnect(client));
                                         if (client.NetConnection.RemoteEndPoint.Address.ToString().Equals(LastKicked)) { client.Silent = true; }
                                         if (sendMsg && !client.Silent)
                                             if (client.Kicked)
@@ -873,7 +878,7 @@ namespace GTAServer
                                                 Msg.Sender = client;
                                                 if (_gamemode != null) Msg = _gamemode.OnChatMessage(Msg);
 
-                                                if (_filterscripts != null) _filterscripts.ForEach(fs => Msg = fs.OnChatMessage(Msg));
+                                                _filterscripts?.ForEach(fs => Msg = fs.OnChatMessage(Msg));
 
                                                 if (!Msg.Supress)
                                                 {
@@ -1063,9 +1068,9 @@ namespace GTAServer
         /// <param name="message"></param>
         public void PrintPlayerList(string message = "Online Players: ")
         {
-            for (var i = 0; i < Program.ServerInstance.Clients.Count; i++)
+            for (var i = 0; i < Clients.Count; i++)
             {
-                PrintPlayerInfo(Program.ServerInstance.Clients[i], "#"+i.ToString()+ " ");
+                PrintPlayerInfo(Clients[i], "#"+i.ToString()+ " ");
             }
         }
         /// <summary>
