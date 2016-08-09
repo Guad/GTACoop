@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Remoting;
+using System.Security.Policy;
+using System.Threading;
 using System.Xml.Serialization;
 using log4net;
 using log4net.Config;
@@ -18,7 +22,10 @@ namespace GTAServer
         /// List of all the virtual servers currently running
         /// </summary>
         public static Dictionary<string, AppDomain> VirtualServerDomains = new Dictionary<string, AppDomain>();
-        public static Dictionary<string, GameServer> VirtualServers = new Dictionary<string, GameServer>();
+        /// <summary>
+        /// List of all the virtual server handles.
+        /// </summary>
+        public static Dictionary<string, ObjectHandle> VirtualServerHandles = new Dictionary<string, ObjectHandle>();
         /// <summary>
         /// Server debug mode
         /// </summary>
@@ -77,15 +84,28 @@ namespace GTAServer
             XmlConfigurator.Configure(new System.IO.FileInfo("logging.xml"));
             log.Debug("Loading settings.xml...");
             GlobalSettings = ReadSettings(Program.ServerHostLocation + ((args.Length > 0) ? args[0] : "Settings.xml"));
+            StartServer(GlobalSettings);
+        }
+
+        public static void StartServer(ServerSettings settings)
+        {
             log.Info("Creating new server instance: ");
-            log.Info("  - Handle: " + GlobalSettings.Handle);
-            log.Info("  - Name: " + GlobalSettings.Name);
-            log.Info("  - Player Limit: " + GlobalSettings.MaxPlayers);
+            log.Info("  - Handle: " + settings.Handle);
+            log.Info("  - Name: " + settings.Name);
+            log.Info("  - Player Limit: " + settings.MaxPlayers);
+
+            VirtualServerDomains[settings.Handle]=AppDomain.CreateDomain(settings.Handle);
+            //VirtualServers[settings.Handle] =
+            //    (GameServer)
+            //        VirtualServerDomains[settings.Handle].CreateInstanceFromAndUnwrap(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath, "GTAServer.GameServerMarshalObject");
+            var domain = VirtualServerDomains[settings.Handle];
             
-            VirtualServerDomains.Add(GlobalSettings.Handle, AppDomain.CreateDomain(GlobalSettings.Handle));
-            VirtualServers[GlobalSettings.Handle] =
-                (GameServer)
-                    VirtualServerDomains[GlobalSettings.Handle].CreateInstanceAndUnwrap(AppDomain.CurrentDomain.FriendlyName, "GameServer");
+            VirtualServerHandles[settings.Handle] = domain.CreateInstanceFrom(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath,
+                "GTAServer.GameServerMarshalObject");
+            var handle = VirtualServerHandles[settings.Handle];
+            var server = (GameServerMarshalObject)handle.Unwrap();
+            server.SetConfig(settings);
+            server.StartServerThread();
         }
     }
 }

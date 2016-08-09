@@ -1,8 +1,11 @@
-﻿namespace GTAServer
+﻿using System;
+
+namespace GTAServer
 {
     /// <summary>
     /// Contains server settings
     /// </summary>
+    [Serializable]
     public class ServerSettings
     {
         /// <summary>

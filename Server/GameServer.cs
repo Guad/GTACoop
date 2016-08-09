@@ -302,6 +302,45 @@ namespace GTAServer
 
     }
 
+    public class test : MarshalByRefObject
+    {
+    }
+
+    /// <summary>
+    /// Game server proxy class, used for appdomains
+    /// </summary>
+    public class GameServerMarshalObject : MarshalByRefObject
+    {
+        private readonly GameServer _server;
+        private ServerSettings _settings;
+        private Thread _thread;
+
+        public GameServerMarshalObject()
+        {
+            _server = new GameServer();
+        }
+        public void SetConfig(ServerSettings settings)
+        {
+            _settings = settings;
+            _server.Name = settings.Name;
+            _server.MaxPlayers = settings.MaxPlayers;
+            _server.Port = settings.Port;
+            _server.PasswordProtected = settings.PasswordProtected;
+            _server.Password = settings.Password;
+            _server.AnnounceSelf = settings.Announce;
+            _server.MasterServer = settings.MasterServer;
+            _server.AllowNickNames = settings.AllowDisplayNames;
+            _server.AllowOutdatedClients = settings.AllowOutdatedClients;
+            _server.GamemodeName = settings.Gamemode;
+            _server.ConfigureServer();
+        }
+
+        public void StartServerThread()
+        {
+            _thread = new Thread(_server.Start);
+            _thread.Start();
+        }
+    }
     /// <summary>
     /// Game server class
     /// </summary>
@@ -311,8 +350,19 @@ namespace GTAServer
         /// Location of the current server instance
         /// </summary>
         public string Location => AppDomain.CurrentDomain.BaseDirectory;
-
-        public GameServer(int port, string name, string gamemodeName)
+        public NetPeerConfiguration Config;
+        public GameServer()
+        {
+            Clients = new List<Client>();
+            MaxPlayers = 32;
+            SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+            Config = new NetPeerConfiguration("GTAVOnlineRaces");
+            Config.EnableMessageType(NetIncomingMessageType.ConnectionApproval);
+            Config.EnableMessageType(NetIncomingMessageType.DiscoveryRequest);
+            Config.EnableMessageType(NetIncomingMessageType.UnconnectedData);
+            Config.EnableMessageType(NetIncomingMessageType.ConnectionLatencyUpdated);
+        }
+        /*public GameServer(int port, string name, string gamemodeName)
         {
             Clients = new List<Client>();
             MaxPlayers = 32;
@@ -329,7 +379,7 @@ namespace GTAServer
             config.EnableMessageType(NetIncomingMessageType.UnconnectedData);
             config.EnableMessageType(NetIncomingMessageType.ConnectionLatencyUpdated);
             Server = new NetServer(config);
-        }
+        }*/
         /// <summary>
         /// Server socket
         /// </summary>
@@ -424,9 +474,26 @@ namespace GTAServer
         private DateTime _lastAnnounceDateTime;
 
         /// <summary>
+        /// Sets all the config stuff for the server.
+        /// Note - You must call this after any update to the config object.
+        /// </summary>
+        public void ConfigureServer()
+        {
+            Server = new NetServer(Config);
+        }
+
+        /// <summary>
+        /// Start a game server with no filterscripts loaded.
+        /// </summary>
+        public void Start()
+        {
+            Start(new string[0]);
+        }
+
+        /// <summary>
         /// Start the game server
         /// </summary>
-        /// <param name="filterscripts"></param>
+        /// <param name="filterscripts">List of filterscritps to load</param>
         public void Start(string[] filterscripts)
         {
             Server.Start();
