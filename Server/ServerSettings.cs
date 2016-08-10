@@ -1,7 +1,19 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace GTAServer
 {
+    public class InstanceSettings
+    {
+        public List<ServerSettings> Servers;
+
+        public InstanceSettings()
+        {
+            Servers = new List<ServerSettings> {new ServerSettings()};
+        }
+    }
+
+
     /// <summary>
     /// Contains server settings
     /// </summary>
