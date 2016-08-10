@@ -31,6 +31,10 @@ namespace GTAServer
         /// </summary>
         public static Dictionary<string, GameServer> VirtualServers = new Dictionary<string, GameServer>();
         /// <summary>
+        /// Dictionary of threads for the virtual servers.
+        /// </summary>
+        public static Dictionary<string, Thread> VirtualServerThreads = new Dictionary<string, Thread>();
+        /// <summary>
         /// Server debug mode
         /// </summary>
         public static bool Debug = false;
@@ -54,27 +58,27 @@ namespace GTAServer
         /// </summary>
         /// <param name="path">Server settings path</param>
         /// <returns>ServerSettings instance</returns>
-        static ServerSettings ReadSettings(string path)
+        static InstanceSettings ReadSettings(string path)
         {
-            var ser = new XmlSerializer(typeof(ServerSettings));
+            var ser = new XmlSerializer(typeof(InstanceSettings));
 
-            ServerSettings settings = null;
+            InstanceSettings settings = null;
 
             if (File.Exists(path))
             {
-                using (var stream = File.OpenRead(path)) settings = (ServerSettings)ser.Deserialize(stream);
+                using (var stream = File.OpenRead(path)) settings = (InstanceSettings)ser.Deserialize(stream);
 
                 using (var stream = new FileStream(path, File.Exists(path) ? FileMode.Truncate : FileMode.Create, FileAccess.ReadWrite)) ser.Serialize(stream, settings);
             }
             else
             {
-                using (var stream = File.OpenWrite(path)) ser.Serialize(stream, settings = new ServerSettings());
+                using (var stream = File.OpenWrite(path)) ser.Serialize(stream, settings = new InstanceSettings());
             }
             //LogToConsole(1, false, "FILE", "Settings loaded from " + path);
             return settings;
         }
 
-        public static ServerSettings GlobalSettings;
+        public static InstanceSettings GlobalSettings;
         /// <summary>
         /// Master server list
         /// </summary>
@@ -88,7 +92,11 @@ namespace GTAServer
             XmlConfigurator.Configure(new System.IO.FileInfo("logging.xml"));
             log.Debug("Loading settings.xml...");
             GlobalSettings = ReadSettings(Program.ServerHostLocation + ((args.Length > 0) ? args[0] : "Settings.xml"));
-            StartServer(GlobalSettings);
+            foreach (var server in GlobalSettings.Servers)
+            {
+                StartServer(server);
+            }
+            VirtualServerThreads[GlobalSettings.Servers[0].Handle].Join();
         }
 
         public static void StartServer(ServerSettings settings)
@@ -122,7 +130,8 @@ namespace GTAServer
             curServer.GamemodeName = settings.Gamemode;
             curServer.ConfigureServer();
             log.Debug("Finished configuring server: " + settings.Handle + ", starting.");
-            curServer.StartInThread();
+            VirtualServerThreads[settings.Handle] = new Thread(curServer.Start);
+            VirtualServerThreads[settings.Handle].Start();
         }
     }
 }

@@ -9,7 +9,7 @@ namespace GTAServer
 
         public InstanceSettings()
         {
-            Servers = new List<ServerSettings> {new ServerSettings()};
+            Servers = new List<ServerSettings>();
         }
     }
 

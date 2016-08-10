@@ -452,6 +452,11 @@ namespace GTAServer
             Thread = new Thread(Start);
             Thread.Start();
         }
+
+        public void JoinThread()
+        {
+            Thread.Join();
+        }
         /// <summary>
         /// Start a game server with no filterscripts loaded.
         /// </summary>
