@@ -19,13 +19,17 @@ namespace GTAServer
         /// </summary>
         public static string ServerHostLocation => AppDomain.CurrentDomain.BaseDirectory;
         /// <summary>
-        /// List of all the virtual servers currently running
+        /// Dictionary of all the virtual servers currently running
         /// </summary>
         public static Dictionary<string, AppDomain> VirtualServerDomains = new Dictionary<string, AppDomain>();
         /// <summary>
-        /// List of all the virtual server handles.
+        /// Dictionary of all the virtual server handles.
         /// </summary>
         public static Dictionary<string, ObjectHandle> VirtualServerHandles = new Dictionary<string, ObjectHandle>();
+        /// <summary>
+        /// Dictionary of all the virtual servers
+        /// </summary>
+        public static Dictionary<string, GameServer> VirtualServers = new Dictionary<string, GameServer>();
         /// <summary>
         /// Server debug mode
         /// </summary>
@@ -93,19 +97,32 @@ namespace GTAServer
             log.Info("  - Handle: " + settings.Handle);
             log.Info("  - Name: " + settings.Name);
             log.Info("  - Player Limit: " + settings.MaxPlayers);
-
+            if (settings.AllowOutdatedClients && !AllowOutdatedClients)
+            {
+                log.Warn("Server config for " + settings.Handle + " is set to allow outdated clients, yet it has been disabled on the master server.");
+                settings.AllowOutdatedClients = false;
+            }
             VirtualServerDomains[settings.Handle]=AppDomain.CreateDomain(settings.Handle);
-            //VirtualServers[settings.Handle] =
-            //    (GameServer)
-            //        VirtualServerDomains[settings.Handle].CreateInstanceFromAndUnwrap(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath, "GTAServer.GameServerMarshalObject");
             var domain = VirtualServerDomains[settings.Handle];
             
             VirtualServerHandles[settings.Handle] = domain.CreateInstanceFrom(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath,
-                "GTAServer.GameServerMarshalObject");
+                "GTAServer.GameServer");
             var handle = VirtualServerHandles[settings.Handle];
-            var server = (GameServerMarshalObject)handle.Unwrap();
-            server.SetConfig(settings);
-            server.StartServerThread();
+            VirtualServers[settings.Handle] = (GameServer)handle.Unwrap();
+            var curServer = VirtualServers[settings.Handle];
+            curServer.Name = settings.Name;
+            curServer.MaxPlayers = settings.MaxPlayers;
+            curServer.Port = settings.Port;
+            curServer.PasswordProtected = settings.PasswordProtected;
+            curServer.Password = settings.Password;
+            curServer.AnnounceSelf = settings.Announce;
+            curServer.MasterServer = settings.MasterServer;
+            curServer.AllowNickNames = settings.AllowDisplayNames;
+            curServer.AllowOutdatedClients = settings.AllowOutdatedClients;
+            curServer.GamemodeName = settings.Gamemode;
+            curServer.ConfigureServer();
+            log.Debug("Finished configuring server: " + settings.Handle + ", starting.");
+            curServer.StartInThread();
         }
     }
 }

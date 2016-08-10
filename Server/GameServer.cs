@@ -301,50 +301,10 @@ namespace GTAServer
         CHAR_MARTIN,
 
     }
-
-    public class test : MarshalByRefObject
-    {
-    }
-
-    /// <summary>
-    /// Game server proxy class, used for appdomains
-    /// </summary>
-    public class GameServerMarshalObject : MarshalByRefObject
-    {
-        private readonly GameServer _server;
-        private ServerSettings _settings;
-        private Thread _thread;
-
-        public GameServerMarshalObject()
-        {
-            _server = new GameServer();
-        }
-        public void SetConfig(ServerSettings settings)
-        {
-            _settings = settings;
-            _server.Name = settings.Name;
-            _server.MaxPlayers = settings.MaxPlayers;
-            _server.Port = settings.Port;
-            _server.PasswordProtected = settings.PasswordProtected;
-            _server.Password = settings.Password;
-            _server.AnnounceSelf = settings.Announce;
-            _server.MasterServer = settings.MasterServer;
-            _server.AllowNickNames = settings.AllowDisplayNames;
-            _server.AllowOutdatedClients = settings.AllowOutdatedClients;
-            _server.GamemodeName = settings.Gamemode;
-            _server.ConfigureServer();
-        }
-
-        public void StartServerThread()
-        {
-            _thread = new Thread(_server.Start);
-            _thread.Start();
-        }
-    }
     /// <summary>
     /// Game server class
     /// </summary>
-    public class GameServer
+    public class GameServer : MarshalByRefObject
     {
         /// <summary>
         /// Location of the current server instance
@@ -473,6 +433,11 @@ namespace GTAServer
         /// </summary>
         private DateTime _lastAnnounceDateTime;
 
+        ///<summary>
+        /// Thread of current server
+        /// </summary>
+        public Thread Thread;
+
         /// <summary>
         /// Sets all the config stuff for the server.
         /// Note - You must call this after any update to the config object.
@@ -482,6 +447,11 @@ namespace GTAServer
             Server = new NetServer(Config);
         }
 
+        public void StartInThread()
+        {
+            Thread = new Thread(Start);
+            Thread.Start();
+        }
         /// <summary>
         /// Start a game server with no filterscripts loaded.
         /// </summary>
