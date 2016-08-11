@@ -596,14 +596,20 @@ namespace GTACoOp
             {
                 if (!_serverRunning)
                 {
-                    Program.ServerInstance = new GameServer(ServerSettings.Port, ServerSettings.Name, "freeroam");
-                    Program.ServerInstance.PasswordProtected = ServerSettings.PasswordProtected;
-                    Program.ServerInstance.Password = ServerSettings.Password;
-                    Program.ServerInstance.AnnounceSelf = ServerSettings.Announce;
-                    Program.ServerInstance.MasterServer = ServerSettings.MasterServer;
-                    Program.ServerInstance.BackupMasterServer = ServerSettings.BackupMasterServer;
-                    Program.ServerInstance.MaxPlayers = ServerSettings.MaxPlayers;
-                    Program.ServerInstance.AllowNickNames = ServerSettings.AllowNickNames;
+                    //Program.ServerInstance = new GameServer(ServerSettings.Port, ServerSettings.Name, "freeroam");
+                    Program.ServerInstance = new GameServer
+                    {
+                        Port = ServerSettings.Port,
+                        Name = ServerSettings.Name,
+                        GamemodeName = ServerSettings.Gamemode,
+                        PasswordProtected = ServerSettings.PasswordProtected,
+                        Password = ServerSettings.Password,
+                        AnnounceSelf = ServerSettings.Announce,
+                        MasterServer = ServerSettings.MasterServer,
+                        BackupMasterServer = ServerSettings.BackupMasterServer,
+                        MaxPlayers = ServerSettings.MaxPlayers,
+                        AllowNickNames = ServerSettings.AllowNickNames
+                    };
 
                     if (IsOnServer())
                     {
@@ -668,13 +674,18 @@ namespace GTACoOp
             if (PlayerSettings.AutoConnect && !String.IsNullOrWhiteSpace(PlayerSettings.LastIP) && PlayerSettings.LastPort != -1 && PlayerSettings.LastPort != 0) { 
                 ConnectToServer(PlayerSettings.LastIP.ToString(), PlayerSettings.LastPort);
             }else if(PlayerSettings.AutoStartServer){
-                Program.ServerInstance = new GameServer(ServerSettings.Port, ServerSettings.Name, "freeroam");
-                Program.ServerInstance.PasswordProtected = ServerSettings.PasswordProtected;
-                Program.ServerInstance.Password = ServerSettings.Password;
-                Program.ServerInstance.AnnounceSelf = ServerSettings.Announce;
-                Program.ServerInstance.MasterServer = ServerSettings.MasterServer;
-                Program.ServerInstance.MaxPlayers = ServerSettings.MaxPlayers;
-                Program.ServerInstance.AllowNickNames = ServerSettings.AllowNickNames;
+                Program.ServerInstance = new GameServer
+                {
+                    Port = ServerSettings.Port,
+                    Name = ServerSettings.Name,
+                    GamemodeName = ServerSettings.Gamemode,
+                    PasswordProtected = ServerSettings.PasswordProtected,
+                    Password = ServerSettings.Password,
+                    AnnounceSelf = ServerSettings.Announce,
+                    MasterServer = ServerSettings.MasterServer,
+                    MaxPlayers = ServerSettings.MaxPlayers,
+                    AllowNickNames = ServerSettings.AllowNickNames
+                };
 
                 if (IsOnServer())
                 {
