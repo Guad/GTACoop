@@ -92,7 +92,7 @@ namespace GTAServer
             AllowDisplayNames = true;
             AllowOutdatedClients = false;
             MasterServer = "http://46.101.1.92/";
-            Filterscripts = new List<string>() { "AdminTools" };
+            Filterscripts = new List<string>() {""};
             Handle = "default";
         }
     }
