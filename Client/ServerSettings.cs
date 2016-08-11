@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Windows.Forms.VisualStyles;
 
 namespace GTACoOp
 {
@@ -17,7 +18,7 @@ namespace GTACoOp
         public bool AllowOutdatedClients { get; set; }
 
         public string Gamemode { get; set; }
-        public List<string> Filterscripts { get; set; }
+        public string[] Filterscripts { get; set; }
 
         public string LANIP { get; set; }
         public string WANIP { get; set; }
@@ -35,7 +36,7 @@ namespace GTACoOp
             AllowOutdatedClients = false;
             MasterServer = "http://46.101.1.92/";
             BackupMasterServer = "http://79.143.189.135/";
-            Filterscripts = new List<string>() { "" };
+            Filterscripts = new string[] { "" };
         }
     }
 }

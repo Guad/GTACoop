@@ -52,26 +52,26 @@ namespace GTAServer
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool DeleteFile(string name);
 
-        public static readonly ILog log = LogManager.GetLogger("ServerManager");
+        public static readonly ILog Log = LogManager.GetLogger("ServerManager");
         /// <summary>
         /// Read server settings from XML
         /// </summary>
         /// <param name="path">Server settings path</param>
         /// <returns>ServerSettings instance</returns>
-        static InstanceSettings ReadSettings(string path)
+        private static InstanceSettings ReadSettings(string path)
         {
             var ser = new XmlSerializer(typeof(InstanceSettings));
 
             InstanceSettings settings = null;
-
+            Log.Debug(path);
             if (File.Exists(path))
             {
                 using (var stream = File.OpenRead(path)) settings = (InstanceSettings)ser.Deserialize(stream);
-
                 using (var stream = new FileStream(path, File.Exists(path) ? FileMode.Truncate : FileMode.Create, FileAccess.ReadWrite)) ser.Serialize(stream, settings);
             }
             else
             {
+                Log.Debug("No settings.xml found, creating a new one.");
                 using (var stream = File.OpenWrite(path)) ser.Serialize(stream, settings = new InstanceSettings());
             }
             //LogToConsole(1, false, "FILE", "Settings loaded from " + path);
@@ -90,24 +90,24 @@ namespace GTAServer
         public static void Main(string[] args)
         {
             XmlConfigurator.Configure(new System.IO.FileInfo("logging.xml"));
-            log.Debug("Loading settings.xml...");
+            Log.Debug("Loading settings");
             GlobalSettings = ReadSettings(Program.ServerHostLocation + ((args.Length > 0) ? args[0] : "Settings.xml"));
             foreach (var server in GlobalSettings.Servers)
             {
                 StartServer(server);
             }
-            VirtualServerThreads[GlobalSettings.Servers[0].Handle].Join();
+            foreach (var thread in VirtualServerThreads) thread.Value.Join(100);
         }
 
         public static void StartServer(ServerSettings settings)
         {
-            log.Info("Creating new server instance: ");
-            log.Info("  - Handle: " + settings.Handle);
-            log.Info("  - Name: " + settings.Name);
-            log.Info("  - Player Limit: " + settings.MaxPlayers);
+            Log.Info("Creating new server instance: ");
+            Log.Info("  - Handle: " + settings.Handle);
+            Log.Info("  - Name: " + settings.Name);
+            Log.Info("  - Player Limit: " + settings.MaxPlayers);
             if (settings.AllowOutdatedClients && !AllowOutdatedClients)
             {
-                log.Warn("Server config for " + settings.Handle + " is set to allow outdated clients, yet it has been disabled on the master server.");
+                Log.Warn("Server config for " + settings.Handle + " is set to allow outdated clients, yet it has been disabled on the master server.");
                 settings.AllowOutdatedClients = false;
             }
             VirtualServerDomains[settings.Handle]=AppDomain.CreateDomain(settings.Handle);
@@ -128,11 +128,17 @@ namespace GTAServer
             curServer.AllowNickNames = settings.AllowDisplayNames;
             curServer.AllowOutdatedClients = settings.AllowOutdatedClients;
             curServer.GamemodeName = settings.Gamemode;
-            curServer.Filterscripts = settings.Filterscripts;
             curServer.ConfigureServer();
-            log.Debug("Finished configuring server: " + settings.Handle + ", starting.");
-            VirtualServerThreads[settings.Handle] = new Thread(curServer.Start);
+            Log.Debug("Finished configuring server: " + settings.Handle + ", starting.");
+            VirtualServerThreads[settings.Handle] = new Thread(curServer.StartAndRunMainLoop);
             VirtualServerThreads[settings.Handle].Start();
+            Log.Debug("Server started, injecting filterscripts into " + settings.Handle);
+            foreach (var script in settings.Filterscripts)
+            {
+                if (string.IsNullOrEmpty(script) || string.IsNullOrWhiteSpace(script)) continue;
+                Log.Info("Filterscript " + script + " loading into server instance " + settings.Handle);
+                curServer.LoadFilterscript(script);
+            }
         }
     }
 }

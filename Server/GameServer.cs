@@ -437,8 +437,6 @@ namespace GTAServer
         /// Thread of current server
         /// </summary>
         public Thread Thread;
-
-        public List<string> Filterscripts = new List<string>();
         /// <summary>
         /// Sets all the config stuff for the server.
         /// Note - You must call this after any update to the config object.
@@ -448,29 +446,32 @@ namespace GTAServer
             Server = new NetServer(Config);
         }
 
-        public void StartInThread()
+        /// <summary>
+        /// Starts a server, then runs the main loop.
+        /// </summary>
+        public void StartAndRunMainLoop()
         {
-            Thread = new Thread(Start);
-            Thread.Start();
-        }
+            Start();
+            while (true)
+            {
+                Tick();
+                System.Threading.Thread.Sleep(10);
+            }
 
-        public void JoinThread()
-        {
-            Thread.Join();
         }
         /// <summary>
         /// Start a game server with no filterscripts loaded.
         /// </summary>
         public void Start()
         {
-            Start(Filterscripts);
+            Start(new string[] {});
         }
 
         /// <summary>
         /// Start the game server
         /// </summary>
         /// <param name="filterscripts">List of filterscritps to load</param>
-        public void Start(List<string> filterscripts)
+        public void Start(string[] filterscripts)
         {
             Server.Start();
             if (AnnounceSelf)
@@ -553,6 +554,22 @@ namespace GTAServer
             PrintServerInfo(); PrintPlayerList();
         }
 
+        /// <summary>
+        /// Inject filterscript into server at run time.
+        /// </summary>
+        /// <param name="scriptAssembly">Name of the filterscript .dll file.</param>
+        public void LoadFilterscript(string scriptAssembly)
+        {
+            Program.DeleteFile(Location + "filterscripts" + Path.DirectorySeparatorChar + scriptAssembly +
+                                ".dll:Zone.Identifier");
+            var fsAsm = Assembly.LoadFrom(Location + "filterscripts" + Path.DirectorySeparatorChar + scriptAssembly + ".dll");
+            var fsObj = InstantiateScripts(fsAsm);
+            foreach (var script in fsObj)
+            {
+                script.Start(this);
+                _filterscripts.Add(script);
+            }
+        }
         /// <summary>
         /// Announce server to master
         /// </summary>

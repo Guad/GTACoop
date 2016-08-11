@@ -5,11 +5,11 @@ namespace GTAServer
 {
     public class InstanceSettings
     {
-        public List<ServerSettings> Servers;
+        public ServerSettings[] Servers;
 
         public InstanceSettings()
         {
-            Servers = new List<ServerSettings>();
+            Servers = new ServerSettings[] {new ServerSettings()};
         }
     }
 
@@ -65,7 +65,7 @@ namespace GTAServer
         /// <summary>
         /// Filterscripts to load
         /// </summary>
-        public List<String> Filterscripts { get; set; }
+        public string[] Filterscripts { get; set; }
         /// <summary>
         /// Server LAN IP
         /// </summary>
@@ -92,7 +92,7 @@ namespace GTAServer
             AllowDisplayNames = true;
             AllowOutdatedClients = false;
             MasterServer = "http://46.101.1.92/";
-            Filterscripts = new List<string>() {""};
+            Filterscripts = new string[] {""};
             Handle = "default";
         }
     }
