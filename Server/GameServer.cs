@@ -771,7 +771,7 @@ namespace GTAServer
                                 var ReadableScriptVersion = Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last().ToString();
                                 ReadableScriptVersion = Regex.Replace(ReadableScriptVersion, "VERSION_", "", RegexOptions.IgnoreCase);
                                 ReadableScriptVersion = Regex.Replace(ReadableScriptVersion, "_", ".", RegexOptions.IgnoreCase);
-                                LogToConsole(3, true, "Network", "Client " + connReq.DisplayName + " tried to connect with outdated scriptversion " + connReq.ScriptVersion.ToString() + " but the server requires " + Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last().ToString());
+                                Log.Info("Client " + connReq.DisplayName + " tried to connect with outdated scriptversion " + connReq.ScriptVersion.ToString() + " but the server requires " + Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last().ToString());
                                 DenyPlayer(client, string.Format("Update to GTACoop v{0} from bit.ly/gtacoop", ReadableScriptVersion), true, msg); continue;
                             }else if (AllowOutdatedClients && (ScriptVersion)connReq.ScriptVersion != Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last())
                             {
@@ -780,7 +780,7 @@ namespace GTAServer
                             }
                             if ((ScriptVersion)connReq.ScriptVersion == ScriptVersion.VERSION_UNKNOWN)
                             {
-                                LogToConsole(3, true, "Network", "Client " + connReq.DisplayName + " tried to connect with unknown scriptversion " + connReq.ScriptVersion.ToString());
+                                Log.Info("Client " + connReq.DisplayName + " tried to connect with unknown scriptversion " + connReq.ScriptVersion.ToString());
                                 DenyPlayer(client, "Unknown version. Please redownload GTA Coop from bit.ly/gtacoop", true, msg); continue;
                             }
 
@@ -792,7 +792,7 @@ namespace GTAServer
                                 {
                                     if (Password != connReq.Password)
                                     {
-                                        LogToConsole(3, false, "Network", connReq.DisplayName + " connection refused: Wrong password: " + connReq.Password.ToString());
+                                        Log.Info(connReq.DisplayName + " connection refused: Wrong password: " + connReq.Password.ToString());
                                         DenyPlayer(client, "Wrong password.", true, msg); continue;
                                     }
                                 }
@@ -825,7 +825,7 @@ namespace GTAServer
                             }
                             else
                             {
-                                LogToConsole(4, false, "Network", client.DisplayName + " connection refused: server full with " + clients.ToString() + " of " + MaxPlayers + " players.");
+                                Log.Info(client.DisplayName + " connection refused: server full with " + clients.ToString() + " of " + MaxPlayers + " players.");
                                 DenyPlayer(client, "No available player slots.", true, msg);
                             }
                             break;
@@ -845,7 +845,7 @@ namespace GTAServer
                                         client.geoIP = reader.Country(client.NetConnection.RemoteEndPoint.Address);
                                     }
                                 }
-                                catch (Exception ex) { LogToConsole(3, false, "GeoIP", ex.Message); }
+                                catch (Exception ex) { Log.Error("GeoIP Error: "+ex.Message); }
                                 if (_gamemode != null) sendMsg = sendMsg && _gamemode.OnPlayerConnect(client);
                                 _filterscripts?.ForEach(fs => sendMsg = sendMsg && fs.OnPlayerConnect(client));
                                 if (sendMsg && !client.Silent)
@@ -943,7 +943,7 @@ namespace GTAServer
                             response.Write(bin.Length);
                             response.Write(bin);
 
-                            LogToConsole(1, false, "Network", "Server Status requested by " + msg.SenderEndPoint.Address);
+                            Log.Debug("Server Status requested by " + msg.SenderEndPoint.Address);
                             Server.SendDiscoveryResponse(response, msg.SenderEndPoint);
                             break;
                         case NetIncomingMessageType.Data:
@@ -975,7 +975,7 @@ namespace GTAServer
                                                     if (!string.IsNullOrWhiteSpace(Msg.Suffix))
                                                         data.Sender += " (" + Msg.Suffix + ") ";
                                                     SendToAll(data, PacketType.ChatData, true);
-                                                    LogToConsole(6, false, "Chat", data.Sender + ": " + data.Message);
+                                                    Log.Info("[CHAT] <"+data.Sender+">" + ": " + data.Message);
                                                 }
                                             }
                                         }
@@ -1233,7 +1233,7 @@ namespace GTAServer
                 msg.Write(data.Length);
                 msg.Write(data);
                 Server.SendToAll(msg, important ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced);
-            }catch(Exception ex) { LogToConsole(5, false, "Network", "Error in SendToAll: " + ex.Message); }
+            }catch(Exception ex) { Log.Error("Error in SendToAll: " + ex.Message) }
         }
 
         /// <summary>
