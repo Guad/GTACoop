@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using MaxMind.GeoIP2;
 using System.Security.Principal;
 using System.Diagnostics;
+using log4net;
 
 namespace GTAServer
 {
@@ -437,6 +438,8 @@ namespace GTAServer
         /// Thread of current server
         /// </summary>
         public Thread Thread;
+
+        public ILog Log;
         /// <summary>
         /// Sets all the config stuff for the server.
         /// Note - You must call this after any update to the config object.
@@ -451,6 +454,10 @@ namespace GTAServer
         /// </summary>
         public void StartAndRunMainLoop()
         {
+            if (Log == null)
+            {
+                Log = LogManager.GetLogger("UNKNOWN_SERVER_FIXME");
+            }
             Start();
             while (true)
             {
@@ -458,6 +465,11 @@ namespace GTAServer
                 System.Threading.Thread.Sleep(10);
             }
 
+        }
+
+        public void SetupLogger(string name)
+        {
+            Log = LogManager.GetLogger(name);
         }
         /// <summary>
         /// Start a game server with no filterscripts loaded.

@@ -129,6 +129,7 @@ namespace GTAServer
             curServer.AllowOutdatedClients = settings.AllowOutdatedClients;
             curServer.GamemodeName = settings.Gamemode;
             curServer.ConfigureServer();
+            curServer.SetupLogger(settings.Handle);
             Log.Debug("Finished configuring server: " + settings.Handle + ", starting.");
             VirtualServerThreads[settings.Handle] = new Thread(curServer.StartAndRunMainLoop);
             VirtualServerThreads[settings.Handle].Start();
