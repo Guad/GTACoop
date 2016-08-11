@@ -65,7 +65,7 @@ namespace GTAServer
         /// <summary>
         /// Filterscripts to load
         /// </summary>
-        public string[] Filterscripts { get; set; }
+        public List<String> Filterscripts { get; set; }
         /// <summary>
         /// Server LAN IP
         /// </summary>
@@ -92,7 +92,7 @@ namespace GTAServer
             AllowDisplayNames = true;
             AllowOutdatedClients = false;
             MasterServer = "http://46.101.1.92/";
-            Filterscripts = new string[] { "" };
+            Filterscripts = new List<string>() { "AdminTools" };
             Handle = "default";
         }
     }

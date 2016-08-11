@@ -438,6 +438,7 @@ namespace GTAServer
         /// </summary>
         public Thread Thread;
 
+        public List<string> Filterscripts = new List<string>();
         /// <summary>
         /// Sets all the config stuff for the server.
         /// Note - You must call this after any update to the config object.
@@ -462,14 +463,14 @@ namespace GTAServer
         /// </summary>
         public void Start()
         {
-            Start(new string[0]);
+            Start(Filterscripts);
         }
 
         /// <summary>
         /// Start the game server
         /// </summary>
         /// <param name="filterscripts">List of filterscritps to load</param>
-        public void Start(string[] filterscripts)
+        public void Start(List<string> filterscripts)
         {
             Server.Start();
             if (AnnounceSelf)
