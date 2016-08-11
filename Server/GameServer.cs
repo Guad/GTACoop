@@ -1229,11 +1229,16 @@ namespace GTAServer
             {
                 var data = SerializeBinary(newData);
                 NetOutgoingMessage msg = Server.CreateMessage();
-                msg.Write((int)packetType);
+                msg.Write((int) packetType);
                 msg.Write(data.Length);
                 msg.Write(data);
-                Server.SendToAll(msg, important ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced);
-            }catch(Exception ex) { Log.Error("Error in SendToAll: " + ex.Message) }
+                Server.SendToAll(msg,
+                    important ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Error in SendToAll: " + ex.Message);
+            }
         }
 
         /// <summary>
