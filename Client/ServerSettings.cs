@@ -1,4 +1,7 @@
-﻿namespace GTACoOp
+﻿using System.Collections.Generic;
+using System.Windows.Forms.VisualStyles;
+
+namespace GTACoOp
 {
     public class ServerSettings
     {

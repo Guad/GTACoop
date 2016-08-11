@@ -1,8 +1,23 @@
-﻿namespace GTAServer
+﻿using System;
+using System.Collections.Generic;
+
+namespace GTAServer
 {
+    public class InstanceSettings
+    {
+        public ServerSettings[] Servers;
+
+        public InstanceSettings()
+        {
+            Servers = new ServerSettings[] {new ServerSettings()};
+        }
+    }
+
+
     /// <summary>
     /// Contains server settings
     /// </summary>
+    [Serializable]
     public class ServerSettings
     {
         /// <summary>
@@ -59,6 +74,11 @@
         /// Server WAN IP
         /// </summary>
         public string WANIP { get; set; }
+        /// <summary>
+        /// Internal server handle
+        /// </summary>
+        public string Handle { get; set; }
+
 
         public ServerSettings()
         {
@@ -72,7 +92,8 @@
             AllowDisplayNames = true;
             AllowOutdatedClients = false;
             MasterServer = "http://46.101.1.92/";
-            Filterscripts = new string[] { "" };
+            Filterscripts = new string[] {""};
+            Handle = "default";
         }
     }
 }
