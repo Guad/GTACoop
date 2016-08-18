@@ -129,8 +129,13 @@ namespace GTACoOp
         public static void SaveSettings(string path)
         {
             try {
-            var ser = new XmlSerializer(typeof(PlayerSettings));
-            using (var stream = new FileStream(path, File.Exists(path) ? FileMode.Truncate : FileMode.Create, FileAccess.ReadWrite)) ser.Serialize(stream, Main.PlayerSettings);
+                if (string.IsNullOrEmpty(path)) { path = Program.Location + Path.DirectorySeparatorChar + "ClientSettings.xml"; }
+                var ser = new XmlSerializer(typeof(PlayerSettings));
+                using (var stream = new FileStream(path, File.Exists(path) ? FileMode.Truncate : FileMode.Create, FileAccess.ReadWrite)) ser.Serialize(stream, Main.PlayerSettings);
+                if (Main.PlayerSettings.Logging)
+                {
+                    File.AppendAllText("scripts\\GTACOOP.log", "Saved settings to " + path);
+                }
             } catch (Exception ex) {
                 UI.Notify("Error saving player settings: " + ex.Message);
             }

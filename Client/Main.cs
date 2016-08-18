@@ -186,7 +186,7 @@ namespace GTACoOp
                 if (!string.IsNullOrWhiteSpace(_clientIp))
                 {
                     PlayerSettings.LastIP = _clientIp;
-                    Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                    Util.SaveSettings(null);
                     listenItem.SetRightLabel(PlayerSettings.LastIP);
                 }
             };
@@ -204,7 +204,7 @@ namespace GTACoOp
                 }
                 Port = nPort;
                 PlayerSettings.LastPort = nPort;
-                Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                Util.SaveSettings(null);
                 portItem.SetRightLabel(nPort.ToString());
             };
             
@@ -223,7 +223,7 @@ namespace GTACoOp
                 if (!string.IsNullOrEmpty(_LastPassword))
                 {
                     PlayerSettings.DisplayName = _LastPassword;
-                    Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                    Util.SaveSettings(null);
                     if (PlayerSettings.HidePasswords)
                     {
                         passItem.SetRightLabel(new String('*', PlayerSettings.LastPassword.Length));
@@ -293,7 +293,7 @@ namespace GTACoOp
                 if (!string.IsNullOrWhiteSpace(_DisplayName))
                 {
                     PlayerSettings.DisplayName = _DisplayName;
-                    Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                    Util.SaveSettings(null);
                     nameItem.SetRightLabel(PlayerSettings.DisplayName);
                 }
             };
@@ -306,7 +306,7 @@ namespace GTACoOp
                 if (!string.IsNullOrWhiteSpace(_masterIP))
                 {
                     PlayerSettings.MasterServerAddress = _masterIP;
-                    Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                    Util.SaveSettings(null);
                     masterItem.SetRightLabel(PlayerSettings.MasterServerAddress);
                 }
             };
@@ -319,7 +319,7 @@ namespace GTACoOp
                 if (!string.IsNullOrWhiteSpace(_input))
                 {
                     PlayerSettings.BackupMasterServerAddress = _input;
-                    Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                    Util.SaveSettings(null);
                     backupMasterItem.SetRightLabel(PlayerSettings.BackupMasterServerAddress);
                 }
             };
@@ -329,14 +329,14 @@ namespace GTACoOp
             chatItem.CheckboxEvent += (item, check) =>
             {
                 PlayerSettings.OldChat = check;
-                Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                Util.SaveSettings(null);
             };
 
             var chatLogItem = new UIMenuCheckboxItem("Log Chats", PlayerSettings.ChatLog);
             chatLogItem.CheckboxEvent += (item, check) =>
             {
                 PlayerSettings.ChatLog = check;
-                Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                Util.SaveSettings(null);
             };
 
             var hidePasswordsItem = new UIMenuCheckboxItem("Hide Passwords (Restart required)", PlayerSettings.HidePasswords);
@@ -344,7 +344,7 @@ namespace GTACoOp
             {
                 PlayerSettings.HidePasswords = check;
                 _mainMenu.RefreshIndex();_settingsMenu.RefreshIndex();_serverMenu.RefreshIndex();
-                Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                Util.SaveSettings(null);
             };
 
             var npcItem = new UIMenuCheckboxItem("Share NPC's With Players", PlayerSettings.SyncWorld);
@@ -364,35 +364,35 @@ namespace GTACoOp
                     _client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, 3);
                 }
                 PlayerSettings.SyncWorld = check;
-                Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                Util.SaveSettings(null);
             };
 
             /*var trafficItem = new UIMenuCheckboxItem("Enable Traffic When Sharing", PlayerSettings.SyncTraffic, "May affect performance.");
             trafficItem.CheckboxEvent += (item, check) =>
             {
                 PlayerSettings.SyncTraffic = check;
-                Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                Util.SaveSettings(null);
             };*/
 
             var trafficItem = new UIMenuListItem("Share Traffic With Players", new List<dynamic>(Enum.GetNames(typeof(TrafficMode))), 0);
             trafficItem.OnListChanged += (item, index) =>
             {
                 PlayerSettings.SyncTraffic = Enum.Parse(typeof(TrafficMode), item.IndexToItem(index).ToString());
-                Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                Util.SaveSettings(null);
             };
 
             var autoConnectItem = new UIMenuCheckboxItem("Auto Connect On Startup", PlayerSettings.AutoConnect);
             autoConnectItem.CheckboxEvent += (item, check) =>
             {
                 PlayerSettings.AutoConnect = check;
-                Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                Util.SaveSettings(null);
             };
 
             var autoReconnectItem = new UIMenuCheckboxItem("Auto Reconnect", PlayerSettings.AutoReconnect);
             autoReconnectItem.CheckboxEvent += (item, check) =>
             {
                 PlayerSettings.AutoReconnect = check;
-                Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                Util.SaveSettings(null);
             };
             var autoLoginItem = new UIMenuItem("Auto Login");
             if (PlayerSettings.HidePasswords)
@@ -409,7 +409,7 @@ namespace GTACoOp
                 if (!string.IsNullOrEmpty(_AutoLogin))
                 {
                     PlayerSettings.AutoLogin = _AutoLogin;
-                    Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                    Util.SaveSettings(null);
                     if (PlayerSettings.HidePasswords)
                     {
                         autoLoginItem.SetRightLabel(new String('*', PlayerSettings.AutoLogin.Length));
@@ -425,7 +425,7 @@ namespace GTACoOp
             autoRegisterItem.CheckboxEvent += (item, check) =>
             {
                 PlayerSettings.AutoRegister = check;
-                Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                Util.SaveSettings(null);
             };
 
 
@@ -561,7 +561,7 @@ namespace GTACoOp
                 if (!string.IsNullOrWhiteSpace(_masterIP))
                 {
                     PlayerSettings.MasterServerAddress = _input;
-                    Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                    Util.SaveSettings(null);
                     serverMasterItem.SetRightLabel(ServerSettings.MasterServer);
                 }
             };
@@ -574,7 +574,7 @@ namespace GTACoOp
                 if (!string.IsNullOrWhiteSpace(_input))
                 {
                     PlayerSettings.BackupMasterServerAddress = _input;
-                    Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                    Util.SaveSettings(null);
                     serverBackupMasterItem.SetRightLabel(ServerSettings.BackupMasterServer);
                 }
             };
@@ -589,7 +589,7 @@ namespace GTACoOp
             serverAutoStartItem.CheckboxEvent += (item, check) =>
             {
                 PlayerSettings.AutoStartServer = check;
-                Util.SaveSettings(Program.Location + "ClientSettings.xml");
+                Util.SaveSettings(null);
             };
             var serverStartItem = new UIMenuItem("Start Server");
             serverStartItem.Activated += (menu, item) =>

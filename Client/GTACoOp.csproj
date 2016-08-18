@@ -34,6 +34,7 @@
     <DocumentationFile>GTACoOp.XML</DocumentationFile>
     <FileAlignment>8192</FileAlignment>
     <DebugSymbols>true</DebugSymbols>
+    <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject>
