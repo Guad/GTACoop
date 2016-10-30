@@ -1,2 +1,6 @@
 language: csharp
 solution: GTACoOp.sln
+os: windows
+branches:
+  only:
+  - indev-server
