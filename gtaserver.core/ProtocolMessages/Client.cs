@@ -10,7 +10,7 @@ namespace GTAServer.ProtocolMessages
 
     public class Client
     {
-        private NetConnection NetConnection { get; set; }
+        public NetConnection NetConnection { get; set; }
         public string Name { get; set; }
         public string DisplayName { get; set; }
         public float Latency { get; set; }

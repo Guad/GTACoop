@@ -6,7 +6,11 @@
   },
   "dependencies": {
     "Lidgren.Network.Core": "8.0.30703",
-    "protobuf-net":  "2.1.0"  
+    "Microsoft.Extensions.Logging": "1.0.0",
+    "Microsoft.Extensions.Logging.Abstractions": "1.0.0",
+    "Microsoft.Extensions.Logging.Console": "1.0.0",
+    "Microsoft.Extensions.Logging.Debug": "1.0.0",
+    "protobuf-net": "2.1.0"
   },
   "frameworks": {
     "netcoreapp1.1": {
