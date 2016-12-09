@@ -30,5 +30,13 @@ namespace GTAServer.ProtocolMessages
         {
             NetConnection = nc;
         }
+
+        public void ApplyConnectionRequest(ConnectionRequest cr)
+        {
+            Name = cr.Name;
+            DisplayName = cr.DisplayName;
+            RemoteScriptVersion = (ScriptVersion)cr.ScriptVersion;
+            GameVersion = cr.GameVersion;
+        }
     }
 }
