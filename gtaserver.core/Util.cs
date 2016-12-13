@@ -16,5 +16,14 @@ namespace GTAServer
                 return Serializer.Deserialize<T>(stream);
             }
         }
+
+        public static byte[] SerializeBinary(object data)
+        {
+            using (var stream = new MemoryStream())
+            {
+                Serializer.Serialize(stream, data);
+                return stream.ToArray();
+            }
+        }
     }
 }

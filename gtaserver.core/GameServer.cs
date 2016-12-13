@@ -285,8 +285,25 @@ namespace GTAServer
         }
         private void HandleClientDiscoveryRequest(Client client, NetIncomingMessage msg)
         {
-            throw new NotImplementedException();
+            var responsePkt = _server.CreateMessage();
+            var discoveryResponse = new DiscoveryResponse
+            {
+                ServerName = Name,
+                MaxPlayers = MaxPlayers,
+                PasswordProtected = PasswordProtected,
+                Gamemode = GamemodeName,
+                Port = Port,
+            };
+            lock (Clients) discoveryResponse.PlayerCount = Clients.Count;
+
+            var serializedResponse = Util.SerializeBinary(discoveryResponse);
+            responsePkt.Write((int)PacketType.DiscoveryResponse);
+            responsePkt.Write(serializedResponse.Length);
+            responsePkt.Write(serializedResponse);
+            logger.LogInformation($"Server status requested by {msg.SenderEndPoint.Address.ToString()}");
+            _server.SendDiscoveryResponse(responsePkt, msg.SenderEndPoint);
         }
+
         private void HandleClientIncomingData(Client client, NetIncomingMessage msg)
         {
             throw new NotImplementedException();
