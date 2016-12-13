@@ -230,7 +230,49 @@ namespace GTAServer
         }
         private void HandleClientStatusChange(Client client, NetIncomingMessage msg)
         {
-            throw new NotImplementedException();
+            var newStatus = (NetConnectionStatus) msg.ReadByte();
+            if (newStatus == NetConnectionStatus.Connected)
+            {
+                var sendMsg = true;
+                logger.LogInformation($"Connected: {client.DisplayName}@{msg.SenderEndPoint.Address.ToString()}");
+
+                // TODO: Send notification to all players about new player connecting
+            }
+            else if (newStatus == NetConnectionStatus.Disconnected)
+            {
+                lock (Clients)
+                {
+                    if (Clients.Contains(client))
+                    {
+                        if (client.Kicked)
+                        {
+                            // TODO: Send notification to all players about kicked player
+                        }
+                        else
+                        {
+                            //TODO: send notification to all players about disconnecting player
+                        }
+                        var dcMsg = new PlayerDisconnect()
+                        {
+                            Id = client.NetConnection.RemoteUniqueIdentifier
+                        };
+                        
+                        // TODO: Send dcMsg to all connections
+                        if (client.Kicked)
+                        {
+                            logger.LogInformation(
+                                $"Player kicked: {client.DisplayName}@{msg.SenderEndPoint.Address.ToString()}");
+                            LastKickedClient = client;
+                            LastKickedIP = client.NetConnection.RemoteEndPoint.ToString();
+                        }
+                        else
+                        {
+                            logger.LogInformation($"Player disconnected: {client.DisplayName}@{msg.SenderEndPoint.Address.ToString()}");
+                        }
+                        Clients.Remove(client);
+                    }
+                }
+            }
         }
         private void HandleClientDiscoveryRequest(Client client, NetIncomingMessage msg)
         {
