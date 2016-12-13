@@ -231,47 +231,56 @@ namespace GTAServer
         private void HandleClientStatusChange(Client client, NetIncomingMessage msg)
         {
             var newStatus = (NetConnectionStatus) msg.ReadByte();
-            if (newStatus == NetConnectionStatus.Connected)
+            switch (newStatus)
             {
-                var sendMsg = true;
-                logger.LogInformation($"Connected: {client.DisplayName}@{msg.SenderEndPoint.Address.ToString()}");
+                case NetConnectionStatus.Connected:
+                    logger.LogInformation($"Connected: {client.DisplayName}@{msg.SenderEndPoint.Address.ToString()}");
+                    break;
 
                 // TODO: Send notification to all players about new player connecting
-            }
-            else if (newStatus == NetConnectionStatus.Disconnected)
-            {
-                lock (Clients)
-                {
-                    if (Clients.Contains(client))
+                case NetConnectionStatus.Disconnected:
+                    lock (Clients)
                     {
-                        if (client.Kicked)
+                        if (Clients.Contains(client))
                         {
-                            // TODO: Send notification to all players about kicked player
-                        }
-                        else
-                        {
-                            //TODO: send notification to all players about disconnecting player
-                        }
-                        var dcMsg = new PlayerDisconnect()
-                        {
-                            Id = client.NetConnection.RemoteUniqueIdentifier
-                        };
+                            if (client.Kicked)
+                            {
+                                // TODO: Send notification to all players about kicked player
+                            }
+                            else
+                            {
+                                //TODO: send notification to all players about disconnecting player
+                            }
+                            var dcMsg = new PlayerDisconnect()
+                            {
+                                Id = client.NetConnection.RemoteUniqueIdentifier
+                            };
                         
-                        // TODO: Send dcMsg to all connections
-                        if (client.Kicked)
-                        {
-                            logger.LogInformation(
-                                $"Player kicked: {client.DisplayName}@{msg.SenderEndPoint.Address.ToString()}");
-                            LastKickedClient = client;
-                            LastKickedIP = client.NetConnection.RemoteEndPoint.ToString();
+                            // TODO: Send dcMsg to all connections
+                            if (client.Kicked)
+                            {
+                                logger.LogInformation(
+                                    $"Player kicked: {client.DisplayName}@{msg.SenderEndPoint.Address.ToString()}");
+                                LastKickedClient = client;
+                                LastKickedIP = client.NetConnection.RemoteEndPoint.ToString();
+                            }
+                            else
+                            {
+                                logger.LogInformation($"Player disconnected: {client.DisplayName}@{msg.SenderEndPoint.Address.ToString()}");
+                            }
+                            Clients.Remove(client);
                         }
-                        else
-                        {
-                            logger.LogInformation($"Player disconnected: {client.DisplayName}@{msg.SenderEndPoint.Address.ToString()}");
-                        }
-                        Clients.Remove(client);
+                        break;
                     }
-                }
+                // resharper was bugging me about not having the below case statements
+                case NetConnectionStatus.None:
+                case NetConnectionStatus.InitiatedConnect:
+                case NetConnectionStatus.ReceivedInitiation:
+                case NetConnectionStatus.RespondedAwaitingApproval:
+                case NetConnectionStatus.RespondedConnect:
+                case NetConnectionStatus.Disconnecting:
+                default:
+                    break;
             }
         }
         private void HandleClientDiscoveryRequest(Client client, NetIncomingMessage msg)
