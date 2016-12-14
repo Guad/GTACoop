@@ -46,7 +46,7 @@ namespace GTAServer
             Port = port;
             MasterServer = "https://gtamaster.nofla.me";
             BackupMasterServer = "http://fakemaster.nofla.me";
-            Config = new NetPeerConfiguration("GTAVOnlineRaces") {Port = port};
+            Config = new NetPeerConfiguration("GTAVOnlineRaces") { Port = port };
             Config.EnableMessageType(NetIncomingMessageType.ConnectionApproval);
             Config.EnableMessageType(NetIncomingMessageType.DiscoveryRequest);
             Config.EnableMessageType(NetIncomingMessageType.UnconnectedData);
@@ -110,12 +110,13 @@ namespace GTAServer
                                 logger.LogInformation("Ping received from " + msg.SenderEndPoint.Address.ToString());
                                 var reply = _server.CreateMessage("pong");
                                 _server.SendMessage(reply, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
-                            } else if (ucType == "query")
+                            }
+                            else if (ucType == "query")
                             {
                                 var playersOnline = 0;
                                 lock (Clients) playersOnline = Clients.Count;
                                 logger.LogInformation("Query received from " + msg.SenderEndPoint.Address.ToString());
-                                var reply =_server.CreateMessage($"{Name}%{PasswordProtected}%{playersOnline}%{MaxPlayers}%{GamemodeName}");
+                                var reply = _server.CreateMessage($"{Name}%{PasswordProtected}%{playersOnline}%{MaxPlayers}%{GamemodeName}");
                                 _server.SendMessage(reply, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
                             }
                             break;
@@ -133,21 +134,21 @@ namespace GTAServer
                             client.Latency = msg.ReadFloat();
                             break;
                         case NetIncomingMessageType.ConnectionApproval:
-                            HandleClientConnectionApproval(client,msg);
+                            HandleClientConnectionApproval(client, msg);
                             break;
                         case NetIncomingMessageType.StatusChanged:
-                            HandleClientStatusChange(client,msg);
+                            HandleClientStatusChange(client, msg);
                             break;
                         case NetIncomingMessageType.DiscoveryRequest:
-                            HandleClientDiscoveryRequest(client,msg);
+                            HandleClientDiscoveryRequest(client, msg);
                             break;
                         case NetIncomingMessageType.Data:
-                            HandleClientIncomingData(client,msg);
+                            HandleClientIncomingData(client, msg);
                             break;
                         default:
                             // We shouldn't get packets reaching this, so throw warnings when it happens.
                             logger.LogWarning("Unknown packet received: " +
-                                              ((NetIncomingMessageType) msg.MessageType).ToString());
+                                              ((NetIncomingMessageType)msg.MessageType).ToString());
                             break;
 
                     }
@@ -156,7 +157,7 @@ namespace GTAServer
             }
             catch (Exception e)
             {
-                logger.LogError("Uncaught exception in Tick()",e);
+                logger.LogError("Uncaught exception in Tick()", e);
                 // TODO: Error catching/reporting w/ Sentry
             }
         }
@@ -181,7 +182,7 @@ namespace GTAServer
 
             var latestScriptVersion = Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last();
             if (!AllowOutdatedClients &&
-                (ScriptVersion) connReq.ScriptVersion != latestScriptVersion)
+                (ScriptVersion)connReq.ScriptVersion != latestScriptVersion)
             {
                 var latestReadableScriptVersion = latestScriptVersion.ToString();
                 latestReadableScriptVersion = Regex.Replace(latestReadableScriptVersion, "VERSION_", "",
@@ -193,11 +194,11 @@ namespace GTAServer
                 DenyConnect(client, $"Please update to version ${latestReadableScriptVersion} from http://bit.ly/gtacoop", true, msg);
                 return;
             }
-            else if ((ScriptVersion) connReq.ScriptVersion != latestScriptVersion)
+            else if ((ScriptVersion)connReq.ScriptVersion != latestScriptVersion)
             {
                 // TODO: send message to player here
             }
-            else if ((ScriptVersion) connReq.ScriptVersion == ScriptVersion.VERSION_UNKNOWN)
+            else if ((ScriptVersion)connReq.ScriptVersion == ScriptVersion.VERSION_UNKNOWN)
             {
                 logger.LogInformation($"Client {client.DisplayName} tried to connect with an unknown script version (client too old?)");
                 DenyConnect(client, $"Unknown version. Please re-download GTACoop from http://bit.ly/gtacoop", true, msg);
@@ -218,9 +219,9 @@ namespace GTAServer
             }
 
             lock (Clients) if (Clients.Any(c => c.DisplayName == connReq.DisplayName))
-            {
-                DenyConnect(client, "A player already exists with the current display name.");
-            }
+                {
+                    DenyConnect(client, "A player already exists with the current display name.");
+                }
 
             client.ApplyConnectionRequest(connReq);
 
@@ -230,7 +231,7 @@ namespace GTAServer
         }
         private void HandleClientStatusChange(Client client, NetIncomingMessage msg)
         {
-            var newStatus = (NetConnectionStatus) msg.ReadByte();
+            var newStatus = (NetConnectionStatus)msg.ReadByte();
             switch (newStatus)
             {
                 case NetConnectionStatus.Connected:
@@ -255,7 +256,7 @@ namespace GTAServer
                             {
                                 Id = client.NetConnection.RemoteUniqueIdentifier
                             };
-                        
+
                             // TODO: Send dcMsg to all connections
                             if (client.Kicked)
                             {
@@ -306,7 +307,7 @@ namespace GTAServer
 
         private void HandleClientIncomingData(Client client, NetIncomingMessage msg)
         {
-            var packetType = (PacketType) msg.ReadInt32();
+            var packetType = (PacketType)msg.ReadInt32();
 
             switch (packetType)
             {
@@ -336,6 +337,22 @@ namespace GTAServer
                     }
                     break;
                 case PacketType.VehiclePositionData:
+                    {
+                        var len = msg.ReadInt32();
+                        var vehicleData = Util.DeserializeBinary<VehicleData>(msg.ReadBytes(len));
+                        if (vehicleData != null)
+                        {
+                            vehicleData.Id = client.NetConnection.RemoteUniqueIdentifier;
+                            vehicleData.Name = client.Name;
+                            vehicleData.Latency = client.Latency;
+
+                            client.Health = vehicleData.PlayerHealth;
+                            client.LastKnownPosition = vehicleData.Position;
+                            client.IsInVehicle = false;
+
+                            // TODO: broadcast VehicleData packet
+                        }
+                    }
                     break;
                 case PacketType.PlayerDisconnect:
                     break;
@@ -381,12 +398,12 @@ namespace GTAServer
             }
 
             Clients.Remove(player);
-            if (msg!=null) _server.Recycle(msg);
+            if (msg != null) _server.Recycle(msg);
         }
 
         public int GetChannelForClient(Client c)
         {
-            lock (Clients) return (Clients.IndexOf(c)%31) + 1;
+            lock (Clients) return (Clients.IndexOf(c) % 31) + 1;
         }
     }
 }
