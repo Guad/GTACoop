@@ -67,7 +67,7 @@ namespace GTAServer
             {
                 AnnounceToMaster();
             }
-            // TODO: Gamemode loading here... we need a module system first
+            // TODO: Gamemode loading here... we need a module/plugin system first
         }
 
         private void AnnounceToMaster()
@@ -306,7 +306,68 @@ namespace GTAServer
 
         private void HandleClientIncomingData(Client client, NetIncomingMessage msg)
         {
-            throw new NotImplementedException();
+            var packetType = (PacketType) msg.ReadInt32();
+
+            switch (packetType)
+            {
+                case PacketType.ChatData:
+                    {
+                        // TODO: This code really could use refactoring.. right now only trying to make sure this all works on .NET Core and fixing small issues.
+                        var len = msg.ReadInt32();
+                        var chatData = Util.DeserializeBinary<ChatData>(msg.ReadBytes(len));
+                        if (chatData != null)
+                        {
+                            var chatMsg = new ChatMessage(chatData, client);
+
+                            if (!chatMsg.Suppress)
+                            {
+                                chatData.Id = client.NetConnection.RemoteUniqueIdentifier;
+                                chatData.Sender = "";
+                                if (!string.IsNullOrWhiteSpace(chatMsg.Prefix))
+                                    chatData.Sender += "[" + chatMsg.Prefix + "] ";
+                                chatData.Sender += chatMsg.Sender.DisplayName;
+
+                                if (!string.IsNullOrWhiteSpace(chatMsg.Suffix))
+                                    chatData.Sender += $" ({chatMsg.Suffix}) ";
+                                // TODO: Send chat message here
+                                logger.LogInformation($"[Chat] <{chatData.Sender}>: {chatData.Message}");
+                            }
+                        }
+                    }
+                    break;
+                case PacketType.VehiclePositionData:
+                    break;
+                case PacketType.PlayerDisconnect:
+                    break;
+                case PacketType.PedPositionData:
+                    break;
+                case PacketType.NpcVehPositionData:
+                    break;
+                case PacketType.NpcPedPositionData:
+                    break;
+                case PacketType.WorldSharingStop:
+                    break;
+                case PacketType.DiscoveryResponse:
+                    break;
+                case PacketType.ConnectionRequest:
+                    break;
+                case PacketType.NativeCall:
+                    break;
+                case PacketType.NativeResponse:
+                    break;
+                case PacketType.PlayerSpawned:
+                    break;
+                case PacketType.NativeTick:
+                    break;
+                case PacketType.NativeTickRecall:
+                    break;
+                case PacketType.NativeOnDisconnect:
+                    break;
+                case PacketType.NativeOnDisconnectRecall:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
 
         public void DenyConnect(Client player, string reason, bool silent = true, NetIncomingMessage msg = null,

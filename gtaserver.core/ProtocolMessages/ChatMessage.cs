@@ -15,6 +15,16 @@ namespace GTAServer.ProtocolMessages
         public string Prefix { get; set; }
         public string Suffix { get; set; }
         public bool Suppress { get; set; }
+
+        public ChatMessage(ChatData chatData, Client client)
+        {
+            Message = chatData.Message;
+            Sender = client;
+        }
+
+        public ChatMessage()
+        {
+        }
     }
 
 }
