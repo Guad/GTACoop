@@ -373,10 +373,34 @@ namespace GTAServer
                     }
                     break;
                 case PacketType.NpcVehPositionData:
+                    {
+                        var len = msg.ReadInt32();
+                        var vehData = Util.DeserializeBinary<VehicleData>(msg.ReadBytes(len));
+                        if (vehData != null)
+                        {
+                            vehData.Id = client.NetConnection.RemoteUniqueIdentifier;
+                            // TODO: broadcast npc vehicle position packet
+                        }
+                    }
                     break;
                 case PacketType.NpcPedPositionData:
+                    {
+                        var len = msg.ReadInt32();
+                        var pedData = Util.DeserializeBinary<PedData>(msg.ReadBytes(len));
+                        if (pedData != null) {
+                            pedData.Id = msg.SenderConnection.RemoteUniqueIdentifier;
+                        }
+                        // TODO: broadcast NPC ped position packet
+                    }
                     break;
                 case PacketType.WorldSharingStop:
+                    {
+                        var dcObj = new PlayerDisconnect()
+                        {
+                            Id = client.NetConnection.RemoteUniqueIdentifier
+                        }
+                        // TODO broadcast world sharing stop packet
+                    }
                     break;
                 case PacketType.DiscoveryResponse:
                     break;
