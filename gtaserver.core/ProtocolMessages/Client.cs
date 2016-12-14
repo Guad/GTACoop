@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using GTAServer.ProtocolMessages;
-using Lidgren.Network;
+﻿using Lidgren.Network;
 
 namespace GTAServer.ProtocolMessages
 {

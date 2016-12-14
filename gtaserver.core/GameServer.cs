@@ -3,11 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using GTAServer.ProtocolMessages;
 using Lidgren.Network;
 using Microsoft.Extensions.Logging;
-using ProtoBuf;
 
 namespace GTAServer
 {
