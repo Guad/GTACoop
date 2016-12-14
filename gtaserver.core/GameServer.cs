@@ -355,6 +355,22 @@ namespace GTAServer
                 case PacketType.PlayerDisconnect:
                     break;
                 case PacketType.PedPositionData:
+                    {
+                        var len = msg.ReadInt32();
+                        var pedPosData = Util.DeserializeBinary<PedData>(msg.ReadBytes(len));
+                        if (pedPosData != null)
+                        {
+                            pedPosData.Id = client.NetConnection.RemoteUniqueIdentifier;
+                            pedPosData.Name = client.DisplayName;
+                            pedPosData.Latency = client.Latency;
+
+                            client.Health = pedPosData.PlayerHealth;
+                            client.LastKnownPosition = pedPosData.Position;
+                            client.IsInVehicle = false;
+
+                            // TODO: broadcast PedPositionData packet
+                        }
+                    }
                     break;
                 case PacketType.NpcVehPositionData:
                     break;
