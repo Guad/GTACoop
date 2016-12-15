@@ -387,7 +387,8 @@ namespace GTAServer
                     {
                         var len = msg.ReadInt32();
                         var pedData = Util.DeserializeBinary<PedData>(msg.ReadBytes(len));
-                        if (pedData != null) {
+                        if (pedData != null)
+                        {
                             pedData.Id = msg.SenderConnection.RemoteUniqueIdentifier;
                         }
                         // TODO: broadcast NPC ped position packet
@@ -398,7 +399,7 @@ namespace GTAServer
                         var dcObj = new PlayerDisconnect()
                         {
                             Id = client.NetConnection.RemoteUniqueIdentifier
-                        }
+                        };
                         // TODO broadcast world sharing stop packet
                     }
                     break;
