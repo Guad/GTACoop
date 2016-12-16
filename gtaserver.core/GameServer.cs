@@ -352,8 +352,6 @@ namespace GTAServer
                         }
                     }
                     break;
-                case PacketType.PlayerDisconnect:
-                    break;
                 case PacketType.PedPositionData:
                     {
                         var len = msg.ReadInt32();
@@ -403,15 +401,58 @@ namespace GTAServer
                         // TODO broadcast world sharing stop packet
                     }
                     break;
+                case PacketType.NativeResponse:
+                    {
+                        var len = msg.ReadInt32();
+                        var nativeResponse = Util.DeserializeBinary<NativeResponse>(msg.ReadBytes(len));
+                        if (nativeResponse == null) return; // TODO: check if there is a callback.
+                        object response = nativeResponse.Response;
+                        if (response is IntArgument)
+                        {
+                            response = ((IntArgument) response).Data;
+                        }
+                        else if (response is UIntArgument)
+                        {
+                            response = ((UIntArgument) response).Data;
+                        }
+                        else if (response is StringArgument)
+                        {
+                            response = ((StringArgument) response).Data;
+                        }
+                        else if (response is FloatArgument)
+                        {
+                            response = ((FloatArgument) response).Data;
+                        }
+                        else if (response is BooleanArgument)
+                        {
+                            response = ((BooleanArgument) response).Data;
+                        }
+                        else if (response is Vector3Argument)
+                        {
+                            var tmp = (Vector3Argument) response;
+                            response = new Vector3()
+                            {
+                                X = tmp.X,
+                                Y = tmp.Y,
+                                Z = tmp.Z
+                            };
+                        }
+                        // TODO: call the callback (if there is one) and remove it
+                    }
+                    break;
+                case PacketType.PlayerSpawned:
+                    {
+                        logger.LogInformation("Player spawned: " + client.DisplayName);
+                    }
+                    break;
+
+                case PacketType.PlayerDisconnect:
+                    break;
                 case PacketType.DiscoveryResponse:
                     break;
                 case PacketType.ConnectionRequest:
                     break;
                 case PacketType.NativeCall:
-                    break;
-                case PacketType.NativeResponse:
-                    break;
-                case PacketType.PlayerSpawned:
                     break;
                 case PacketType.NativeTick:
                     break;
@@ -422,7 +463,9 @@ namespace GTAServer
                 case PacketType.NativeOnDisconnectRecall:
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    // ReSharper disable once NotResolvedInText
+                    // resharper wants to see a variable name in the below... w/e.
+                    throw new ArgumentOutOfRangeException("Received unknown packet type. Server out of date or modded client?");
             }
         }
 
