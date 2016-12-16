@@ -86,6 +86,7 @@ namespace GTAServer
             }
             try
             {
+                //throw new Exception("test");
                 NetIncomingMessage msg;
                 while ((msg = _server.ReadMessage()) != null)
                 {
@@ -157,7 +158,8 @@ namespace GTAServer
             }
             catch (Exception e)
             {
-                logger.LogError("Uncaught exception in Tick()", e);
+                logger.LogError("Uncaught exception in Tick()");
+                logger.LogError(e.ToString());
                 // TODO: Error catching/reporting w/ Sentry
             }
         }

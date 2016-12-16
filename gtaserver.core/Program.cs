@@ -19,9 +19,9 @@ namespace GTAServer
             logger.LogInformation("Server preparing to start...");
 
             logger.LogTrace(
-                "Creating instance of GameServer (port: 4599 | name: GTAServer .NET Core Test | Gamemode: freeroam");
+                "Creating instance of GameServer (port: 4699 | name: GTAServer .NET Core Test | Gamemode: freeroam");
 
-            var gameServer = new GameServer(4499, "GTAServer .NET Core Test", "freeroam");
+            var gameServer = new GameServer(4699, "GTAServer .NET Core Test", "freeroam");
 
             logger.LogInformation("Server starting...");
             gameServer.Start();
