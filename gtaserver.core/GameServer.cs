@@ -469,6 +469,26 @@ namespace GTAServer
             }
         }
 
+        public void SendToAll(object dataToSend, PacketType packetType, bool packetIsImportant)
+        {
+            var data = Util.SerializeBinary(dataToSend);
+            var msg = _server.CreateMessage();
+            msg.Write((int) packetType);
+            msg.Write(data.Length);
+            msg.Write(data);
+            _server.SendToAll(msg, packetIsImportant ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced);
+        }
+
+        public void SendToAll(object dataToSend, PacketType packetType, bool packetIsImportant, Client clientToExclude)
+        {
+            var data = Util.SerializeBinary(dataToSend);
+            var msg = _server.CreateMessage();
+            msg.Write((int)packetType);
+            msg.Write(data.Length);
+            msg.Write(data);
+            _server.SendToAll(msg, clientToExclude.NetConnection, packetIsImportant ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced, GetChannelForClient(clientToExclude));
+        }
+
         public void DenyConnect(Client player, string reason, bool silent = true, NetIncomingMessage msg = null,
             int duraction = 60)
         {
