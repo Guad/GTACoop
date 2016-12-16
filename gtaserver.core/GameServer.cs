@@ -57,7 +57,7 @@ namespace GTAServer
             logger.LogInformation("Server ready to start");
         }
 
-        public void Start(string[] filterscripts)
+        public void Start()
         {
             logger.LogInformation("Server starting");
             _server.Start();
@@ -70,9 +70,11 @@ namespace GTAServer
 
         private void AnnounceToMaster()
         {
+#if !DEBUG
             logger.LogDebug("Announcing to master server");
             _lastAnnounceDateTime = DateTime.Now;
             logger.LogDebug("Server announcer not implemented");
+#endif
             // TODO: implement server announcing
         }
 
@@ -171,8 +173,12 @@ namespace GTAServer
             }
 
             // If nicknames are disabled on the server, set the nickname to the player's social club name.
-            // TODO: Notify client that nicknames are disabled
-            if (!AllowNicknames) connReq.DisplayName = connReq.Name;
+            if (!AllowNicknames)
+            {
+                SendNotificationToPlayer(client,
+                    $"Nicknames are disabled on this server. Your nickname has been set to {connReq.Name}");
+                connReq.DisplayName = connReq.Name;
+            }
 
 
             logger.LogInformation(
@@ -194,7 +200,7 @@ namespace GTAServer
             }
             else if ((ScriptVersion)connReq.ScriptVersion != latestScriptVersion)
             {
-                // TODO: send message to player here
+                SendNotificationToPlayer(client, "You are currently on an outdated client. Please go to http://bit.ly/gtacoop and update.");
             }
             else if ((ScriptVersion)connReq.ScriptVersion == ScriptVersion.VERSION_UNKNOWN)
             {
@@ -234,21 +240,27 @@ namespace GTAServer
             {
                 case NetConnectionStatus.Connected:
                     logger.LogInformation($"Connected: {client.DisplayName}@{msg.SenderEndPoint.Address.ToString()}");
+                    SendNotificationToAll($"Player connected: {client.DisplayName}");
                     break;
 
-                // TODO: Send notification to all players about new player connecting
                 case NetConnectionStatus.Disconnected:
                     lock (Clients)
                     {
                         if (Clients.Contains(client))
                         {
-                            if (client.Kicked)
+                            if (!client.Silent)
                             {
-                                // TODO: Send notification to all players about kicked player
-                            }
-                            else
-                            {
-                                //TODO: send notification to all players about disconnecting player
+                                if (client.Kicked)
+                                {
+                                    if (string.IsNullOrEmpty(client.KickReason)) client.KickReason = "Unknown";
+                                    SendNotificationToAll(
+                                        $"Player kicked: {client.DisplayName} - Reason: {client.KickReason}");
+                                }
+                                else
+                                {
+                                    SendNotificationToAll(
+                                        $"Player disconnected: {client.DisplayName}");
+                                }
                             }
                             var dcMsg = new PlayerDisconnect()
                             {
@@ -410,27 +422,27 @@ namespace GTAServer
                         object response = nativeResponse.Response;
                         if (response is IntArgument)
                         {
-                            response = ((IntArgument) response).Data;
+                            response = ((IntArgument)response).Data;
                         }
                         else if (response is UIntArgument)
                         {
-                            response = ((UIntArgument) response).Data;
+                            response = ((UIntArgument)response).Data;
                         }
                         else if (response is StringArgument)
                         {
-                            response = ((StringArgument) response).Data;
+                            response = ((StringArgument)response).Data;
                         }
                         else if (response is FloatArgument)
                         {
-                            response = ((FloatArgument) response).Data;
+                            response = ((FloatArgument)response).Data;
                         }
                         else if (response is BooleanArgument)
                         {
-                            response = ((BooleanArgument) response).Data;
+                            response = ((BooleanArgument)response).Data;
                         }
                         else if (response is Vector3Argument)
                         {
-                            var tmp = (Vector3Argument) response;
+                            var tmp = (Vector3Argument)response;
                             response = new Vector3()
                             {
                                 X = tmp.X,
@@ -474,7 +486,7 @@ namespace GTAServer
         {
             var data = Util.SerializeBinary(dataToSend);
             var msg = _server.CreateMessage();
-            msg.Write((int) packetType);
+            msg.Write((int)packetType);
             msg.Write(data.Length);
             msg.Write(data);
             _server.SendToAll(msg, packetIsImportant ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced);
@@ -497,7 +509,7 @@ namespace GTAServer
             logger.LogInformation($"Player rejected from server: {player.DisplayName} for {reason}");
             if (!silent)
             {
-                // TODO: Send notification to players here
+                SendNotificationToAll($"Player rejected by server: {player.DisplayName} - {reason}");
             }
 
             Clients.Remove(player);
@@ -508,5 +520,116 @@ namespace GTAServer
         {
             lock (Clients) return (Clients.IndexOf(c) % 31) + 1;
         }
+
+        // Native call functions
+        public List<NativeArgument> ParseNativeArguments(params object[] args) // literally copypasted from old gtaserver
+        {
+            var list = new List<NativeArgument>();
+            foreach (var o in args)
+            {
+                if (o is int)
+                {
+                    list.Add(new IntArgument() { Data = ((int)o) });
+                }
+                else if (o is uint)
+                {
+                    list.Add(new UIntArgument() { Data = ((uint)o) });
+                }
+                else if (o is string)
+                {
+                    list.Add(new StringArgument() { Data = ((string)o) });
+                }
+                else if (o is float)
+                {
+                    list.Add(new FloatArgument() { Data = ((float)o) });
+                }
+                else if (o is bool)
+                {
+                    list.Add(new BooleanArgument() { Data = ((bool)o) });
+                }
+                else if (o is Vector3)
+                {
+                    var tmp = (Vector3)o;
+                    list.Add(new Vector3Argument()
+                    {
+                        X = tmp.X,
+                        Y = tmp.Y,
+                        Z = tmp.Z,
+                    });
+                }
+                else if (o is LocalPlayerArgument)
+                {
+                    list.Add((LocalPlayerArgument)o);
+                }
+                else if (o is LocalGamePlayerArgument)
+                {
+                    list.Add((LocalGamePlayerArgument)o);
+                }
+            }
+
+            return list;
+        }
+
+        public void SendNativeCallToPlayer(Client player, ulong hash, params object[] arguments)
+        {
+            var obj = new NativeData
+            {
+                Hash = hash,
+                Arguments = ParseNativeArguments(arguments)
+            };
+
+            var bin = Util.SerializeBinary(obj);
+
+            var msg = _server.CreateMessage();
+
+            msg.Write((int) PacketType.NativeCall);
+            msg.Write(bin.Length);
+            msg.Write(bin);
+
+            player.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelForClient(player));
+        }
+
+        public void SendNativeCallToAll(ulong hash, params object[] arguments)
+        {
+            var obj = new NativeData
+            {
+                Hash = hash,
+                Arguments = ParseNativeArguments(arguments),
+                ReturnType = null,
+                Id = null,
+            };
+
+            var bin = Util.SerializeBinary(obj);
+
+            var msg = _server.CreateMessage();
+
+            msg.Write((int)PacketType.NativeCall);
+            msg.Write(bin.Length);
+            msg.Write(bin);
+
+            _server.SendToAll(msg, NetDeliveryMethod.ReliableOrdered);
+        }
+
+        // Notification stuff
+        public void SendNotificationToPlayer(Client player, string message, bool flashing = false)
+        {
+            for (var i = 0; i < message.Length; i += 99)
+            {
+                SendNativeCallToPlayer(player, 0x202709F4C58A0424, "STRING");
+                SendNativeCallToPlayer(player, 0x6C188BE134E074AA, message.Substring(i, Math.Min(99, message.Length - i)));
+                SendNativeCallToPlayer(player, 0xF020C96915705B3A, flashing, true);
+            }
+        }
+
+        public void SendNotificationToAll(string message, bool flashing = false)
+        {
+            for (var i = 0; i < message.Length; i += 99)
+            {
+                SendNativeCallToAll(0x202709F4C58A0424, "STRING");
+                SendNativeCallToAll(0x6C188BE134E074AA, message.Substring(i, Math.Min(99, message.Length - i)));
+                SendNativeCallToAll(0xF020C96915705B3A, flashing, true);
+            }
+        }
+
     }
 }

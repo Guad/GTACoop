@@ -19,7 +19,7 @@ namespace GTAServer.ProtocolMessages
         public bool Kicked { get; set; }
         public string KickReason { get; set; }
         public Client KickedBy { get; set; }
-        public bool Muted { get; set; }
+        public bool Silent { get; set; }
 
         public Client(NetConnection nc)
         {
