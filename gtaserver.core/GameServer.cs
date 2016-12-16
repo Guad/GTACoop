@@ -255,7 +255,8 @@ namespace GTAServer
                                 Id = client.NetConnection.RemoteUniqueIdentifier
                             };
 
-                            // TODO: Send dcMsg to all connections
+                            SendToAll(dcMsg, PacketType.PlayerDisconnect, true);
+
                             if (client.Kicked)
                             {
                                 logger.LogInformation(
@@ -328,7 +329,7 @@ namespace GTAServer
 
                                 if (!string.IsNullOrWhiteSpace(chatMsg.Suffix))
                                     chatData.Sender += $" ({chatMsg.Suffix}) ";
-                                // TODO: Send chat message here
+                                SendToAll(chatData, PacketType.ChatData, true);
                                 logger.LogInformation($"[Chat] <{chatData.Sender}>: {chatData.Message}");
                             }
                         }
@@ -348,7 +349,7 @@ namespace GTAServer
                             client.LastKnownPosition = vehicleData.Position;
                             client.IsInVehicle = false;
 
-                            // TODO: broadcast VehicleData packet
+                            SendToAll(vehicleData, PacketType.VehiclePositionData, false, client);
                         }
                     }
                     break;
@@ -366,7 +367,7 @@ namespace GTAServer
                             client.LastKnownPosition = pedPosData.Position;
                             client.IsInVehicle = false;
 
-                            // TODO: broadcast PedPositionData packet
+                            SendToAll(pedPosData, PacketType.PedPositionData, false, client);
                         }
                     }
                     break;
@@ -377,7 +378,7 @@ namespace GTAServer
                         if (vehData != null)
                         {
                             vehData.Id = client.NetConnection.RemoteUniqueIdentifier;
-                            // TODO: broadcast npc vehicle position packet
+                            SendToAll(vehData, PacketType.NpcVehPositionData, false, client);
                         }
                     }
                     break;
@@ -389,7 +390,7 @@ namespace GTAServer
                         {
                             pedData.Id = msg.SenderConnection.RemoteUniqueIdentifier;
                         }
-                        // TODO: broadcast NPC ped position packet
+                        SendToAll(pedData, PacketType.NpcPedPositionData, false, client);
                     }
                     break;
                 case PacketType.WorldSharingStop:
@@ -398,7 +399,7 @@ namespace GTAServer
                         {
                             Id = client.NetConnection.RemoteUniqueIdentifier
                         };
-                        // TODO broadcast world sharing stop packet
+                        SendToAll(dcObj, PacketType.WorldSharingStop, true);
                     }
                     break;
                 case PacketType.NativeResponse:
