@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using GTA;
 
-namespace GTACoOp
+namespace GTAServer
 {
     public class PedThread : Script
-    {
+    { 
+
         public PedThread()
         {
             Tick += OnTick;

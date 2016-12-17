@@ -15,7 +15,7 @@ using Newtonsoft.Json;
 using ProtoBuf;
 using Control = GTA.Control;
 
-namespace GTACoOp
+namespace GTAServer
 {
     public class Main : Script
     {
@@ -55,6 +55,7 @@ namespace GTACoOp
 
         private static int _messagesSent = 0;
         private static int _messagesReceived = 0;
+
         //
 
         public Main()
@@ -706,6 +707,19 @@ namespace GTACoOp
 
         public void OnKeyDown(object sender, KeyEventArgs e)
         {
+            if (IsOnServer() && !_mainMenu.Visible && !_chat.IsFocused)
+            {
+                var obj_ = new KeySendData()
+                {
+                    key = e.KeyCode
+                };
+                var data_ = SerializeBinary(obj_);
+                var msg_ = _client.CreateMessage();
+                msg_.Write((int)PacketType.KeySendData);
+                msg_.Write(data_.Length);
+                msg_.Write(data_);
+                _client.SendMessage(msg_, NetDeliveryMethod.ReliableOrdered, 0);
+            }
             _chat.OnKeyDown(e.KeyCode);
             if (e.KeyCode == PlayerSettings.ActivationKey && !_chat.IsFocused)
             {
@@ -756,6 +770,7 @@ namespace GTACoOp
                 }
             }
         }
+
 
         public void ConnectToServer(string ip, int port = 0)
         {

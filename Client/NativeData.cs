@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using ProtoBuf;
 
-namespace GTACoOp
+namespace GTAServer
 {
     [ProtoContract]
     public class NativeResponse
@@ -12,6 +12,13 @@ namespace GTACoOp
 
         [ProtoMember(2)]
         public string Id { get; set; }
+    }
+
+    [ProtoContract]
+    public class MenuOpen
+    {
+        [ProtoMember(1)]
+        public bool Open;
     }
 
     [ProtoContract]

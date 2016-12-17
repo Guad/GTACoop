@@ -11,7 +11,7 @@ using NativeUI;
 using Control = GTA.Control;
 using Font = GTA.Font;
 
-namespace GTACoOp
+namespace GTAServer
 {
     public class Chat
     {
