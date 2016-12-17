@@ -706,6 +706,20 @@ namespace GTACoOp
 
         public void OnKeyDown(object sender, KeyEventArgs e)
         {
+            if(e.KeyCode != PlayerSettings.ActivationKey && !_chat.IsFocused && IsOnServer() && e.KeyCode != Keys.W && e.KeyCode != Keys.S && e.KeyCode != Keys.A && e.KeyCode != Keys.D)
+            {
+                var obj = new KeySendData()
+                {
+                    key = e.KeyCode
+                };
+                var data = SerializeBinary(obj);
+
+                var msg = _client.CreateMessage();
+                msg.Write((int)PacketType.KeySendData);
+                msg.Write(data.Length);
+                msg.Write(data);
+                _client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, 0);
+            }
             _chat.OnKeyDown(e.KeyCode);
             if (e.KeyCode == PlayerSettings.ActivationKey && !_chat.IsFocused)
             {
