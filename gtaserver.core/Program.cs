@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Microsoft.Extensions.Logging;
 
 namespace GTAServer
@@ -17,9 +18,6 @@ namespace GTAServer
             logger.LogCritical("To help bring crashes to the attention of the server owner and make sure they are reported to me, error catching has been disabled in this build.");
 #endif
             logger.LogInformation("Server preparing to start...");
-
-            logger.LogTrace(
-                "Creating instance of GameServer (port: 4699 | name: GTAServer .NET Core Test | Gamemode: freeroam");
 
             var gameServer = new GameServer(4699, "GTAServer .NET Core Test", "freeroam");
 
@@ -41,6 +39,7 @@ namespace GTAServer
                     logger.LogError("Exception while ticking", e);
                 }
 #endif
+                Thread.Sleep(1);
             }
         }
     }

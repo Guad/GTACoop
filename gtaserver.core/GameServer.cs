@@ -37,6 +37,11 @@ namespace GTAServer
 
         public GameServer(int port, string name, string gamemodeName)
         {
+            var loggerFactory = new LoggerFactory()
+                .AddConsole()
+                .AddDebug();
+            logger = loggerFactory.CreateLogger<GameServer>();
+            logger.LogInformation("Server ready to start");
             Clients = new List<Client>();
             MaxPlayers = 32;
             GamemodeName = gamemodeName;
@@ -50,11 +55,9 @@ namespace GTAServer
             Config.EnableMessageType(NetIncomingMessageType.UnconnectedData);
             Config.EnableMessageType(NetIncomingMessageType.ConnectionLatencyUpdated);
             _server = new NetServer(Config);
-            var loggerFactory = new LoggerFactory()
-                .AddConsole()
-                .AddDebug();
-            logger = loggerFactory.CreateLogger<GameServer>();
-            logger.LogInformation("Server ready to start");
+
+            logger.LogInformation($"NetServer created with port {Config.Port}");
+
         }
 
         public void Start()
@@ -84,83 +87,83 @@ namespace GTAServer
             {
                 AnnounceToMaster();
             }
-            try
+            //throw new Exception("test");
+            NetIncomingMessage msg;
+            while ((msg = _server.ReadMessage()) != null)
             {
-                //throw new Exception("test");
-                NetIncomingMessage msg;
-                while ((msg = _server.ReadMessage()) != null)
+                Client client = null;
+                lock (Clients)
                 {
-                    Client client = null;
-                    lock (Clients)
+                    try
                     {
                         client = Clients.Where(d => d.NetConnection != null)
-                                        .Where(d => d.NetConnection.RemoteUniqueIdentifier != 0)
-                                        .Where(d => msg.SenderConnection != null) // almost pointless but w/e
-                                        .First(d => d.NetConnection.RemoteUniqueIdentifier == msg.SenderConnection.RemoteUniqueIdentifier);
-
+                            .Where(d => d.NetConnection.RemoteUniqueIdentifier != 0)
+                            .Where(d => msg.SenderConnection != null) // almost pointless but w/e
+                            .First(
+                                d =>
+                                    d.NetConnection.RemoteUniqueIdentifier ==
+                                    msg.SenderConnection.RemoteUniqueIdentifier);
                     }
-                    if (client == null) client = new Client(msg.SenderConnection);
-
-                    switch (msg.MessageType)
+                    catch (InvalidOperationException e)
                     {
-                        case NetIncomingMessageType.UnconnectedData:
-                            var ucType = msg.ReadString();
-                            // ReSharper disable once ConvertIfStatementToSwitchStatement
-                            if (ucType == "ping")
-                            {
-                                logger.LogInformation("Ping received from " + msg.SenderEndPoint.Address.ToString());
-                                var reply = _server.CreateMessage("pong");
-                                _server.SendMessage(reply, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
-                            }
-                            else if (ucType == "query")
-                            {
-                                var playersOnline = 0;
-                                lock (Clients) playersOnline = Clients.Count;
-                                logger.LogInformation("Query received from " + msg.SenderEndPoint.Address.ToString());
-                                var reply = _server.CreateMessage($"{Name}%{PasswordProtected}%{playersOnline}%{MaxPlayers}%{GamemodeName}");
-                                _server.SendMessage(reply, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
-                            }
-                            break;
-                        case NetIncomingMessageType.VerboseDebugMessage:
-                        case NetIncomingMessageType.DebugMessage:
-                            logger.LogDebug("Network (Verbose)DebugMessage: " + msg.ReadString());
-                            break;
-                        case NetIncomingMessageType.WarningMessage:
-                            logger.LogWarning("Network WarningMessage: " + msg.ReadString());
-                            break;
-                        case NetIncomingMessageType.ErrorMessage:
-                            logger.LogError("Network ErrorMessage: " + msg.ReadString());
-                            break;
-                        case NetIncomingMessageType.ConnectionLatencyUpdated:
-                            client.Latency = msg.ReadFloat();
-                            break;
-                        case NetIncomingMessageType.ConnectionApproval:
-                            HandleClientConnectionApproval(client, msg);
-                            break;
-                        case NetIncomingMessageType.StatusChanged:
-                            HandleClientStatusChange(client, msg);
-                            break;
-                        case NetIncomingMessageType.DiscoveryRequest:
-                            HandleClientDiscoveryRequest(client, msg);
-                            break;
-                        case NetIncomingMessageType.Data:
-                            HandleClientIncomingData(client, msg);
-                            break;
-                        default:
-                            // We shouldn't get packets reaching this, so throw warnings when it happens.
-                            logger.LogWarning("Unknown packet received: " +
-                                              ((NetIncomingMessageType)msg.MessageType).ToString());
-                            break;
-
+                        // ignored because we make a new client below if there is none, which is when an InvalidOperationException is thrown
                     }
-                    _server.Recycle(msg);
                 }
-            }
-            catch (Exception e)
-            {
-                logger.LogError("Uncaught exception in Tick()");
-                logger.LogError(e.ToString());
-                // TODO: Error catching/reporting w/ Sentry
+                if (client == null) client = new Client(msg.SenderConnection);
+                //logger.LogInformation("Packet received - type: " + ((NetIncomingMessageType)msg.MessageType).ToString());
+                switch (msg.MessageType)
+                {
+                    case NetIncomingMessageType.UnconnectedData:
+                        var ucType = msg.ReadString();
+                        // ReSharper disable once ConvertIfStatementToSwitchStatement
+                        if (ucType == "ping")
+                        {
+                            logger.LogInformation("Ping received from " + msg.SenderEndPoint.Address.ToString());
+                            var reply = _server.CreateMessage("pong");
+                            _server.SendMessage(reply, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
+                        }
+                        else if (ucType == "query")
+                        {
+                            var playersOnline = 0;
+                            lock (Clients) playersOnline = Clients.Count;
+                            logger.LogInformation("Query received from " + msg.SenderEndPoint.Address.ToString());
+                            var reply = _server.CreateMessage($"{Name}%{PasswordProtected}%{playersOnline}%{MaxPlayers}%{GamemodeName}");
+                            _server.SendMessage(reply, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
+                        }
+                        break;
+                    case NetIncomingMessageType.VerboseDebugMessage:
+                    case NetIncomingMessageType.DebugMessage:
+                        logger.LogDebug("Network (Verbose)DebugMessage: " + msg.ReadString());
+                        break;
+                    case NetIncomingMessageType.WarningMessage:
+                        logger.LogWarning("Network WarningMessage: " + msg.ReadString());
+                        break;
+                    case NetIncomingMessageType.ErrorMessage:
+                        logger.LogError("Network ErrorMessage: " + msg.ReadString());
+                        break;
+                    case NetIncomingMessageType.ConnectionLatencyUpdated:
+                        client.Latency = msg.ReadFloat();
+                        break;
+                    case NetIncomingMessageType.ConnectionApproval:
+                        HandleClientConnectionApproval(client, msg);
+                        break;
+                    case NetIncomingMessageType.StatusChanged:
+                        HandleClientStatusChange(client, msg);
+                        break;
+                    case NetIncomingMessageType.DiscoveryRequest:
+                        HandleClientDiscoveryRequest(client, msg);
+                        break;
+                    case NetIncomingMessageType.Data:
+                        HandleClientIncomingData(client, msg);
+                        break;
+                    default:
+                        // We shouldn't get packets reaching this, so throw warnings when it happens.
+                        logger.LogWarning("Unknown packet received: " +
+                                          ((NetIncomingMessageType)msg.MessageType).ToString());
+                        break;
+
+                }
+                _server.Recycle(msg);
             }
         }
         private void HandleClientConnectionApproval(Client client, NetIncomingMessage msg)
@@ -584,7 +587,7 @@ namespace GTAServer
 
             var msg = _server.CreateMessage();
 
-            msg.Write((int) PacketType.NativeCall);
+            msg.Write((int)PacketType.NativeCall);
             msg.Write(bin.Length);
             msg.Write(bin);
 
