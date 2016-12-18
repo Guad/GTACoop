@@ -1,19 +1,33 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using System.Threading;
 using System.IO;
 using System.Xml.Serialization;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
+using GTAServer.PluginAPI;
 
 namespace GTAServer
 {
     public class Program
     {
-        public static ServerConfiguration GameServerConfiguration;
+        private static ServerConfiguration _gameServerConfiguration;
         private static ILogger _logger;
+        private static IEnumerable<IPlugin> Plugins;
+        private static void CreateNeededFiles()
+        {
+            if (!Directory.Exists("Plugins")) Directory.CreateDirectory("Plugins");
+        }
 
+        private static void DoDebugWarning()
+        {
+#if DEBUG
+            _logger.LogWarning("Note - This build is a debug build. Please do not share this build and report any issues to Mitchell Monahan (@wolfmitchell)");
+            _logger.LogWarning("Furthermore, debug builds will not announce themselves to the master server, regardless of the AnnounceSelf config option.");
+            _logger.LogWarning("To help bring crashes to the attention of the server owner and make sure they are reported to me, error catching has been disabled in this build.");
+#endif
+        }
         public static void Main(string[] args)
         {
+            CreateNeededFiles();
             Util.LoggerFactory = new LoggerFactory()
 #if DEBUG
                 .AddConsole(LogLevel.Trace)
@@ -23,26 +37,36 @@ namespace GTAServer
 #endif
 
             _logger = Util.LoggerFactory.CreateLogger<Program>();
-#if DEBUG
-            _logger.LogWarning("Note - This build is a debug build. Please do not share this build and report any issues to Mitchell Monahan (@wolfmitchell)");
-            _logger.LogWarning("Furthermore, debug builds will not announce themselves to the master server, regardless of the AnnounceSelf config option.");
-            _logger.LogWarning("To help bring crashes to the attention of the server owner and make sure they are reported to me, error catching has been disabled in this build.");
-#endif
+            DoDebugWarning();
+
             _logger.LogInformation("Reading server configuration...");
-            GameServerConfiguration = LoadServerConfiguration("serverSettings.xml");
+            _gameServerConfiguration = LoadServerConfiguration("serverSettings.xml");
             _logger.LogInformation("Configuration loaded...");
 
             _logger.LogInformation("Server preparing to start...");
 
-            var gameServer = new GameServer(GameServerConfiguration.Port, GameServerConfiguration.ServerName,
-                GameServerConfiguration.GamemodeName)
+            var gameServer = new GameServer(_gameServerConfiguration.Port, _gameServerConfiguration.ServerName,
+                _gameServerConfiguration.GamemodeName)
             {
-                Password = GameServerConfiguration.Password,
-                MasterServer = GameServerConfiguration.PrimaryMasterServer,
-                AnnounceSelf = GameServerConfiguration.AnnounceSelf,
-                AllowNicknames = GameServerConfiguration.AllowNicknames,
-                AllowOutdatedClients = GameServerConfiguration.AllowOutdatedClients,
+                Password = _gameServerConfiguration.Password,
+                MasterServer = _gameServerConfiguration.PrimaryMasterServer,
+                AnnounceSelf = _gameServerConfiguration.AnnounceSelf,
+                AllowNicknames = _gameServerConfiguration.AllowNicknames,
+                AllowOutdatedClients = _gameServerConfiguration.AllowOutdatedClients,
             };
+
+
+            // Plugin Code
+            _logger.LogInformation("loading test plugin");
+            Plugins = PluginLoader.LoadPlugin("TestPlugin");
+            _logger.LogInformation("Plugins loaded. Enabling plugins...");
+            foreach (var plugin in Plugins)
+            {
+                if (!plugin.OnEnable(gameServer, false))
+                {
+                    _logger.LogWarning("Plugin " + plugin.Name + " returned false when enabling, marking as disabled, although it may still have hooks registered and called.");
+                }
+            }
 
             _logger.LogInformation("Server starting...");
             gameServer.Start();
@@ -59,7 +83,7 @@ namespace GTAServer
                 }
                 catch (Exception e)
                 {
-                    logger.LogError("Exception while ticking", e);
+                    _logger.LogError("Exception while ticking", e);
                 }
 #endif
                 Thread.Sleep(1);
