@@ -26,7 +26,7 @@ namespace GTAServer
         public bool AnnounceSelf { get; set; }
         public bool AllowNicknames { get; set; }
         public bool AllowOutdatedClients { get; set; }
-        public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_9_3;
+        public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_9_4;
         public string LastKickedIP { get; set; }
         public Client LastKickedClient { get; set; }
 
