@@ -265,11 +265,13 @@ namespace GTACoOp
             _mainMenu.BindMenuToItem(_playersMenu, playersItem);
             playersItem.Activated += (sender, item) => RebuildPlayersList();
 
-            var aboutItem = new UIMenuItem("~g~GTA V~w~ Coop mod v" + ReadableScriptVersion() + " by ~b~Bluscream~w~.");
-            aboutItem.Enabled = true;
+            var aboutItem = new UIMenuItem("~g~GTA V~w~ Coop mod v" + ReadableScriptVersion() + " by ~b~Bluscream~w~.")
+            {
+                Enabled = true
+            };
             aboutItem.Activated += (sender, item) =>
             {
-                UI.Notify("GTA V Coop mod by Guad, temporary continued by Bluscream.");
+                UI.Notify("GTA V Coop mod by Guad, temporary continued by Bluscream and wolfmitchell.");
                 UI.Notify("Mod Version: " + ReadableScriptVersion());
                 UI.Notify("https://github.com/Bluscream/GTACoop/releases/latest");
             };
@@ -671,7 +673,7 @@ namespace GTACoOp
             #endregion
 
             _debug = new DebugWindow();
-            UI.Notify("~g~GTA V Coop mod v" + ReadableScriptVersion() + " by Guad loaded successfully.~w~");
+            UI.Notify("~g~GTA V Coop mod v" + ReadableScriptVersion() + " by Guad, Bluscream and wolfmitchell loaded successfully.~w~");
             if (PlayerSettings.AutoConnect && !String.IsNullOrWhiteSpace(PlayerSettings.LastIP) && PlayerSettings.LastPort != -1 && PlayerSettings.LastPort != 0) { 
                 ConnectToServer(PlayerSettings.LastIP.ToString(), PlayerSettings.LastPort);
             }else if(PlayerSettings.AutoStartServer){
