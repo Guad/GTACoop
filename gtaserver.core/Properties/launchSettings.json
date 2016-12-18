@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "gtaserver.core netstandard/win7-x64": {
+      "executablePath": "F:\\Misc\\code\\GTACoOp\\gtaserver.core\\bin\\Debug\\netstandard1.6\\win7-x64\\gtaserver.core.exe"
+    }
+  }
+}

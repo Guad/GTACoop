@@ -13,17 +13,16 @@
     "protobuf-net": "2.1.0"
   },
   "frameworks": {
-    "netcoreapp1.1": {
+    "netstandard1.6": {
       "dependencies": {
-        "Microsoft.NETCore.App": {
-          "version": "1.1.0"
-        }
-      },
-      "imports": "dnxcore50"
+        "NETStandard.Library": "1.6.0",
+        "Microsoft.NETCore.Runtime.CoreCLR":  "1.1.0" 
+      }
     }
   },
   "runtimes": {
     "win7-x64": {},
+    //"win10-x64":  {}, 
     "ubuntu.14.04-x64": {},
     "osx.10.10-x64":  {} 
   }
