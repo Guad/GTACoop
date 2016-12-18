@@ -12,7 +12,7 @@ namespace GTAServer.ProtocolMessages
         [ProtoMember(2)]
         public string Name { get; set; }
         [ProtoMember(3)]
-        public string VehicleModelHash { get; set; }
+        public int VehicleModelHash { get; set; }
         [ProtoMember(4)]
         public int PedModelHash { get; set; }
         [ProtoMember(5)]

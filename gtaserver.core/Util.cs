@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using Microsoft.Extensions.Logging;
 using ProtoBuf;
 
 namespace GTAServer
@@ -21,5 +22,7 @@ namespace GTAServer
                 return stream.ToArray();
             }
         }
+
+        public static ILoggerFactory LoggerFactory;
     }
 }

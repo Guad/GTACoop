@@ -8,14 +8,18 @@ namespace GTAServer
     {
         public static void Main(string[] args)
         {
-            var loggerFactory = new LoggerFactory()
-                .AddConsole()
-                .AddDebug();
-            var logger = loggerFactory.CreateLogger<Program>();
+            Util.LoggerFactory = new LoggerFactory()
 #if DEBUG
-            logger.LogCritical("Note - This build is a debug build. Please do not share this build and report any issues to Mitchell Monahan (@wolfmitchell)");
-            logger.LogCritical("Furthermore, debug builds will not announce themselves to the master server, regardless of the AnnounceSelf config option.");
-            logger.LogCritical("To help bring crashes to the attention of the server owner and make sure they are reported to me, error catching has been disabled in this build.");
+                .AddConsole(LogLevel.Trace)
+#else
+                .AddConsole()
+#endif
+                .AddDebug();
+            var logger = Util.LoggerFactory.CreateLogger<Program>();
+#if DEBUG
+            logger.LogWarning("Note - This build is a debug build. Please do not share this build and report any issues to Mitchell Monahan (@wolfmitchell)");
+            logger.LogWarning("Furthermore, debug builds will not announce themselves to the master server, regardless of the AnnounceSelf config option.");
+            logger.LogWarning("To help bring crashes to the attention of the server owner and make sure they are reported to me, error catching has been disabled in this build.");
 #endif
             logger.LogInformation("Server preparing to start...");
 

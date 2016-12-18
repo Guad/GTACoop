@@ -37,10 +37,7 @@ namespace GTAServer
 
         public GameServer(int port, string name, string gamemodeName)
         {
-            var loggerFactory = new LoggerFactory()
-                .AddConsole()
-                .AddDebug();
-            logger = loggerFactory.CreateLogger<GameServer>();
+            logger = Util.LoggerFactory.CreateLogger<GameServer>();
             logger.LogInformation("Server ready to start");
             Clients = new List<Client>();
             MaxPlayers = 32;
@@ -94,22 +91,21 @@ namespace GTAServer
                 Client client = null;
                 lock (Clients)
                 {
-                    try
+                    foreach (var c in Clients)
                     {
-                        client = Clients.Where(d => d.NetConnection != null)
-                            .Where(d => d.NetConnection.RemoteUniqueIdentifier != 0)
-                            .Where(d => msg.SenderConnection != null) // almost pointless but w/e
-                            .First(
-                                d =>
-                                    d.NetConnection.RemoteUniqueIdentifier ==
-                                    msg.SenderConnection.RemoteUniqueIdentifier);
-                    }
-                    catch (InvalidOperationException e)
-                    {
-                        // ignored because we make a new client below if there is none, which is when an InvalidOperationException is thrown
+                        if (c?.NetConnection == null || c.NetConnection.RemoteUniqueIdentifier == 0 ||
+                            msg.SenderConnection == null ||
+                            c.NetConnection.RemoteUniqueIdentifier != msg.SenderConnection.RemoteUniqueIdentifier)
+                            continue;
+                        client = c;
+                        break;
                     }
                 }
-                if (client == null) client = new Client(msg.SenderConnection);
+                if (client == null)
+                {
+                    logger.LogDebug("Client not found for remote ID " + msg.SenderConnection?.RemoteUniqueIdentifier + ", creating client. Current number of clients: " + Clients.Count());
+                    client = new Client(msg.SenderConnection);
+                }
                 //logger.LogInformation("Packet received - type: " + ((NetIncomingMessageType)msg.MessageType).ToString());
                 switch (msg.MessageType)
                 {
@@ -177,17 +173,22 @@ namespace GTAServer
                 return;
             }
 
+            client.DisplayName = connReq.DisplayName;
+            client.Name = connReq.Name;
+            client.GameVersion = connReq.GameVersion;
+            client.RemoteScriptVersion = (ScriptVersion)connReq.ScriptVersion;
+
             // If nicknames are disabled on the server, set the nickname to the player's social club name.
             if (!AllowNicknames)
             {
                 SendNotificationToPlayer(client,
                     $"Nicknames are disabled on this server. Your nickname has been set to {connReq.Name}");
-                connReq.DisplayName = connReq.Name;
+                client.DisplayName = client.Name;
             }
 
 
             logger.LogInformation(
-                $"New connection request: {connReq.DisplayName}@{msg.SenderEndPoint.Address.ToString()} | Game version: {connReq.GameVersion.ToString()} | Script version: {connReq.ScriptVersion.ToString()}");
+                $"New connection request: {client.DisplayName}@{msg.SenderEndPoint.Address.ToString()} | Game version: {client.GameVersion.ToString()} | Script version: {client.RemoteScriptVersion.ToString()}");
 
             var latestScriptVersion = Enum.GetValues(typeof(ScriptVersion)).Cast<ScriptVersion>().Last();
             if (!AllowOutdatedClients &&
@@ -199,15 +200,15 @@ namespace GTAServer
                 latestReadableScriptVersion = Regex.Replace(latestReadableScriptVersion, "_", ".",
                     RegexOptions.IgnoreCase);
 
-                logger.LogInformation($"Client {client.DisplayName} tried to connect with an outdated script version {connReq.ScriptVersion.ToString()} but the server requires {latestScriptVersion.ToString()}");
+                logger.LogInformation($"Client {client.DisplayName} tried to connect with an outdated script version {client.RemoteScriptVersion.ToString()} but the server requires {latestScriptVersion.ToString()}");
                 DenyConnect(client, $"Please update to version ${latestReadableScriptVersion} from http://bit.ly/gtacoop", true, msg);
                 return;
             }
-            else if ((ScriptVersion)connReq.ScriptVersion != latestScriptVersion)
+            else if (client.RemoteScriptVersion != latestScriptVersion)
             {
                 SendNotificationToPlayer(client, "You are currently on an outdated client. Please go to http://bit.ly/gtacoop and update.");
             }
-            else if ((ScriptVersion)connReq.ScriptVersion == ScriptVersion.VERSION_UNKNOWN)
+            else if (client.RemoteScriptVersion == ScriptVersion.VERSION_UNKNOWN)
             {
                 logger.LogInformation($"Client {client.DisplayName} tried to connect with an unknown script version (client too old?)");
                 DenyConnect(client, $"Unknown version. Please re-download GTACoop from http://bit.ly/gtacoop", true, msg);
@@ -227,12 +228,17 @@ namespace GTAServer
                 DenyConnect(client, "Wrong password.", true, msg);
             }
 
-            lock (Clients) if (Clients.Any(c => c.DisplayName == connReq.DisplayName))
+            lock (Clients)
+                if (Clients.Any(c => c.DisplayName == client.DisplayName))
                 {
                     DenyConnect(client, "A player already exists with the current display name.");
                 }
+                else
+                {
+                    Clients.Add(client);
+                }
 
-            client.ApplyConnectionRequest(connReq);
+
 
             var channelHail = _server.CreateMessage();
             channelHail.Write(GetChannelForClient(client));
