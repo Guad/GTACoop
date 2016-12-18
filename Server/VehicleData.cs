@@ -116,6 +116,10 @@ namespace GTAServer
         /// v0.9.3
         /// </summary>
         VERSION_0_9_3 = 8,
+        /// <summary>
+        /// v0.9.4
+        /// </summary>
+        VERSION_0_9_4 = 9
     }
 
     /// <summary>
