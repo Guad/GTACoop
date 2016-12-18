@@ -170,7 +170,7 @@ namespace GTACoOp
             _settingsMenu = new UIMenu("Co-oP", "CLIENT SETTINGS");
             _serverBrowserMenu = new UIMenu("Co-oP", "SERVER BROWSER");
             _playersMenu = new UIMenu("Co-oP", "PLAYER LIST");
-            _serverMenu = new UIMenu("Co-oP", "SERVER SETTINGS");
+            //_serverMenu = new UIMenu("Co-oP", "SERVER SETTINGS");
             //_playerMenu = new UIMenu("Co-oP", "PLAYER OPTIONS");
 
             var browserItem = new UIMenuItem("Server Browser");
@@ -258,8 +258,8 @@ namespace GTACoOp
             var settItem = new UIMenuItem("Client Settings");
             _mainMenu.BindMenuToItem(_settingsMenu, settItem);
 
-            var serverItem = new UIMenuItem("Server Settings");
-            _mainMenu.BindMenuToItem(_serverMenu, serverItem);
+            //var serverItem = new UIMenuItem("Server Settings");
+            //_mainMenu.BindMenuToItem(_serverMenu, serverItem);
 
             var playersItem = new UIMenuItem("Player List");
             _mainMenu.BindMenuToItem(_playersMenu, playersItem);
@@ -280,7 +280,7 @@ namespace GTACoOp
             _mainMenu.AddItem(portItem);
             _mainMenu.AddItem(passItem);
             _mainMenu.AddItem(settItem);
-            _mainMenu.AddItem(serverItem);
+            //_mainMenu.AddItem(serverItem);
             _mainMenu.AddItem(playersItem);
             _mainMenu.AddItem(aboutItem);
 
@@ -343,7 +343,7 @@ namespace GTACoOp
             hidePasswordsItem.CheckboxEvent += (item, check) =>
             {
                 PlayerSettings.HidePasswords = check;
-                _mainMenu.RefreshIndex();_settingsMenu.RefreshIndex();_serverMenu.RefreshIndex();
+                //_mainMenu.RefreshIndex();_settingsMenu.RefreshIndex();_serverMenu.RefreshIndex();
                 Util.SaveSettings(null);
             };
 
@@ -628,7 +628,7 @@ namespace GTACoOp
                 }
 
             };
-
+            /*
             _serverMenu.AddItem(serverNameItem);
             _serverMenu.AddItem(serverMaxPlayersItem);
             _serverMenu.AddItem(serverPortItem);
@@ -640,6 +640,7 @@ namespace GTACoOp
             _serverMenu.AddItem(serverAllowDisplayNamesItem);
             _serverMenu.AddItem(serverAutoStartItem);
             _serverMenu.AddItem(serverStartItem);
+            */
 
 
             _playersMenu.OnIndexChange += (sender, index) =>
@@ -660,13 +661,13 @@ namespace GTACoOp
 
             _mainMenu.RefreshIndex();
             _settingsMenu.RefreshIndex();
-            _serverMenu.RefreshIndex();
+            //_serverMenu.RefreshIndex();
 
             _menuPool.Add(_mainMenu);
             _menuPool.Add(_serverBrowserMenu);
             _menuPool.Add(_settingsMenu);
             _menuPool.Add(_playersMenu);
-            _menuPool.Add(_serverMenu);
+            //_menuPool.Add(_serverMenu);
             #endregion
 
             _debug = new DebugWindow();
@@ -1076,13 +1077,13 @@ namespace GTACoOp
                 if (_serverRunning)
                 {
                     //Program.ServerInstance.Tick();
-                    if(!_serverMenu.MenuItems[8].Text.Equals("Stop Server"))
-                        _serverMenu.MenuItems[8].Text = "Stop Server";
+                    //if(!_serverMenu.MenuItems[8].Text.Equals("Stop Server"))
+                        //_serverMenu.MenuItems[8].Text = "Stop Server";
                 }
                 else
                 {
-                    if (!_serverMenu.MenuItems[8].Text.Equals("Start Server"))
-                        _serverMenu.MenuItems[8].Text = "Start Server";
+                    //if (!_serverMenu.MenuItems[8].Text.Equals("Start Server"))
+                        //_serverMenu.MenuItems[8].Text = "Start Server";
                 }
                 if (display)
                 {
