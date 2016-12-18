@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 using System.Xml.Serialization;
 using GTA;
 using GTA.Native;
-using GTAServer;
 using Lidgren.Network;
 using ProtoBuf;
 
@@ -21,7 +20,7 @@ namespace GTACoOp
         
         // The following code is written for compat. for filterscripts/gamemodes/commands
         // that rely on these functions
-        public static GameServer ServerInstance { get; set; }
+        //public static GameServer ServerInstance { get; set; }
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool DeleteFile(string name);

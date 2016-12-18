@@ -14,7 +14,7 @@ using NativeUI;
 using Newtonsoft.Json;
 using ProtoBuf;
 using Control = GTA.Control;
-using GTAServer;
+//using GTAServer;
 using System.Text.RegularExpressions;
 using System.Globalization;
 using MaxMind.GeoIP2;
@@ -247,7 +247,7 @@ namespace GTACoOp
                         return;
                     }
 
-                    ConnectToServer(_clientIp);
+                    ConnectToServer(_clientIp, Port);
                 }
                 else
                 {
@@ -597,7 +597,7 @@ namespace GTACoOp
                 if (!_serverRunning)
                 {
                     //Program.ServerInstance = new GameServer(ServerSettings.Port, ServerSettings.Name, "freeroam");
-                    Program.ServerInstance = new GameServer
+                    /*Program.ServerInstance = new GameServer
                     {
                         Port = ServerSettings.Port,
                         Name = ServerSettings.Name,
@@ -609,7 +609,7 @@ namespace GTACoOp
                         BackupMasterServer = ServerSettings.BackupMasterServer,
                         MaxPlayers = ServerSettings.MaxPlayers,
                         AllowNickNames = ServerSettings.AllowNickNames
-                    };
+                    };*/
 
                     if (IsOnServer())
                     {
@@ -617,13 +617,13 @@ namespace GTACoOp
                     }
                     _serverRunning = true;
                     //string[] filterscripts = new string[] { };
-                    try { Program.ServerInstance.Start(ServerSettings.Filterscripts); } catch(Exception ex) { UI.Notify("Can't start server: " +ex.Message); }
+                    //try { Program.ServerInstance.Start(ServerSettings.Filterscripts); } catch(Exception ex) { UI.Notify("Can't start server: " +ex.Message); }
                     try { ConnectToServer("localhost", ServerSettings.Port); } catch (Exception ex) { UI.Notify("Can't connect to local server: " + ex.Message); }
                     UI.Notify("For others to access the server, you may have to port forward.");
                 }
                 else
                 {
-                    Program.ServerInstance.Stop();
+                    //Program.ServerInstance.Stop();
                     _serverRunning = false;
                 }
 
@@ -674,7 +674,7 @@ namespace GTACoOp
             if (PlayerSettings.AutoConnect && !String.IsNullOrWhiteSpace(PlayerSettings.LastIP) && PlayerSettings.LastPort != -1 && PlayerSettings.LastPort != 0) { 
                 ConnectToServer(PlayerSettings.LastIP.ToString(), PlayerSettings.LastPort);
             }else if(PlayerSettings.AutoStartServer){
-                Program.ServerInstance = new GameServer
+                /*Program.ServerInstance = new GameServer
                 {
                     Port = ServerSettings.Port,
                     Name = ServerSettings.Name,
@@ -685,7 +685,7 @@ namespace GTACoOp
                     MasterServer = ServerSettings.MasterServer,
                     MaxPlayers = ServerSettings.MaxPlayers,
                     AllowNickNames = ServerSettings.AllowNickNames
-                };
+                };*/
 
                 if (IsOnServer())
                 {
@@ -693,9 +693,9 @@ namespace GTACoOp
                 }
                 _serverRunning = true;
                 //string[] filterscripts = new string[] { };
-                Program.ServerInstance.Start(ServerSettings.Filterscripts);
+                /*Program.ServerInstance.Start(ServerSettings.Filterscripts);
                 ConnectToServer("localhost", ServerSettings.Port);
-                UI.Notify("For others to access the server, you may have to port forward.");
+                UI.Notify("For others to access the server, you may have to port forward.");*/
             }
         }
 
@@ -1075,7 +1075,7 @@ namespace GTACoOp
 
                 if (_serverRunning)
                 {
-                    Program.ServerInstance.Tick();
+                    //Program.ServerInstance.Tick();
                     if(!_serverMenu.MenuItems[8].Text.Equals("Stop Server"))
                         _serverMenu.MenuItems[8].Text = "Stop Server";
                 }

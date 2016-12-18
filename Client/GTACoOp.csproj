@@ -108,12 +108,6 @@
   <ItemGroup>
     <WCFMetadata Include="Service References\" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Server\GTAServer.csproj">
-      <Project>{559ee224-bf7b-49d8-9cee-11e6ba71fe4e}</Project>
-      <Name>GTAServer</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>
