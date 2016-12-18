@@ -399,7 +399,7 @@ namespace GTAServer
         /// <summary>
         /// Server-side script version
         /// </summary>
-        public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_9_4;
+        public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_9_3;
         /// <summary>
         /// Gamemode ServerScript object
         /// Note: ReSharper is suggesting we change this variable's name to 'Gamemode'
