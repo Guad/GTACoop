@@ -273,7 +273,7 @@ namespace GTACoOp
             {
                 UI.Notify("GTA V Coop mod by Guad, temporary continued by Bluscream and wolfmitchell.");
                 UI.Notify("Mod Version: " + ReadableScriptVersion());
-                UI.Notify("https://github.com/Bluscream/GTACoop/releases/latest");
+                UI.Notify("https://pydio.studiowolfree.com/public/gtacoop");
             };
 
             _mainMenu.AddItem(browserItem);
