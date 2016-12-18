@@ -213,3 +213,4 @@ ModelManifest.xml
 *.csproj
 *.csproj
 *.csproj
+gtaserver.core/serverSettings.xml
