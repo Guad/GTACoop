@@ -1,20 +1,24 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.IO;
 using System.Xml.Serialization;
 using Microsoft.Extensions.Logging;
 using GTAServer.PluginAPI;
+using SimpleConsoleLogger;
 
 namespace GTAServer
 {
-    public class Program
+    public class ServerManager
     {
         private static ServerConfiguration _gameServerConfiguration;
         private static ILogger _logger;
         private static IEnumerable<IPlugin> Plugins;
+        private static readonly string Location = System.AppContext.BaseDirectory;
+
         private static void CreateNeededFiles()
         {
-            if (!Directory.Exists("Plugins")) Directory.CreateDirectory("Plugins");
+            if (!Directory.Exists(Location + Path.DirectorySeparatorChar + "Plugins")) Directory.CreateDirectory(Location + Path.DirectorySeparatorChar + "Plugins");
         }
 
         private static void DoDebugWarning()
@@ -28,15 +32,17 @@ namespace GTAServer
         public static void Main(string[] args)
         {
             CreateNeededFiles();
+            
             Util.LoggerFactory = new LoggerFactory()
+                .AddSimpleConsole()
 #if DEBUG
-                .AddConsole(LogLevel.Trace)
+               // .AddConsole(LogLevel.Trace)
                 .AddDebug(); // this adds stuff to VS debug console
 #else
                 .AddConsole();
 #endif
-
-            _logger = Util.LoggerFactory.CreateLogger<Program>();
+            
+            _logger = Util.LoggerFactory.CreateLogger<ServerManager>();
             DoDebugWarning();
 
             _logger.LogInformation("Reading server configuration...");
