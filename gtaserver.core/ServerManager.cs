@@ -34,14 +34,14 @@ namespace GTAServer
             CreateNeededFiles();
             
             Util.LoggerFactory = new LoggerFactory()
-                .AddSimpleConsole()
 #if DEBUG
-               // .AddConsole(LogLevel.Trace)
+                .AddSimpleConsole()
                 .AddDebug(); // this adds stuff to VS debug console
 #else
-                .AddConsole();
+                .AddSimpleConsole((s,l) => (int)l >= (int)LogLevel.Information);
+                //.AddConsole();
 #endif
-            
+
             _logger = Util.LoggerFactory.CreateLogger<ServerManager>();
             DoDebugWarning();
 

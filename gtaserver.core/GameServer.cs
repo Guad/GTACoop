@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using GTAServer.ProtocolMessages;
 using Lidgren.Network;
 using Microsoft.Extensions.Logging;
+using GTAServer.PluginAPI.Events;
 
 namespace GTAServer
 {
@@ -105,6 +107,13 @@ namespace GTAServer
                 {
                     logger.LogDebug("Client not found for remote ID " + msg.SenderConnection?.RemoteUniqueIdentifier + ", creating client. Current number of clients: " + Clients.Count());
                     client = new Client(msg.SenderConnection);
+                }
+                var pluginPacketHandlerResult = PacketEvents.IncomingPacket(client, msg);
+                msg = pluginPacketHandlerResult.Msg;
+                if (!pluginPacketHandlerResult.ContinueServerProc)
+                {
+                    _server.Recycle(msg);
+                    return;
                 }
                 //logger.LogInformation("Packet received - type: " + ((NetIncomingMessageType)msg.MessageType).ToString());
                 switch (msg.MessageType)
