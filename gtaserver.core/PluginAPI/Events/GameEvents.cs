@@ -93,5 +93,33 @@ namespace GTAServer.PluginAPI.Events
             }
             return result;
         }
+
+        /// <summary>
+        /// Called on every NPC vehicle update/creation
+        /// </summary>
+        public static List<Func<Client, VehicleData, PluginResponse<VehicleData>>> OnNpcVehicleDataUpdate
+                = new List<Func<Client, VehicleData, PluginResponse<VehicleData>>>();
+        /// <summary>
+        /// Internal method. Triggers OnNpcVehicleDataUpdate
+        /// </summary>
+        /// <param name="c">Client who sent the update</param>
+        /// <param name="v">PedData object</param>
+        /// <returns>A PluginResponse, with the ability to rewrite the received data.</returns>
+        public static PluginResponse<VehicleData> NpcVehicleDataUpdate(Client c, VehicleData v)
+        {
+            var result = new PluginResponse<VehicleData>()
+            {
+                ContinuePluginProc = true,
+                ContinueServerProc = true,
+                Data = v
+            };
+            foreach (var f in OnNpcVehicleDataUpdate)
+            {
+                result = f(c, v);
+                if (!result.ContinuePluginProc) return result;
+                v = result.Data;
+            }
+            return result;
+        }
     }
 }

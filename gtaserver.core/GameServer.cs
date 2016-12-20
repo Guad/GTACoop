@@ -441,6 +441,10 @@ namespace GTAServer
                         var pedPosData = Util.DeserializeBinary<PedData>(msg.ReadBytes(len));
                         if (pedPosData != null)
                         {
+                            var pedPluginResult = GameEvents.PedDataUpdate(client, pedPosData);
+                            if (!pedPluginResult.ContinueServerProc) return;
+                            pedPosData = pedPluginResult.Data;
+
                             pedPosData.Id = client.NetConnection.RemoteUniqueIdentifier;
                             pedPosData.Name = client.DisplayName;
                             pedPosData.Latency = client.Latency;
@@ -457,8 +461,13 @@ namespace GTAServer
                     {
                         var len = msg.ReadInt32();
                         var vehData = Util.DeserializeBinary<VehicleData>(msg.ReadBytes(len));
+
                         if (vehData != null)
                         {
+                            var pluginVehData = GameEvents.NpcVehicleDataUpdate(client, vehData);
+                            if (!pluginVehData.ContinueServerProc) return;
+                            vehData = pluginVehData.Data;
+
                             vehData.Id = client.NetConnection.RemoteUniqueIdentifier;
                             SendToAll(vehData, PacketType.NpcVehPositionData, false, client);
                         }
