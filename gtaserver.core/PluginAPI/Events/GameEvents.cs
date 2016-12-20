@@ -20,7 +20,7 @@ namespace GTAServer.PluginAPI.Events
         /// </summary>
         /// <param name="c">Client who sent the chat message</param>
         /// <param name="d">ChatData object</param>
-        /// <returns></returns>
+        /// <returns>A PluginResponse, with the ability to rewrite the received message.</returns>
         public static PluginResponse<ChatData> ChatMessage(Client c, ChatData d)
         {
             var result = new PluginResponse<ChatData>()
@@ -38,6 +38,32 @@ namespace GTAServer.PluginAPI.Events
             return result;
         }
 
-       
+        /// <summary>
+        /// Called on every vehicle update (or vehicle creation)
+        /// </summary>
+        public static List<Func<Client, VehicleData, PluginResponse<VehicleData>>> OnVehicleDataUpdate
+               = new List<Func<Client, VehicleData, PluginResponse<VehicleData>>>();
+        /// <summary>
+        /// Internal method. Triggers OnVehicleDataUpdate
+        /// </summary>
+        /// <param name="c">Client who sent the vehicle position update</param>
+        /// <param name="v">VehicleData object</param>
+        /// <returns>A PluginResponse, with the ability to rewrite the received data.</returns>
+        public static PluginResponse<VehicleData> VehicleDataUpdate(Client c, VehicleData v)
+        {
+            var result = new PluginResponse<VehicleData>
+            {
+                ContinuePluginProc = true,
+                ContinueServerProc = true,
+                Data = v
+            };
+            foreach (var f in OnVehicleDataUpdate)
+            {
+                result = f(c, v);
+                if (!result.ContinuePluginProc) return result;
+                v = result.Data;
+            }
+            return result;
+        }
     }
 }

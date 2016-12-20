@@ -394,7 +394,8 @@ namespace GTAServer
                         {
                             var chatPluginResult = GameEvents.ChatMessage(client, chatData);
                             if (!chatPluginResult.ContinueServerProc) return;
-                            
+                            chatData = chatPluginResult.Data;
+
                             var chatMsg = new ChatMessage(chatData, client);
                             if (!chatMsg.Suppress)
                             {
@@ -418,6 +419,10 @@ namespace GTAServer
                         var vehicleData = Util.DeserializeBinary<VehicleData>(msg.ReadBytes(len));
                         if (vehicleData != null)
                         {
+                            var vehiclePluginResult = GameEvents.VehicleDataUpdate(client, vehicleData);
+                            if (!vehiclePluginResult.ContinueServerProc) return;
+                            vehicleData = vehiclePluginResult.Data;
+
                             vehicleData.Id = client.NetConnection.RemoteUniqueIdentifier;
                             vehicleData.Name = client.Name;
                             vehicleData.Latency = client.Latency;
