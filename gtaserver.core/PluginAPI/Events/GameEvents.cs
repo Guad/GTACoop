@@ -65,5 +65,33 @@ namespace GTAServer.PluginAPI.Events
             }
             return result;
         }
+
+        /// <summary>
+        /// Called on every pedestrian update/creation
+        /// </summary>
+        public static List<Func<Client, PedData, PluginResponse<PedData>>> OnPedDataUpdate 
+                = new List<Func<Client, PedData, PluginResponse<PedData>>>();
+        /// <summary>
+        /// Internal method. Triggers OnPedDataUpdate
+        /// </summary>
+        /// <param name="c">Client who sent the update</param>
+        /// <param name="p">PedData object</param>
+        /// <returns>A PluginResponse, with the ability to rewrite the received data.</returns>
+        public static PluginResponse<PedData> PedDataUpdate(Client c, PedData p)
+        {
+            var result = new PluginResponse<PedData>()
+            {
+                ContinuePluginProc = true,
+                ContinueServerProc = true,
+                Data = p
+            };
+            foreach (var f in OnPedDataUpdate)
+            {
+                result = f(c, p);
+                if (!result.ContinuePluginProc) return result;
+                p = result.Data;
+            }
+            return result;
+        }
     }
 }
