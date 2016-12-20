@@ -90,22 +90,22 @@ namespace GTAServer.PluginAPI.Events
         /// <summary>
         /// Called when a new connection approval packet is received.. Return false to cancel further processing by the server and other plugins.
         /// </summary>
-        public static List<Func<Client, NetIncomingMessage, PluginResponse<NetIncomingMessage>>> OnIncomingConnectionApproval = new List<Func<Client, NetIncomingMessage, PluginResponse<NetIncomingMessage>>>();
+        public static List<Func<Client, NetIncomingMessage, PluginResponse<NetIncomingMessage,bool>>> OnIncomingConnectionApproval = new List<Func<Client, NetIncomingMessage, PluginResponse<NetIncomingMessage,bool>>>();
         /// <summary>
         /// Internal method. Used to trigger OnIncomingPacket.
         /// </summary>
         /// <param name="c">Client who the packet is from.</param>
         /// <param name="msg">Packet contents</param>
         /// <returns></returns>
-        public static PluginResponse<NetIncomingMessage> IncomingConnectionApproval(Client c, NetIncomingMessage msg)
+        public static PluginResponse<NetIncomingMessage,bool> IncomingConnectionApproval(Client c, NetIncomingMessage msg)
         {
-            var result = new PluginResponse<NetIncomingMessage>()
+            var result = new PluginResponse<NetIncomingMessage,bool>()
             {
                 ContinuePluginProc = true,
                 ContinueServerProc = true,
                 Data = msg
             };
-            foreach (var f in OnIncomingPacket)
+            foreach (var f in OnIncomingConnectionApproval)
             {
                 result = f(c, msg);
                 if (!result.ContinuePluginProc) return result;
