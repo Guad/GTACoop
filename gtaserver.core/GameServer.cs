@@ -163,13 +163,15 @@ namespace GTAServer
                         client.Latency = msg.ReadFloat();
                         break;
                     case NetIncomingMessageType.ConnectionApproval:
-                        pluginPacketHandlerResult = PacketEvents.IncomingConnectionApproval(client, msg);
-                        msg = pluginPacketHandlerResult.Data;
-                        if (!pluginPacketHandlerResult.ContinueServerProc)
+                        var connectionApprovalPacketResult = PacketEvents.IncomingConnectionApproval(client, msg);
+                        msg = connectionApprovalPacketResult.Data;
+                        if (!connectionApprovalPacketResult.ContinueServerProc)
                         {
                             _server.Recycle(msg);
                             return;
                         }
+                        if (!connectionApprovalPacketResult.Data2)
+                            DenyConnect(client, "Denied by plugin", true, msg, 0);
                         HandleClientConnectionApproval(client, msg);
                         break;
                     case NetIncomingMessageType.StatusChanged:
@@ -183,6 +185,13 @@ namespace GTAServer
                         HandleClientStatusChange(client, msg);
                         break;
                     case NetIncomingMessageType.DiscoveryRequest:
+                        pluginPacketHandlerResult = PacketEvents.IncomingDiscoveryRequest(client, msg);
+                        msg = pluginPacketHandlerResult.Data;
+                        if (!pluginPacketHandlerResult.ContinueServerProc)
+                        {
+                            _server.Recycle(msg);
+                            return;
+                        }
                         HandleClientDiscoveryRequest(client, msg);
                         break;
                     case NetIncomingMessageType.Data:
@@ -191,7 +200,7 @@ namespace GTAServer
                     default:
                         // We shouldn't get packets reaching this, so throw warnings when it happens.
                         logger.LogWarning("Unknown packet received: " +
-                                          ((NetIncomingMessageType)msg.MessageType).ToString());
+                                          msg.MessageType.ToString());
                         break;
 
                 }

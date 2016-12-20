@@ -131,8 +131,8 @@ namespace GTAServer.PluginAPI.Events
         /// <summary>
         /// Internal method. Used to trigger OnIncomingStatusChange
         /// </summary>
-        /// <param name="c"></param>
-        /// <param name="msg"></param>
+        /// <param name="c">Client who sent the status change (or is affected by the change)</param>
+        /// <param name="msg">Status change message for the client</param>
         /// <returns>A PluginResponse, with the ability to rewrite the emssage.</returns>
         public static PluginResponse<NetIncomingMessage> IncomingStatusChange(Client c, NetIncomingMessage msg)
         {
@@ -151,6 +151,32 @@ namespace GTAServer.PluginAPI.Events
             return result;
         }
 
-
+        /// <summary>
+        /// Called when a new discovery request is received.
+        /// </summary>
+        public static List<Func<Client, NetIncomingMessage, PluginResponse<NetIncomingMessage>>> OnIncomingDiscoveryRequest =
+                      new List<Func<Client, NetIncomingMessage, PluginResponse<NetIncomingMessage>>>();
+        /// <summary>
+        /// Internal method. Used to trigger OnIncomingDiscoveryRequest
+        /// </summary>
+        /// <param name="c">Client who sent the discovery request</param>
+        /// <param name="msg">Discovery request packet received from client</param>
+        /// <returns>A PluginResponse, with the ability to rewrite the message</returns>
+        public static PluginResponse<NetIncomingMessage> IncomingDiscoveryRequest(Client c, NetIncomingMessage msg)
+        {
+            var result = new PluginResponse<NetIncomingMessage>()
+            {
+                ContinuePluginProc = true,
+                ContinueServerProc = true,
+                Data = msg
+            };
+            foreach (var f in OnIncomingDiscoveryRequest)
+            {
+                result = f(c, msg);
+                if (!result.ContinuePluginProc) return result;
+                msg = result.Data;
+            }
+            return result;
+        }
     }
 }
