@@ -173,6 +173,13 @@ namespace GTAServer
                         HandleClientConnectionApproval(client, msg);
                         break;
                     case NetIncomingMessageType.StatusChanged:
+                        pluginPacketHandlerResult = PacketEvents.IncomingStatusChange(client, msg);
+                        msg = pluginPacketHandlerResult.Data;
+                        if (!pluginPacketHandlerResult.ContinueServerProc)
+                        {
+                            _server.Recycle(msg);
+                            return;
+                        }
                         HandleClientStatusChange(client, msg);
                         break;
                     case NetIncomingMessageType.DiscoveryRequest:
