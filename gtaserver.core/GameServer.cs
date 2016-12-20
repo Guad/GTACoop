@@ -392,8 +392,10 @@ namespace GTAServer
                         var chatData = Util.DeserializeBinary<ChatData>(msg.ReadBytes(len));
                         if (chatData != null)
                         {
+                            var chatPluginResult = GameEvents.ChatMessage(client, chatData);
+                            if (!chatPluginResult.ContinueServerProc) return;
+                            
                             var chatMsg = new ChatMessage(chatData, client);
-
                             if (!chatMsg.Suppress)
                             {
                                 chatData.Id = client.NetConnection.RemoteUniqueIdentifier;
