@@ -108,13 +108,16 @@ namespace GTAServer
                     logger.LogDebug("Client not found for remote ID " + msg.SenderConnection?.RemoteUniqueIdentifier + ", creating client. Current number of clients: " + Clients.Count());
                     client = new Client(msg.SenderConnection);
                 }
+
+                // Plugin event: OnIncomingPacket
                 var pluginPacketHandlerResult = PacketEvents.IncomingPacket(client, msg);
-                msg = pluginPacketHandlerResult.Msg;
+                msg = pluginPacketHandlerResult.Data;
                 if (!pluginPacketHandlerResult.ContinueServerProc)
                 {
                     _server.Recycle(msg);
                     return;
                 }
+
                 //logger.LogInformation("Packet received - type: " + ((NetIncomingMessageType)msg.MessageType).ToString());
                 switch (msg.MessageType)
                 {
@@ -123,12 +126,22 @@ namespace GTAServer
                         // ReSharper disable once ConvertIfStatementToSwitchStatement
                         if (ucType == "ping")
                         {
+                            if (!PacketEvents.Ping(client, msg).ContinueServerProc)
+                            {
+                                _server.Recycle(msg);
+                                return;
+                            }
                             logger.LogInformation("Ping received from " + msg.SenderEndPoint.Address.ToString());
                             var reply = _server.CreateMessage("pong");
                             _server.SendMessage(reply, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
                         }
                         else if (ucType == "query")
                         {
+                            if (!PacketEvents.Query(client, msg).ContinueServerProc)
+                            {
+                                _server.Recycle(msg);
+                                return;
+                            }
                             var playersOnline = 0;
                             lock (Clients) playersOnline = Clients.Count;
                             logger.LogInformation("Query received from " + msg.SenderEndPoint.Address.ToString());
@@ -150,6 +163,13 @@ namespace GTAServer
                         client.Latency = msg.ReadFloat();
                         break;
                     case NetIncomingMessageType.ConnectionApproval:
+                        pluginPacketHandlerResult = PacketEvents.IncomingConnectionApproval(client, msg);
+                        msg = pluginPacketHandlerResult.Data;
+                        if (!pluginPacketHandlerResult.ContinueServerProc)
+                        {
+                            _server.Recycle(msg);
+                            return;
+                        }
                         HandleClientConnectionApproval(client, msg);
                         break;
                     case NetIncomingMessageType.StatusChanged:

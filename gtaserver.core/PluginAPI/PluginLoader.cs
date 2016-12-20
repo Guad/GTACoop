@@ -14,7 +14,7 @@ namespace GTAServer.PluginAPI
         private static readonly string Location = System.AppContext.BaseDirectory;
 
         private static ILogger _logger;
-        public static IEnumerable<IPlugin> LoadPlugin(string targetAssemblyName)
+        public static List<IPlugin> LoadPlugin(string targetAssemblyName)
         {
             _logger = Util.LoggerFactory.CreateLogger<GameServer>();
             var assemblyName = Location + Path.DirectorySeparatorChar + "Plugins" + Path.DirectorySeparatorChar + targetAssemblyName + ".dll";

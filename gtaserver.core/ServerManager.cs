@@ -5,6 +5,7 @@ using System.IO;
 using System.Xml.Serialization;
 using Microsoft.Extensions.Logging;
 using GTAServer.PluginAPI;
+using ProtoBuf.Meta;
 using SimpleConsoleLogger;
 
 namespace GTAServer
@@ -13,7 +14,7 @@ namespace GTAServer
     {
         private static ServerConfiguration _gameServerConfiguration;
         private static ILogger _logger;
-        private static IEnumerable<IPlugin> Plugins;
+        private static List<IPlugin> Plugins=new List<IPlugin>();
         private static readonly string Location = System.AppContext.BaseDirectory;
 
         private static void CreateNeededFiles()
@@ -63,8 +64,16 @@ namespace GTAServer
 
 
             // Plugin Code
-            _logger.LogInformation("loading test plugin");
-            Plugins = PluginLoader.LoadPlugin("TestPlugin");
+            _logger.LogInformation("Loading plugins");
+            //Plugins = PluginLoader.LoadPlugin("TestPlugin");
+            foreach (var pluginName in _gameServerConfiguration.ServerPlugins)
+            {
+                foreach (var loadedPlugin in PluginLoader.LoadPlugin(pluginName))
+                {
+                    Plugins.Add(loadedPlugin);
+                }
+            }
+
             _logger.LogInformation("Plugins loaded. Enabling plugins...");
             foreach (var plugin in Plugins)
             {

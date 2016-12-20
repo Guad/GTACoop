@@ -7,28 +7,14 @@ using Lidgren.Network;
 
 namespace GTAServer.PluginAPI.Events
 {
-    public class PluginPacketHandler
-    {
-        /// <summary>
-        /// If the packet should continue being processed by other plugins
-        /// </summary>
-        public bool ContinuePluginProc;
-        /// <summary>
-        /// If the packet should continue being processed by the server
-        /// </summary>
-        public bool ContinueServerProc;
 
-        /// <summary>
-        /// Message received. Passed on to the next thing in the chain (or the server)
-        /// </summary>
-        public NetIncomingMessage Msg;
-    }
+
     public static class PacketEvents
     {
         /// <summary>
         /// Called when a new packet is received. Return false to cancel further processing by the server and other plugins.
         /// </summary>
-        public static List<Func<Client, NetIncomingMessage, PluginPacketHandler>> OnIncomingPacket = new List<Func<Client, NetIncomingMessage, PluginPacketHandler>>();
+        public static List<Func<Client, NetIncomingMessage, PluginResponse<NetIncomingMessage>>> OnIncomingPacket = new List<Func<Client, NetIncomingMessage, PluginResponse<NetIncomingMessage>>>();
 
         /// <summary>
         /// Internal method. Used to trigger OnIncomingPacket.
@@ -36,19 +22,94 @@ namespace GTAServer.PluginAPI.Events
         /// <param name="c">Client who the packet is from.</param>
         /// <param name="msg">Packet contents</param>
         /// <returns></returns>
-        public static PluginPacketHandler IncomingPacket(Client c, NetIncomingMessage msg)
+        public static PluginResponse<NetIncomingMessage> IncomingPacket(Client c, NetIncomingMessage msg)
         {
-            var result = new PluginPacketHandler()
+            var result = new PluginResponse<NetIncomingMessage>()
             {
                 ContinuePluginProc = true,
                 ContinueServerProc = true,
-                Msg = msg
+                Data = msg
             };
             foreach (var f in OnIncomingPacket)
             {
                 result = f(c, msg);
                 if (!result.ContinuePluginProc) return result;
-                msg = result.Msg;
+                msg = result.Data;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Called whenever a ping packet is received.
+        /// </summary>
+        public static List<Func<Client, NetIncomingMessage,PluginResponse>> OnPing = new List<Func<Client, NetIncomingMessage, PluginResponse>>();
+        /// <summary>
+        /// Internal method. Used to trigger OnPing.
+        /// </summary>
+        /// <param name="c">Client who the packet is from</param>
+        /// <param name="msg">Packet contents</param>
+        public static PluginResponse Ping(Client c, NetIncomingMessage msg)
+        {
+            var result = new PluginResponse()
+            {
+                ContinuePluginProc = true,
+                ContinueServerProc = true,
+            };
+            foreach (var f in OnPing)
+            {
+                result = f(c, msg);
+                if (!result.ContinuePluginProc) return result;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Called whenever a query packet is received.
+        /// </summary>
+        public static List<Func<Client, NetIncomingMessage, PluginResponse>> OnQuery = new List<Func<Client, NetIncomingMessage, PluginResponse>>();
+        /// <summary>
+        /// Internal method. Used to trigger OnQuery.
+        /// </summary>
+        /// <param name="c">Client who the packet is from</param>
+        /// <param name="msg">Packet contents</param>
+        public static PluginResponse Query(Client c, NetIncomingMessage msg)
+        {
+            var result = new PluginResponse()
+            {
+                ContinuePluginProc = true,
+                ContinueServerProc = true,
+            };
+            foreach (var f in OnQuery)
+            {
+                result = f(c, msg);
+                if (!result.ContinuePluginProc) return result;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Called when a new connection approval packet is received.. Return false to cancel further processing by the server and other plugins.
+        /// </summary>
+        public static List<Func<Client, NetIncomingMessage, PluginResponse<NetIncomingMessage>>> OnIncomingConnectionApproval = new List<Func<Client, NetIncomingMessage, PluginResponse<NetIncomingMessage>>>();
+        /// <summary>
+        /// Internal method. Used to trigger OnIncomingPacket.
+        /// </summary>
+        /// <param name="c">Client who the packet is from.</param>
+        /// <param name="msg">Packet contents</param>
+        /// <returns></returns>
+        public static PluginResponse<NetIncomingMessage> IncomingConnectionApproval(Client c, NetIncomingMessage msg)
+        {
+            var result = new PluginResponse<NetIncomingMessage>()
+            {
+                ContinuePluginProc = true,
+                ContinueServerProc = true,
+                Data = msg
+            };
+            foreach (var f in OnIncomingPacket)
+            {
+                result = f(c, msg);
+                if (!result.ContinuePluginProc) return result;
+                msg = result.Data;
             }
             return result;
         }
