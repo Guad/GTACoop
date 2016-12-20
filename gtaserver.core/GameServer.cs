@@ -479,6 +479,10 @@ namespace GTAServer
                         var pedData = Util.DeserializeBinary<PedData>(msg.ReadBytes(len));
                         if (pedData != null)
                         {
+                            var pluginPedData = GameEvents.NpcPedDataUpdate(client, pedData);
+                            if (!pluginPedData.ContinueServerProc) return;
+                            pedData = pluginPedData.Data;
+
                             pedData.Id = msg.SenderConnection.RemoteUniqueIdentifier;
                         }
                         SendToAll(pedData, PacketType.NpcPedPositionData, false, client);

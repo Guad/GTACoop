@@ -121,5 +121,26 @@ namespace GTAServer.PluginAPI.Events
             }
             return result;
         }
+
+
+        public static List<Func<Client, PedData, PluginResponse<PedData>>> OnNpcPedDataUpdate
+                = new List<Func<Client, PedData, PluginResponse<PedData>>>();
+
+        public static PluginResponse<PedData> NpcPedDataUpdate(Client c, PedData p)
+        {
+            var result = new PluginResponse<PedData>()
+            {
+                ContinuePluginProc = true,
+                ContinueServerProc = true,
+                Data = p
+            };
+            foreach (var f in OnNpcPedDataUpdate)
+            {
+                result = f(c, p);
+                if (!result.ContinuePluginProc) return result;
+                p = result.Data;
+            }
+            return result;
+        }
     }
 }
