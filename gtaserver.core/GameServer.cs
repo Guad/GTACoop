@@ -195,6 +195,13 @@ namespace GTAServer
                         HandleClientDiscoveryRequest(client, msg);
                         break;
                     case NetIncomingMessageType.Data:
+                        pluginPacketHandlerResult = PacketEvents.IncomingData(client, msg);
+                        msg = pluginPacketHandlerResult.Data;
+                        if (!pluginPacketHandlerResult.ContinueServerProc)
+                        {
+                            _server.Recycle(msg);
+                            return;
+                        }
                         HandleClientIncomingData(client, msg);
                         break;
                     default:

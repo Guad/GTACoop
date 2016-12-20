@@ -178,5 +178,34 @@ namespace GTAServer.PluginAPI.Events
             }
             return result;
         }
+
+        /// <summary>
+        /// Called when a new data packet is received (most game events)
+        /// </summary>
+        public static List<Func<Client, NetIncomingMessage, PluginResponse<NetIncomingMessage>>> OnIncomingData =
+                  new List<Func<Client, NetIncomingMessage, PluginResponse<NetIncomingMessage>>>();
+
+        /// <summary>
+        /// Internal method. Used to trigger OnIncomingData
+        /// </summary>
+        /// <param name="c">Client who sent the data</param>
+        /// <param name="msg">Data packet itself</param>
+        /// <returns>A PluginResponse, with the ability to rewrite the message</returns>
+        public static PluginResponse<NetIncomingMessage> IncomingData(Client c, NetIncomingMessage msg)
+        {
+            var result = new PluginResponse<NetIncomingMessage>()
+            {
+                ContinueServerProc = true,
+                ContinuePluginProc = true,
+                Data = msg,
+            };
+            foreach (var f in OnIncomingData)
+            {
+                result = f(c, msg);
+                if (!result.ContinuePluginProc) return result;
+                msg = result.Data;
+            }
+            return result;
+        }
     }
 }
