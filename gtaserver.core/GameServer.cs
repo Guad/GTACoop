@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Runtime.Loader;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using GTAServer.PluginAPI;
 using GTAServer.ProtocolMessages;
@@ -42,7 +44,7 @@ namespace GTAServer
         private NetServer _server;
         private ILogger logger;
         private Dictionary<string, Action<object>> _callbacks = new Dictionary<string, Action<object>>();
-
+        private HttpClient httpClient = new HttpClient();
         public GameServer(int port, string name, string gamemodeName, bool isDebug)
         {
             logger = Util.LoggerFactory.CreateLogger<GameServer>();
@@ -109,8 +111,31 @@ namespace GTAServer
             if (DebugMode) return;
             logger.LogDebug("Announcing to master server");
             _lastAnnounceDateTime = DateTime.Now;
-            logger.LogDebug("Server announcer not implemented");
-            // TODO: implement server announcing
+            httpClient.BaseAddress = new Uri(MasterServer);
+            var a = httpClient.PutAsync("", new StringContent(Port.ToString()));
+            a.Start();
+            a.Wait();
+            try
+            {
+                a.Result.EnsureSuccessStatusCode();
+            }
+            catch (Exception e)
+            {
+                logger.LogError("Error when announcing to primary master server: " + e);
+            }
+
+            httpClient.BaseAddress = new Uri(BackupMasterServer);
+            a = httpClient.PutAsync("", new StringContent(Port.ToString()));
+            a.Start();
+            a.Wait();
+            try
+            {
+                a.Result.EnsureSuccessStatusCode();
+            }
+            catch (Exception e)
+            {
+                logger.LogError("Error when announcing to backup master server: " + e);
+            }
         }
 
         public void Tick()
@@ -767,7 +792,7 @@ namespace GTAServer
             obj.Id = salt;
             obj.Arguments = ParseNativeArguments(arguments);
             var bin = Util.SerializeBinary(obj);
-            var msg = _server.CreateMessage(arguments);
+            var msg = _server.CreateMessage();
             msg.Write((int)PacketType.NativeCall);
             msg.Write(bin.Length);
             msg.Write(bin);
@@ -878,13 +903,13 @@ namespace GTAServer
 
         public void GetPlayerHealthg(Client player, Action<object> callback, string salt = "salt") => 
             GetNativeCallFromPlayer(player, salt, 0xEEF059FAD016D209, new IntArgument(),
-                callback, new LocalPlayerArgument()););
+                callback, new LocalPlayerArgument());
 
         public void SetNightVisionForPlayer(Client player, bool status) =>
             SendNativeCallToPlayer(player, 0x18F621F7A5B1F85D, status);
 
         public void SetNightVisionForAll(Client player, bool status) =>
-            SendNativeCallToAll(player, 0x18F621F7A5B1F85D, status);
+            SendNativeCallToAll(0x18F621F7A5B1F85D, status);
 
         public void IsNightVisionActive(Client player, Action<object> callback, string salt = "salt") =>
             GetNativeCallFromPlayer(player, salt, 0x2202A3F42C8E5F79, new BooleanArgument(), 

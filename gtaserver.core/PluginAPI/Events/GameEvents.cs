@@ -10,6 +10,16 @@ namespace GTAServer.PluginAPI.Events
     public static class GameEvents
     {
         /// <summary>
+        /// Called on every tick.
+        /// </summary>
+        public static List<Action<int>> OnTick = new List<Action<int>>();
+        /// <summary>
+        /// Internal method. Triggers OnTick.
+        /// </summary>
+        /// <param name="t">Current tick.</param>
+        public static void Tick(int t) => OnTick.ForEach(f => f(t));
+
+        /// <summary>
         /// Called on every chat message. For commands, add an element to the dictionary GameServer.Commands
         /// </summary>
         public static List<Func<Client, ChatData, PluginResponse<ChatData>>> OnChatMessage
