@@ -45,6 +45,8 @@ namespace GTAServer
         private ILogger logger;
         private Dictionary<string, Action<object>> _callbacks = new Dictionary<string, Action<object>>();
         private HttpClient httpClient = new HttpClient();
+        private int CurrentTick = 0;
+
         public GameServer(int port, string name, string gamemodeName, bool isDebug)
         {
             logger = Util.LoggerFactory.CreateLogger<GameServer>();
@@ -140,6 +142,9 @@ namespace GTAServer
 
         public void Tick()
         {
+            CurrentTick++;
+            GameEvents.Tick(CurrentTick);
+
             if (AnnounceSelf && DateTime.Now.Subtract(_lastAnnounceDateTime).TotalMinutes >= 5)
             {
                 AnnounceToMaster();
