@@ -41,6 +41,7 @@ namespace GTAServer
         private DateTime _lastAnnounceDateTime;
         private NetServer _server;
         private ILogger logger;
+        private Dictionary<string, Action<object>> _callbacks = new Dictionary<string, Action<object>>();
 
         public GameServer(int port, string name, string gamemodeName, bool isDebug)
         {
@@ -560,7 +561,7 @@ namespace GTAServer
                     {
                         var len = msg.ReadInt32();
                         var nativeResponse = Util.DeserializeBinary<NativeResponse>(msg.ReadBytes(len));
-                        if (nativeResponse == null) return; // TODO: check if there is a callback.
+                        if (nativeResponse == null || !_callbacks.ContainsKey(nativeResponse.Id)) return;
                         object response = nativeResponse.Response;
                         if (response is IntArgument)
                         {
@@ -592,7 +593,8 @@ namespace GTAServer
                                 Z = tmp.Z
                             };
                         }
-                        // TODO: call the callback (if there is one) and remove it
+                        _callbacks[nativeResponse.Id].Invoke(response);
+                        _callbacks.Remove(nativeResponse.Id);
                     }
                     break;
                 case PacketType.PlayerSpawned:
@@ -753,6 +755,25 @@ namespace GTAServer
             _server.SendToAll(msg, NetDeliveryMethod.ReliableOrdered);
         }
 
+        public void GetNativeCallFromPlayer(Client player, string salt, ulong hash, NativeArgument returnType,
+            Action<object> callback, params object[] arguments)
+        {
+            var obj = new NativeData()
+            {
+                Hash = hash,
+                ReturnType = returnType
+            };
+            salt = Environment.TickCount.ToString() + salt + player.NetConnection.RemoteUniqueIdentifier.ToString();
+            obj.Id = salt;
+            obj.Arguments = ParseNativeArguments(arguments);
+            var bin = Util.SerializeBinary(obj);
+            var msg = _server.CreateMessage(arguments);
+            msg.Write((int) PacketType.NativeCall);
+            msg.Write(bin.Length);
+            msg.Write(bin);
+            _callbacks.Add(salt, callback);
+            player.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelForClient(player));
+        }
         // Notification stuff
         public void SendNotificationToPlayer(Client player, string message, bool flashing = false)
         {
