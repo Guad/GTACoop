@@ -65,6 +65,7 @@ namespace GTAServer
             {
                 Password = _gameServerConfiguration.Password,
                 MasterServer = _gameServerConfiguration.PrimaryMasterServer,
+                BackupMasterServer = _gameServerConfiguration.BackupMasterServer,
                 AnnounceSelf = _gameServerConfiguration.AnnounceSelf,
                 AllowNicknames = _gameServerConfiguration.AllowNicknames,
                 AllowOutdatedClients = _gameServerConfiguration.AllowOutdatedClients,
