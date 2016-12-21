@@ -10,7 +10,7 @@ namespace GTAServer.PluginAPI.Events
     public static class GameEvents
     {
         /// <summary>
-        /// Called on every chat message. Currently the only way to implement a command (a better way is coming, I promise!)
+        /// Called on every chat message. For commands, add an element to the dictionary GameServer.Commands
         /// </summary>
         public static List<Func<Client, ChatData, PluginResponse<ChatData>>> OnChatMessage
                 = new List<Func<Client, ChatData, PluginResponse<ChatData>>>();

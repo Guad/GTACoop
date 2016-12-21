@@ -22,7 +22,7 @@ namespace GTAServer
         public List<Client> Clients { get; set; }
         public int MaxPlayers { get; set; }
         public int Port { get; set; }
-        public string GamemodeName { get; set; } // This is only what is sent to the client. No GM loading is done yet.
+        public string GamemodeName { get; set; }
         public string Name { get; set; }
         public string Password { get; set; }
         public bool PasswordProtected => !string.IsNullOrEmpty(Password);
@@ -35,6 +35,8 @@ namespace GTAServer
         public string LastKickedIP { get; set; }
         public Client LastKickedClient { get; set; }
         public bool DebugMode { get; set; }
+
+        public readonly Dictionary<string, ICommand> Commands = new Dictionary<string, ICommand>();
 
         private DateTime _lastAnnounceDateTime;
         private NetServer _server;
@@ -49,8 +51,8 @@ namespace GTAServer
             GamemodeName = gamemodeName;
             Name = name;
             Port = port;
-            MasterServer = "https://gtamaster.nofla.me";
-            BackupMasterServer = "http://fakemaster.nofla.me";
+            MasterServer = "http://46.101.1.92/";
+            BackupMasterServer = "https://gtamaster.nofla.me";
             Config = new NetPeerConfiguration("GTAVOnlineRaces") { Port = port };
             Config.EnableMessageType(NetIncomingMessageType.ConnectionApproval);
             Config.EnableMessageType(NetIncomingMessageType.DiscoveryRequest);
@@ -68,7 +70,6 @@ namespace GTAServer
 
             logger.LogDebug("Loading gamemode");
             var assemblyName = Location + Path.DirectorySeparatorChar + GamemodeName + ".dll";
-            var gamemodeList = new List<IPlugin>();
             var pluginAssembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyName);
             var types = pluginAssembly.GetExportedTypes();
             var validTypes = types.Where(t => typeof(IGamemode).IsAssignableFrom(t)).ToArray();
@@ -423,10 +424,36 @@ namespace GTAServer
                         var chatData = Util.DeserializeBinary<ChatData>(msg.ReadBytes(len));
                         if (chatData != null)
                         {
+                            // Plugin chat handling
                             var chatPluginResult = GameEvents.ChatMessage(client, chatData);
                             if (!chatPluginResult.ContinueServerProc) return;
                             chatData = chatPluginResult.Data;
 
+                            // Command handling
+                            if (chatData.Message.StartsWith("/"))
+                            {
+                                var cmdArgs = chatData.Message.Split(' ');
+                                var cmdName = cmdArgs[0].Remove(0, 1);
+                                if (Commands.ContainsKey(cmdName))
+                                {
+                                    Commands[cmdName].OnCommandExec(client, chatData);
+                                    return;
+                                }
+                                chatData = new ChatData()
+                                {
+                                    Id = client.NetConnection.RemoteUniqueIdentifier,
+                                    Message = "Command not found",
+                                    Sender = "SERVER"
+                                };
+                                var outMsg = _server.CreateMessage();
+                                var serChatData = Util.SerializeBinary(chatData);
+
+                                outMsg.Write((int) PacketType.ChatData);
+                                outMsg.Write(serChatData.Length);
+                                outMsg.Write(serChatData);
+                                client.NetConnection.SendMessage(outMsg, NetDeliveryMethod.ReliableOrdered,
+                                    GetChannelForClient(client));
+                            }
                             var chatMsg = new ChatMessage(chatData, client);
                             if (!chatMsg.Suppress)
                             {
