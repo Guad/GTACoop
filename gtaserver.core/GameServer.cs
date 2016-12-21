@@ -74,32 +74,35 @@ namespace GTAServer
             logger.LogInformation("Server starting");
 
             logger.LogDebug("Loading gamemode");
-            var assemblyName = Location + Path.DirectorySeparatorChar + GamemodeName + ".dll";
-            var pluginAssembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyName);
-            var types = pluginAssembly.GetExportedTypes();
-            var validTypes = types.Where(t => typeof(IGamemode).IsAssignableFrom(t)).ToArray();
-            if (!validTypes.Any())
+            if (GamemodeName != "freeroam")
             {
-                logger.LogError("No gamemodes found in gamemode assembly, using freeroam");
-                GamemodeName = "freeroam";
-                return;
+                var assemblyName = Location + Path.DirectorySeparatorChar + GamemodeName + ".dll";
+                var pluginAssembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyName);
+                var types = pluginAssembly.GetExportedTypes();
+                var validTypes = types.Where(t => typeof(IGamemode).IsAssignableFrom(t)).ToArray();
+                if (!validTypes.Any())
+                {
+                    logger.LogError("No gamemodes found in gamemode assembly, using freeroam");
+                    GamemodeName = "freeroam";
+                    return;
+                }
+                if (validTypes.Count() > 1)
+                {
+                    logger.LogError("Multiple valid gamemodes found in gamemode assembly, using freeroam");
+                    GamemodeName = "freeroam";
+                    return;
+                }
+                var gamemode = Activator.CreateInstance(validTypes.First()) as IGamemode;
+                if (gamemode == null)
+                {
+                    logger.LogError(
+                        "Could not create instance of gamemode (Activator.CreateInstance returned null), using freeroam");
+                    GamemodeName = "freeroam";
+                    return;
+                }
+                GamemodeName = gamemode.GamemodeName;
+                gamemode.OnEnable(this, false);
             }
-            if (validTypes.Count() > 1)
-            {
-                logger.LogError("Multiple valid gamemodes found in gamemode assembly, using freeroam");
-                GamemodeName = "freeroam";
-                return;
-            }
-            var gamemode = Activator.CreateInstance(validTypes.First()) as IGamemode;
-            if (gamemode == null)
-            {
-                logger.LogError(
-                    "Could not create instance of gamemode (Activator.CreateInstance returned null), using freeroam");
-                GamemodeName = "freeroam";
-                return;
-            }
-            GamemodeName = gamemode.GamemodeName;
-            gamemode.OnEnable(this, false);
             logger.LogDebug("Gamemode loaded");
             _server.Start();
             if (AnnounceSelf)
