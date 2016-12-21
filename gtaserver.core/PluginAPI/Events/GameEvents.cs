@@ -103,7 +103,7 @@ namespace GTAServer.PluginAPI.Events
         /// Internal method. Triggers OnNpcVehicleDataUpdate
         /// </summary>
         /// <param name="c">Client who sent the update</param>
-        /// <param name="v">PedData object</param>
+        /// <param name="v">VehicleData object</param>
         /// <returns>A PluginResponse, with the ability to rewrite the received data.</returns>
         public static PluginResponse<VehicleData> NpcVehicleDataUpdate(Client c, VehicleData v)
         {
@@ -122,10 +122,17 @@ namespace GTAServer.PluginAPI.Events
             return result;
         }
 
-
+        /// <summary>
+        /// Called on every NPC update/creation
+        /// </summary>
         public static List<Func<Client, PedData, PluginResponse<PedData>>> OnNpcPedDataUpdate
                 = new List<Func<Client, PedData, PluginResponse<PedData>>>();
-
+        /// <summary>
+        /// Internal method. Trigers OnNpcPedDataUpdate
+        /// </summary>
+        /// <param name="c">Client who sent the update</param>
+        /// <param name="p">PedData Object</param>
+        /// <returns>A PluginResponse, with the ability to rewrite the received data</returns>
         public static PluginResponse<PedData> NpcPedDataUpdate(Client c, PedData p)
         {
             var result = new PluginResponse<PedData>()
@@ -142,5 +149,26 @@ namespace GTAServer.PluginAPI.Events
             }
             return result;
         }
+
+        /// <summary>
+        /// (Non-cancellable) Called when a player stops sharing their world.
+        /// </summary>
+        public static List<Action<Client>> OnWorldSharingStop = new List<Action<Client>>();
+
+        /// <summary>
+        /// Internal method. Triggers OnWorldSharingStop.
+        /// </summary>
+        /// <param name="c">Client who stopped sharing their world.</param>
+        public static void WorldSharingStop(Client c) => OnWorldSharingStop.ForEach(f => f(c));
+
+        /// <summary>
+        /// (Non-cancellable) Called when a player spawns.
+        /// </summary>
+        public static List<Action<Client>> OnPlayerSpawned = new List<Action<Client>>();
+        /// <summary>
+        /// Internal method. Triggers OnPlayerSpawned.
+        /// </summary>
+        /// <param name="c">Client of the player who spawned.</param>
+        public static void PlayerSpawned(Client c) => OnPlayerSpawned.ForEach(f => f(c));
     }
 }

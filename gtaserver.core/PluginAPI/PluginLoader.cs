@@ -9,14 +9,14 @@ using Microsoft.Extensions.Logging;
 
 namespace GTAServer.PluginAPI
 {
-    public static class PluginLoader
+    public class PluginLoader
     {
         private static readonly string Location = System.AppContext.BaseDirectory;
 
         private static ILogger _logger;
         public static List<IPlugin> LoadPlugin(string targetAssemblyName)
         {
-            _logger = Util.LoggerFactory.CreateLogger<GameServer>();
+            _logger = Util.LoggerFactory.CreateLogger<PluginLoader>();
             var assemblyName = Location + Path.DirectorySeparatorChar + "Plugins" + Path.DirectorySeparatorChar + targetAssemblyName + ".dll";
             var pluginList = new List<IPlugin>();
 

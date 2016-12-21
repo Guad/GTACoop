@@ -17,6 +17,7 @@ namespace GTAServer
         public bool AnnounceSelf { get; set; } = false;
         public bool AllowNicknames { get; set; } = true;
         public bool AllowOutdatedClients { get; set; } = false;
+        public bool DebugMode { get; set; } = false;
 
         public List<string> ServerPlugins { get; set; } = new List<string>();
     }

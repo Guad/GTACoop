@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.Loader;
 using System.Text.RegularExpressions;
+using GTAServer.PluginAPI;
 using GTAServer.ProtocolMessages;
 using Lidgren.Network;
 using Microsoft.Extensions.Logging;
@@ -31,13 +34,13 @@ namespace GTAServer
         public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_9_4;
         public string LastKickedIP { get; set; }
         public Client LastKickedClient { get; set; }
-
+        public bool DebugMode { get; set; }
 
         private DateTime _lastAnnounceDateTime;
         private NetServer _server;
         private ILogger logger;
 
-        public GameServer(int port, string name, string gamemodeName)
+        public GameServer(int port, string name, string gamemodeName, bool isDebug)
         {
             logger = Util.LoggerFactory.CreateLogger<GameServer>();
             logger.LogInformation("Server ready to start");
@@ -62,21 +65,49 @@ namespace GTAServer
         public void Start()
         {
             logger.LogInformation("Server starting");
+
+            logger.LogDebug("Loading gamemode");
+            var assemblyName = Location + Path.DirectorySeparatorChar + GamemodeName + ".dll";
+            var gamemodeList = new List<IPlugin>();
+            var pluginAssembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyName);
+            var types = pluginAssembly.GetExportedTypes();
+            var validTypes = types.Where(t => typeof(IGamemode).IsAssignableFrom(t)).ToArray();
+            if (!validTypes.Any())
+            {
+                logger.LogError("No gamemodes found in gamemode assembly, using freeroam");
+                GamemodeName = "freeroam";
+                return;
+            }
+            if (validTypes.Count() > 1)
+            {
+                logger.LogError("Multiple valid gamemodes found in gamemode assembly, using freeroam");
+                GamemodeName = "freeroam";
+                return;
+            }
+            var gamemode = Activator.CreateInstance(validTypes.First()) as IGamemode;
+            if (gamemode == null)
+            {
+                logger.LogError(
+                    "Could not create instance of gamemode (Activator.CreateInstance returned null), using freeroam");
+                GamemodeName = "freeroam";
+                return;
+            }
+            GamemodeName = gamemode.GamemodeName;
+            gamemode.OnEnable(this, false);
+            logger.LogDebug("Gamemode loaded");
             _server.Start();
             if (AnnounceSelf)
             {
                 AnnounceToMaster();
             }
-            // TODO: Gamemode loading here... we need a module/plugin system first
         }
 
         private void AnnounceToMaster()
         {
-#if !DEBUG
+            if (DebugMode) return;
             logger.LogDebug("Announcing to master server");
             _lastAnnounceDateTime = DateTime.Now;
             logger.LogDebug("Server announcer not implemented");
-#endif
             // TODO: implement server announcing
         }
 
@@ -490,6 +521,7 @@ namespace GTAServer
                     break;
                 case PacketType.WorldSharingStop:
                     {
+                        GameEvents.WorldSharingStop(client);
                         var dcObj = new PlayerDisconnect()
                         {
                             Id = client.NetConnection.RemoteUniqueIdentifier
@@ -538,10 +570,11 @@ namespace GTAServer
                     break;
                 case PacketType.PlayerSpawned:
                     {
+                        GameEvents.PlayerSpawned(client);
                         logger.LogInformation("Player spawned: " + client.DisplayName);
                     }
                     break;
-
+                // The following is normally only received on the client.
                 case PacketType.PlayerDisconnect:
                     break;
                 case PacketType.DiscoveryResponse:
