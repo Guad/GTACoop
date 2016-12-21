@@ -449,7 +449,7 @@ namespace GTAServer
                                 var outMsg = _server.CreateMessage();
                                 var serChatData = Util.SerializeBinary(chatData);
 
-                                outMsg.Write((int) PacketType.ChatData);
+                                outMsg.Write((int)PacketType.ChatData);
                                 outMsg.Write(serChatData.Length);
                                 outMsg.Write(serChatData);
                                 client.NetConnection.SendMessage(outMsg, NetDeliveryMethod.ReliableOrdered,
@@ -768,12 +768,17 @@ namespace GTAServer
             obj.Arguments = ParseNativeArguments(arguments);
             var bin = Util.SerializeBinary(obj);
             var msg = _server.CreateMessage(arguments);
-            msg.Write((int) PacketType.NativeCall);
+            msg.Write((int)PacketType.NativeCall);
             msg.Write(bin.Length);
             msg.Write(bin);
             _callbacks.Add(salt, callback);
             player.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, GetChannelForClient(player));
         }
+
+
+
+        // Stuff for scripting
+
         // Notification stuff
         public void SendNotificationToPlayer(Client player, string message, bool flashing = false)
         {
@@ -795,5 +800,94 @@ namespace GTAServer
             }
         }
 
+        public void SendPictureNotificationToAll(string body, NotificationPicType pic, int flash, NotificationIconType iconType, string sender, string subject)
+        {
+            //Crash with new LocalPlayerArgument()!
+            SendNativeCallToAll(0x202709F4C58A0424, "STRING");
+            SendNativeCallToAll(0x6C188BE134E074AA, body);
+            SendNativeCallToAll(0x1CCD9A37359072CF, pic.ToString(), pic.ToString(), flash, (int)iconType, sender, subject);
+            SendNativeCallToAll(0xF020C96915705B3A, false, true);
+        }
+
+        public void SendPictureNotificationToAll(string body, string pic, int flash, int iconType, string sender, string subject)
+        {
+            //Crash with new LocalPlayerArgument()!
+            SendNativeCallToAll(0x202709F4C58A0424, "STRING");
+            SendNativeCallToAll(0x6C188BE134E074AA, body);
+            SendNativeCallToAll(0x1CCD9A37359072CF, pic, pic, flash, iconType, sender, subject);
+            SendNativeCallToAll(0xF020C96915705B3A, false, true);
+        }
+
+        public void SendChatMessageToAll(string msg) => SendChatMessageToAll("", msg);
+
+        public void SendChatMessageToAll(string sender, string message)
+        {
+            var chatObj = new ChatData()
+            {
+                Sender = sender,
+                Message = message
+            };
+            SendToAll(chatObj, PacketType.ChatData, true);
+        }
+
+        public void SendChatMessageToPlayer(Client player, string message) => SendChatMessageToPlayer(player, "", message);
+
+        public void SendChatMessageToPlayer(Client player, string sender, string message)
+        {
+            var chatObj = new ChatData()
+            {
+                Sender = sender,
+                Message = message
+            };
+            var data = Util.SerializeBinary(chatObj);
+            var msg = _server.CreateMessage();
+            msg.Write((int)PacketType.ChatData);
+            msg.Write(data.Length);
+            msg.Write(data);
+            player.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, 0);
+        }
+
+        public void GivePlayerWeapon(Client player, uint weaponHash, int ammo, bool equipNow, bool ammoLoaded) =>
+            SendNativeCallToPlayer(player, 0xBF0FD6E56C964FCB, new LocalPlayerArgument(), weaponHash, ammo, equipNow,
+                ammo);
+
+        public void KickPlayer(Client player, string reason = null, bool silent = false, Client sender = null)
+        {
+            player.Kicked = true;
+            player.KickReason = reason?.ToString();
+            player.Silent = silent;
+            player.KickedBy = sender;
+            player.NetConnection.Disconnect("Kicked: " + reason);
+        }
+
+        public void SetPlayerPosition(Client player, Vector3 newPosition) => 
+            SendNativeCallToPlayer(player, 0x06843DA7060A026B, new LocalPlayerArgument(), 
+                newPosition.X, newPosition.Y, newPosition.Z, 0, 0, 0, 1);
+
+        public void GetPlayerPosition(Client player, Action<object> callback, string salt = "salt") =>
+            GetNativeCallFromPlayer(player, salt, 0x3FEF770D40960D5A, new Vector3Argument(), 
+                callback, new LocalPlayerArgument(), 0);
+
+        public void HasPlayerControlBeenPressed(Client player, int controlId, Action<object> callback, string salt = "salt") => 
+            GetNativeCallFromPlayer(player, salt, 0x580417101DDB492F, new BooleanArgument(), 
+                callback, 0, controlId);
+
+        public void SetPlayerHealth(Client player, int health) => 
+            SendNativeCallToPlayer(player, 0x6B76DC1F3AE6E6A3, new LocalPlayerArgument(), 
+                health + 100);
+
+        public void GetPlayerHealthg(Client player, Action<object> callback, string salt = "salt") => 
+            GetNativeCallFromPlayer(player, salt, 0xEEF059FAD016D209, new IntArgument(),
+                callback, new LocalPlayerArgument()););
+
+        public void SetNightVisionForPlayer(Client player, bool status) =>
+            SendNativeCallToPlayer(player, 0x18F621F7A5B1F85D, status);
+
+        public void SetNightVisionForAll(Client player, bool status) =>
+            SendNativeCallToAll(player, 0x18F621F7A5B1F85D, status);
+
+        public void IsNightVisionActive(Client player, Action<object> callback, string salt = "salt") =>
+            GetNativeCallFromPlayer(player, salt, 0x2202A3F42C8E5F79, new BooleanArgument(), 
+                callback, new LocalPlayerArgument());
     }
 }
