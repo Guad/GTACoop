@@ -114,7 +114,7 @@ namespace GTAServer
         private void AnnounceToMaster()
         {
             if (DebugMode) return;
-            logger.LogDebug("Announcing to master server");
+            logger.LogInformation("Announcing to master server");
             _lastAnnounceDateTime = DateTime.Now;
             httpClient.BaseAddress = new Uri(MasterServer);
             var a = httpClient.PutAsync("", new StringContent(Port.ToString()));
@@ -236,8 +236,6 @@ namespace GTAServer
                             _server.Recycle(msg);
                             return;
                         }
-                        if (!connectionApprovalPacketResult.Data2)
-                            DenyConnect(client, "Denied by plugin", true, msg, 0);
                         HandleClientConnectionApproval(client, msg);
                         break;
                     case NetIncomingMessageType.StatusChanged:
