@@ -21,6 +21,7 @@ namespace GTAServer
         private static void CreateNeededFiles()
         {
             if (!Directory.Exists(Location + Path.DirectorySeparatorChar + "Plugins")) Directory.CreateDirectory(Location + Path.DirectorySeparatorChar + "Plugins");
+            if (!Directory.Exists(Location + Path.DirectorySeparatorChar + "Configuration")) Directory.CreateDirectory(Location + Path.DirectorySeparatorChar + "Configuration");
         }
 
         private static void DoDebugWarning()
@@ -39,7 +40,7 @@ namespace GTAServer
 
             // can't use logger here since the logger config depends on if debug mode is on or off
             Console.WriteLine("Reading server configuration...");
-            _gameServerConfiguration = LoadServerConfiguration("serverSettings.xml");
+            _gameServerConfiguration = LoadServerConfiguration("Configuration" + Path.DirectorySeparatorChar + "serverSettings.xml");
             if (!_debugMode) _debugMode = _gameServerConfiguration.DebugMode;
 
             if (_debugMode)

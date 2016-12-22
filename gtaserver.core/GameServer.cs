@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Text.RegularExpressions;
 using GTAServer.PluginAPI;
 using GTAServer.ProtocolMessages;
@@ -44,7 +46,6 @@ namespace GTAServer
         private NetServer _server;
         private ILogger logger;
         private Dictionary<string, Action<object>> _callbacks = new Dictionary<string, Action<object>>();
-        private HttpClient httpClient = new HttpClient();
         private int CurrentTick = 0;
 
         public GameServer(int port, string name, string gamemodeName, bool isDebug)
@@ -111,36 +112,27 @@ namespace GTAServer
             }
         }
 
-        private void AnnounceToMaster()
+        private async void AnnounceToMaster()
         {
             if (DebugMode) return;
             logger.LogInformation("Announcing to master server");
             _lastAnnounceDateTime = DateTime.Now;
-            httpClient.BaseAddress = new Uri(MasterServer);
-            var a = httpClient.PutAsync("", new StringContent(Port.ToString()));
-            a.Start();
-            a.Wait();
-            try
-            {
-                a.Result.EnsureSuccessStatusCode();
-            }
-            catch (Exception e)
-            {
-                logger.LogError("Error when announcing to primary master server: " + e);
-            }
+            var payload = Port.ToString();
+            var enc = new UTF8Encoding();
 
-            httpClient.BaseAddress = new Uri(BackupMasterServer);
-            a = httpClient.PutAsync("", new StringContent(Port.ToString()));
-            a.Start();
-            a.Wait();
-            try
-            {
-                a.Result.EnsureSuccessStatusCode();
-            }
-            catch (Exception e)
-            {
-                logger.LogError("Error when announcing to backup master server: " + e);
-            }
+            var request = WebRequest.Create(MasterServer);
+            request.Method = "POST";
+            request.ContentType = "text/plain";
+            var dataStream = await request.GetRequestStreamAsync();
+            dataStream.Write(enc.GetBytes(payload), 0, payload.Length);
+            await request.GetResponseAsync();
+
+            request = WebRequest.Create(BackupMasterServer);
+            request.Method = "POST";
+            request.ContentType = "text/plain";
+            dataStream = await request.GetRequestStreamAsync();
+            dataStream.Write(enc.GetBytes(payload), 0, payload.Length);
+            await request.GetResponseAsync();
         }
 
         public void Tick()
@@ -289,10 +281,15 @@ namespace GTAServer
                 return;
             }
 
+            var pluginResponse = ConnectionEvents.ConnectionRequest(client, connReq);
+            if (!pluginResponse.ContinueServerProc) return;
+            connReq = pluginResponse.Data;
+
             client.DisplayName = connReq.DisplayName;
             client.Name = connReq.Name;
             client.GameVersion = connReq.GameVersion;
             client.RemoteScriptVersion = (ScriptVersion)connReq.ScriptVersion;
+
 
             // If nicknames are disabled on the server, set the nickname to the player's social club name.
             if (!AllowNicknames)

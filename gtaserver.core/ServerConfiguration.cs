@@ -20,6 +20,6 @@ namespace GTAServer
         public bool AllowOutdatedClients { get; set; } = false;
         public bool DebugMode { get; set; } = false;
 
-        public List<string> ServerPlugins { get; set; } = new List<string>();
+        public List<string> ServerPlugins { get; set; } = new List<string>() {};
     }
 }
