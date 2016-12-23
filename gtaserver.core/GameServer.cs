@@ -10,6 +10,7 @@ using System.Runtime.Loader;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using GTAServer.PluginAPI;
 using GTAServer.ProtocolMessages;
 using Lidgren.Network;
@@ -35,19 +36,23 @@ namespace GTAServer
         public bool AnnounceSelf { get; set; }
         public bool AllowNicknames { get; set; }
         public bool AllowOutdatedClients { get; set; }
-        public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_9_4;
+        public readonly ScriptVersion ServerVersion = ScriptVersion.VERSION_0_9_3;
         public string LastKickedIP { get; set; }
         public Client LastKickedClient { get; set; }
         public bool DebugMode { get; set; }
+        public NetServer Server;
+        public int CurrentTick { get; set; } = 0;
 
         public readonly Dictionary<string, ICommand> Commands = new Dictionary<string, ICommand>();
 
+        public int TicksPerSecond { get; set; }
+
         private DateTime _lastAnnounceDateTime;
-        private NetServer _server;
         private ILogger logger;
         private Dictionary<string, Action<object>> _callbacks = new Dictionary<string, Action<object>>();
-        private int CurrentTick = 0;
+        private int _ticksLastSecond;
 
+        private Timer _tpsTimer;
         public GameServer(int port, string name, string gamemodeName, bool isDebug)
         {
             logger = Util.LoggerFactory.CreateLogger<GameServer>();
@@ -64,10 +69,11 @@ namespace GTAServer
             Config.EnableMessageType(NetIncomingMessageType.DiscoveryRequest);
             Config.EnableMessageType(NetIncomingMessageType.UnconnectedData);
             Config.EnableMessageType(NetIncomingMessageType.ConnectionLatencyUpdated);
-            _server = new NetServer(Config);
+            Server = new NetServer(Config);
 
             logger.LogInformation($"NetServer created with port {Config.Port}");
 
+            _tpsTimer = new Timer(state => CalculateTicksPerSecond(), null, 0, 1000);
         }
 
         public void Start()
@@ -105,7 +111,7 @@ namespace GTAServer
                 gamemode.OnEnable(this, false);
             }
             logger.LogDebug("Gamemode loaded");
-            _server.Start();
+            Server.Start();
             if (AnnounceSelf)
             {
                 AnnounceToMaster();
@@ -135,6 +141,16 @@ namespace GTAServer
             await request.GetResponseAsync();
         }
 
+        private void CalculateTicksPerSecond()
+        {
+            TicksPerSecond = CurrentTick - _ticksLastSecond;
+            _ticksLastSecond = CurrentTick;
+
+            //logger.LogTrace("TPS: " + TicksPerSecond);
+            Console.Title = "GTAServer - " + Name + " (" + Clients.Count + "/" + MaxPlayers + " players) - Port: " + Port + " - TPS: " + TicksPerSecond;
+            return;
+        }
+
         public void Tick()
         {
             CurrentTick++;
@@ -146,7 +162,7 @@ namespace GTAServer
             }
             //throw new Exception("test");
             NetIncomingMessage msg;
-            while ((msg = _server.ReadMessage()) != null)
+            while ((msg = Server.ReadMessage()) != null)
             {
                 Client client = null;
                 lock (Clients)
@@ -172,7 +188,7 @@ namespace GTAServer
                 msg = pluginPacketHandlerResult.Data;
                 if (!pluginPacketHandlerResult.ContinueServerProc)
                 {
-                    _server.Recycle(msg);
+                    Server.Recycle(msg);
                     return;
                 }
 
@@ -186,25 +202,25 @@ namespace GTAServer
                         {
                             if (!PacketEvents.Ping(client, msg).ContinueServerProc)
                             {
-                                _server.Recycle(msg);
+                                Server.Recycle(msg);
                                 return;
                             }
                             logger.LogInformation("Ping received from " + msg.SenderEndPoint.Address.ToString());
-                            var reply = _server.CreateMessage("pong");
-                            _server.SendMessage(reply, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
+                            var reply = Server.CreateMessage("pong");
+                            Server.SendMessage(reply, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
                         }
                         else if (ucType == "query")
                         {
                             if (!PacketEvents.Query(client, msg).ContinueServerProc)
                             {
-                                _server.Recycle(msg);
+                                Server.Recycle(msg);
                                 return;
                             }
                             var playersOnline = 0;
                             lock (Clients) playersOnline = Clients.Count;
                             logger.LogInformation("Query received from " + msg.SenderEndPoint.Address.ToString());
-                            var reply = _server.CreateMessage($"{Name}%{PasswordProtected}%{playersOnline}%{MaxPlayers}%{GamemodeName}");
-                            _server.SendMessage(reply, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
+                            var reply = Server.CreateMessage($"{Name}%{PasswordProtected}%{playersOnline}%{MaxPlayers}%{GamemodeName}");
+                            Server.SendMessage(reply, client.NetConnection, NetDeliveryMethod.ReliableOrdered);
                         }
                         break;
                     case NetIncomingMessageType.VerboseDebugMessage:
@@ -225,7 +241,7 @@ namespace GTAServer
                         msg = connectionApprovalPacketResult.Data;
                         if (!connectionApprovalPacketResult.ContinueServerProc)
                         {
-                            _server.Recycle(msg);
+                            Server.Recycle(msg);
                             return;
                         }
                         HandleClientConnectionApproval(client, msg);
@@ -235,7 +251,7 @@ namespace GTAServer
                         msg = pluginPacketHandlerResult.Data;
                         if (!pluginPacketHandlerResult.ContinueServerProc)
                         {
-                            _server.Recycle(msg);
+                            Server.Recycle(msg);
                             return;
                         }
                         HandleClientStatusChange(client, msg);
@@ -245,7 +261,7 @@ namespace GTAServer
                         msg = pluginPacketHandlerResult.Data;
                         if (!pluginPacketHandlerResult.ContinueServerProc)
                         {
-                            _server.Recycle(msg);
+                            Server.Recycle(msg);
                             return;
                         }
                         HandleClientDiscoveryRequest(client, msg);
@@ -255,7 +271,7 @@ namespace GTAServer
                         msg = pluginPacketHandlerResult.Data;
                         if (!pluginPacketHandlerResult.ContinueServerProc)
                         {
-                            _server.Recycle(msg);
+                            Server.Recycle(msg);
                             return;
                         }
                         HandleClientIncomingData(client, msg);
@@ -267,7 +283,7 @@ namespace GTAServer
                         break;
 
                 }
-                _server.Recycle(msg);
+                Server.Recycle(msg);
             }
         }
         private void HandleClientConnectionApproval(Client client, NetIncomingMessage msg)
@@ -353,7 +369,7 @@ namespace GTAServer
 
 
 
-            var channelHail = _server.CreateMessage();
+            var channelHail = Server.CreateMessage();
             channelHail.Write(GetChannelForClient(client));
             client.NetConnection.Approve(channelHail);
         }
@@ -421,7 +437,7 @@ namespace GTAServer
         }
         private void HandleClientDiscoveryRequest(Client client, NetIncomingMessage msg)
         {
-            var responsePkt = _server.CreateMessage();
+            var responsePkt = Server.CreateMessage();
             var discoveryResponse = new DiscoveryResponse
             {
                 ServerName = Name,
@@ -437,7 +453,7 @@ namespace GTAServer
             responsePkt.Write(serializedResponse.Length);
             responsePkt.Write(serializedResponse);
             logger.LogInformation($"Server status requested by {msg.SenderEndPoint.Address.ToString()}");
-            _server.SendDiscoveryResponse(responsePkt, msg.SenderEndPoint);
+            Server.SendDiscoveryResponse(responsePkt, msg.SenderEndPoint);
         }
 
         private void HandleClientIncomingData(Client client, NetIncomingMessage msg)
@@ -468,20 +484,8 @@ namespace GTAServer
                                     Commands[cmdName].OnCommandExec(client, chatData);
                                     return;
                                 }
-                                chatData = new ChatData()
-                                {
-                                    Id = client.NetConnection.RemoteUniqueIdentifier,
-                                    Message = "Command not found",
-                                    Sender = "SERVER"
-                                };
-                                var outMsg = _server.CreateMessage();
-                                var serChatData = Util.SerializeBinary(chatData);
-
-                                outMsg.Write((int)PacketType.ChatData);
-                                outMsg.Write(serChatData.Length);
-                                outMsg.Write(serChatData);
-                                client.NetConnection.SendMessage(outMsg, NetDeliveryMethod.ReliableOrdered,
-                                    GetChannelForClient(client));
+                                SendChatMessageToPlayer(client, "Command not found");
+                                return;
                             }
                             var chatMsg = new ChatMessage(chatData, client);
                             if (!chatMsg.Suppress)
@@ -658,21 +662,21 @@ namespace GTAServer
         public void SendToAll(object dataToSend, PacketType packetType, bool packetIsImportant)
         {
             var data = Util.SerializeBinary(dataToSend);
-            var msg = _server.CreateMessage();
+            var msg = Server.CreateMessage();
             msg.Write((int)packetType);
             msg.Write(data.Length);
             msg.Write(data);
-            _server.SendToAll(msg, packetIsImportant ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced);
+            Server.SendToAll(msg, packetIsImportant ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced);
         }
 
         public void SendToAll(object dataToSend, PacketType packetType, bool packetIsImportant, Client clientToExclude)
         {
             var data = Util.SerializeBinary(dataToSend);
-            var msg = _server.CreateMessage();
+            var msg = Server.CreateMessage();
             msg.Write((int)packetType);
             msg.Write(data.Length);
             msg.Write(data);
-            _server.SendToAll(msg, clientToExclude.NetConnection, packetIsImportant ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced, GetChannelForClient(clientToExclude));
+            Server.SendToAll(msg, clientToExclude.NetConnection, packetIsImportant ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced, GetChannelForClient(clientToExclude));
         }
 
         public void DenyConnect(Client player, string reason, bool silent = true, NetIncomingMessage msg = null,
@@ -686,7 +690,7 @@ namespace GTAServer
             }
 
             Clients.Remove(player);
-            if (msg != null) _server.Recycle(msg);
+            if (msg != null) Server.Recycle(msg);
         }
 
         public int GetChannelForClient(Client c)
@@ -753,7 +757,7 @@ namespace GTAServer
 
             var bin = Util.SerializeBinary(obj);
 
-            var msg = _server.CreateMessage();
+            var msg = Server.CreateMessage();
 
             msg.Write((int)PacketType.NativeCall);
             msg.Write(bin.Length);
@@ -774,13 +778,13 @@ namespace GTAServer
 
             var bin = Util.SerializeBinary(obj);
 
-            var msg = _server.CreateMessage();
+            var msg = Server.CreateMessage();
 
             msg.Write((int)PacketType.NativeCall);
             msg.Write(bin.Length);
             msg.Write(bin);
 
-            _server.SendToAll(msg, NetDeliveryMethod.ReliableOrdered);
+            Server.SendToAll(msg, NetDeliveryMethod.ReliableOrdered);
         }
 
         public void GetNativeCallFromPlayer(Client player, string salt, ulong hash, NativeArgument returnType,
@@ -795,7 +799,7 @@ namespace GTAServer
             obj.Id = salt;
             obj.Arguments = ParseNativeArguments(arguments);
             var bin = Util.SerializeBinary(obj);
-            var msg = _server.CreateMessage();
+            var msg = Server.CreateMessage();
             msg.Write((int)PacketType.NativeCall);
             msg.Write(bin.Length);
             msg.Write(bin);
@@ -868,7 +872,7 @@ namespace GTAServer
                 Message = message
             };
             var data = Util.SerializeBinary(chatObj);
-            var msg = _server.CreateMessage();
+            var msg = Server.CreateMessage();
             msg.Write((int)PacketType.ChatData);
             msg.Write(data.Length);
             msg.Write(data);

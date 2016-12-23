@@ -3,9 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Xml.Serialization;
 
 namespace GTAServer
 {
+    [XmlType(TypeName = "ServerVariable")]
+    public struct ServerVariable
+    {
+        public string Key { get; set; }
+        public string Value { get; set; }
+    }
+
     public class ServerConfiguration
     {
         public int Port { get; set; } = 4499;
@@ -21,5 +29,7 @@ namespace GTAServer
         public bool DebugMode { get; set; } = false;
 
         public List<string> ServerPlugins { get; set; } = new List<string>() {};
+
+        public List<ServerVariable> ServerVariables = new List<ServerVariable>();
     }
 }

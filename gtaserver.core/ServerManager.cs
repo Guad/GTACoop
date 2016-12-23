@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.IO;
+using System.Linq;
 using System.Xml.Serialization;
 using Microsoft.Extensions.Logging;
 using GTAServer.PluginAPI;
@@ -17,7 +18,7 @@ namespace GTAServer
         private static readonly List<IPlugin> Plugins=new List<IPlugin>();
         private static readonly string Location = System.AppContext.BaseDirectory;
         private static bool _debugMode = false;
-
+        private static int _targetTickTime = 15;
         private static void CreateNeededFiles()
         {
             if (!Directory.Exists(Location + Path.DirectorySeparatorChar + "Plugins")) Directory.CreateDirectory(Location + Path.DirectorySeparatorChar + "Plugins");
@@ -40,7 +41,7 @@ namespace GTAServer
 
             // can't use logger here since the logger config depends on if debug mode is on or off
             Console.WriteLine("Reading server configuration...");
-            _gameServerConfiguration = LoadServerConfiguration("Configuration" + Path.DirectorySeparatorChar + "serverSettings.xml");
+            _gameServerConfiguration = LoadServerConfiguration(Location + Path.DirectorySeparatorChar + "Configuration" + Path.DirectorySeparatorChar + "serverSettings.xml");
             if (!_debugMode) _debugMode = _gameServerConfiguration.DebugMode;
 
             if (_debugMode)
@@ -58,6 +59,19 @@ namespace GTAServer
             _logger = Util.LoggerFactory.CreateLogger<ServerManager>();
             DoDebugWarning();
 
+            if (_gameServerConfiguration.ServerVariables.Any(v => v.Key == "tickEvery"))
+            {
+                var tpsString = _gameServerConfiguration.ServerVariables.First(v => v.Key == "tickEvery").Value;
+                if (!int.TryParse(tpsString, out _targetTickTime))
+                {
+                    _logger.LogError(
+                        "Could not set ticks per second from server variable 'tps' (value is not an integer)");
+                }
+                else
+                {
+                    _logger.LogInformation("Custom tick rate set. Will try to tick every " + _targetTickTime + "ms");
+                }
+            }
             
             _logger.LogInformation("Server preparing to start...");
 
@@ -70,8 +84,9 @@ namespace GTAServer
                 AnnounceSelf = _gameServerConfiguration.AnnounceSelf,
                 AllowNicknames = _gameServerConfiguration.AllowNicknames,
                 AllowOutdatedClients = _gameServerConfiguration.AllowOutdatedClients,
+                MaxPlayers = _gameServerConfiguration.MaxClients
             };
-
+            gameServer.Start();
 
             // Plugin Code
             _logger.LogInformation("Loading plugins");
@@ -93,31 +108,30 @@ namespace GTAServer
                 }
             }
 
-            _logger.LogInformation("Server starting...");
-            gameServer.Start();
-
+            var t = new Timer(doServerTick, gameServer, 0, _targetTickTime);
             _logger.LogInformation("Starting server main loop, ready to accept connections.");
-            while (true)
-            {
-                if (_debugMode)
-                {
-                    gameServer.Tick();
-                }
-                else
-                {
-                    try
-                    {
-                        gameServer.Tick();
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.LogError("Exception while ticking", e);
-                    }
-                }
-                Thread.Sleep(1);
-            }
+            while (true) Thread.Sleep(1);
         }
 
+        public static void doServerTick(object serverObject)
+        {
+            var server = (GameServer) serverObject;
+            if (_debugMode)
+            {
+                server.Tick();
+            }
+            else
+            {
+                try
+                {
+                    server.Tick();
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError("Exception while ticking", e);
+                }
+            }
+        }
         private static ServerConfiguration LoadServerConfiguration(string path)
         {
             var ser = new XmlSerializer(typeof(ServerConfiguration));
