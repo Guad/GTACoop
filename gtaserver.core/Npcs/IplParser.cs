@@ -1,9 +1,13 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 
 namespace GTAServer.Npcs {
+    public class IplSection {
+        public List<string> SectionContents = new List<string>();
+    }
     public class IplParser {
-        public Dictionary<string, List<string>> Sections = new Dictionary<string, List<string>>();
+        public Dictionary<string, IplSection> Sections = new Dictionary<string, IplSection>();
         public IplParser(string path) {
             string line;
             var currentSection = "";
@@ -11,15 +15,24 @@ namespace GTAServer.Npcs {
             var file = new StreamReader(new FileStream(path, FileMode.Open));
 
             while ((line = file.ReadLine()) != null) {
-                if (line.Trim()[0]=='#') continue; // comments
-                if (!string.IsNullOrEmpty(currentSection)) { // if we aren't in a section...
-                    currentSection = line;
+                if (line.Trim()[0] == '#')
+                {
+                    Console.WriteLine("type: comment - " + line);
+                    continue; // comments
+                }
+                //if (!string.IsNullOrEmpty(currentSection) && !line.Contains(",")) { // if we aren't in a section...
+                if (line.Contains(",")) {
+                    Console.WriteLine("type: node -  " + line.Trim());
+                    Sections[currentSection].SectionContents.Add(line.Trim()); // Add the node to the current section
                 } else if (line == "end") { // ending a section
+                    //Console.WriteLine("end of section: " + currentSection);
+                    Console.WriteLine("type: sectionEnd - " + line);
                     currentSection = "";
                 } else { // nodes in a section
-                    if (!Sections.ContainsKey(currentSection)) // if the section isn't in the dictionary of sections yet...
-                        Sections.Add(currentSection, new List<string>()); // make a new one
-                    Sections[currentSection].Add(line.Trim()); // Add the node to the current section
+                    Console.WriteLine("type: sectionStart - " + line);
+                    //Console.WriteLine("new section: " + line);
+                    currentSection = line;
+                    Sections.Add(currentSection, new IplSection());
                 }
             }
         }

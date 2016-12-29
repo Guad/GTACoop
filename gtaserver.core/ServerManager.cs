@@ -6,8 +6,8 @@ using System.Linq;
 using System.Xml.Serialization;
 using Microsoft.Extensions.Logging;
 using GTAServer.PluginAPI;
-using ProtoBuf.Meta;
 using SimpleConsoleLogger;
+using GTAServer.Npcs;
 
 namespace GTAServer
 {
@@ -37,6 +37,12 @@ namespace GTAServer
 #if DEBUG
             _debugMode = true;
 #endif
+            var paths_ipl = new IplParser("paths.ipl");
+            Console.WriteLine("number of sections: " + paths_ipl.Sections.Count);
+            foreach (var path in paths_ipl.Sections) {
+                Console.WriteLine(path.Key + ": " + path.Value.SectionContents.Count);
+            }
+            return;
             CreateNeededFiles();
 
             // can't use logger here since the logger config depends on if debug mode is on or off
