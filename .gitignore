@@ -214,3 +214,4 @@ ModelManifest.xml
 *.csproj
 *.csproj
 gtaserver.core/serverSettings.xml
+gtaserver.core/*.ipl
