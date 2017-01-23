@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Xml.Serialization;
 using GTA;
 using GTA.Native;
@@ -12,7 +14,17 @@ namespace GTACoOp
 {
     public static class Program
     {
+        internal static bool Debug;
+
         public static string Location { get { return AppDomain.CurrentDomain.BaseDirectory; } }
+        
+        // The following code is written for compat. for filterscripts/gamemodes/commands
+        // that rely on these functions
+        //public static GameServer ServerInstance { get; set; }
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool DeleteFile(string name);
+
 
         public static void Main(string[] args)
         {

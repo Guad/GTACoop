@@ -1,11 +1,25 @@
-# [GTA Co-Op](http://www.gtampco-op.cf/) [![Github All Releases](https://img.shields.io/github/downloads/Guad/GTACoop/total.svg)]()
+# Welcome to GTA Co-op!
+GTA Co-op is a multiplayer modification for Grand Theft Auto Five,
+that utilizes none of the online code from Rockstar.
 
-An abandoned (still works) online co-op modification for GTA5. Does not use Rockstar's Online code.
 
-If you have questions be sure to check the [wiki](https://github.com/Guad/GTACoop/wiki) first.
 
-![GitHub license](https://img.shields.io/badge/license-AGPL-blue.svg)
-Copyright (C) 2016  Guad
+# Downloads
+[![Github All Releases](https://img.shields.io/github/downloads/Bluscream/GTACoop/total.svg)]()
 
-[![GitHub contributors](https://img.shields.io/github/contributors/Guad/GTACoop.svg)]()
-[![Join the chat at https://gitter.im/Bluscream/GTACoop](https://badges.gitter.im/Bluscream/GTACoop.svg)](https://gitter.im/Bluscream/GTACoop?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) 
+Downloads are available [here](https://github.com/Bluscream/GTACoop/releases).
+
+
+
+# Information
+
+If you have
+questions, look at our [wiki](https://github.com/Guad/GTACoop/wiki). If you can't find a answer there just ask us on our [![Join the chat at https://discord.gg/ww7Dth](https://img.shields.io/badge/-discord-blue.svg)](https://discord.gg/ww7DthF) or [![Join the chat at https://gitter.im/Bluscream/GTACoop](https://img.shields.io/badge/-gitter-green.svg)](https://gitter.im/Bluscream/GTACoop?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge).
+
+If you encounter a bug or want to suggest a feature, add an issue to our [issues page](https://github.com/Bluscream/GTACoop/issues).
+
+![Licensed under AGPL](https://img.shields.io/badge/license-AGPL-white.svg) [![GitHub contributors](https://img.shields.io/github/contributors/Bluscream/GTACoop.svg)]()
+
+Original code © 2016 [Guad](https://github.com/Guad)
+
+Modifications © 2016 [Bluscream](https://github.com/Bluscream), [wolfmitchell](https://github.com/soccermitchy)

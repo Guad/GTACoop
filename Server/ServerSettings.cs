@@ -1,19 +1,84 @@
-﻿namespace GTAServer
+﻿using System;
+using System.Collections.Generic;
+
+namespace GTAServer
 {
+    public class InstanceSettings
+    {
+        public ServerSettings[] Servers;
+
+        public InstanceSettings()
+        {
+            Servers = new ServerSettings[] {new ServerSettings()};
+        }
+    }
+
+
+    /// <summary>
+    /// Contains server settings
+    /// </summary>
+    [Serializable]
     public class ServerSettings
     {
+        /// <summary>
+        /// Server name
+        /// </summary>
         public string Name { get; set; }
+        /// <summary>
+        /// Server max players
+        /// </summary>
         public int MaxPlayers { get; set; }
+        /// <summary>
+        /// Server port
+        /// </summary>
         public int Port { get; set; }
+        /// <summary>
+        /// If the server is password protected
+        /// </summary>
         public bool PasswordProtected { get; set; }
+        /// <summary>
+        /// Server password
+        /// </summary>
         public string Password { get; set; }
+        /// <summary>
+        /// If the server should announce itself
+        /// </summary>
         public bool Announce { get; set; }
+        /// <summary>
+        /// Master server address
+        /// </summary>
         public string MasterServer { get; set; }
 
+        /// <summary>
+        /// If the server should allow display names
+        /// </summary>
         public bool AllowDisplayNames { get; set; }
+        /// <summary>
+        /// If the server should allow outdated clients
+        /// </summary>
+        public bool AllowOutdatedClients { get; set; }
 
+        /// <summary>
+        /// Server gamemode
+        /// </summary>
         public string Gamemode { get; set; }
+        /// <summary>
+        /// Filterscripts to load
+        /// </summary>
         public string[] Filterscripts { get; set; }
+        /// <summary>
+        /// Server LAN IP
+        /// </summary>
+        public string LANIP { get; set; }
+        /// <summary>
+        /// Server WAN IP
+        /// </summary>
+        public string WANIP { get; set; }
+        /// <summary>
+        /// Internal server handle
+        /// </summary>
+        public string Handle { get; set; }
+
 
         public ServerSettings()
         {
@@ -25,8 +90,10 @@
             Gamemode = "freeroam";
             Announce = true;
             AllowDisplayNames = true;
+            AllowOutdatedClients = false;
             MasterServer = "http://46.101.1.92/";
-            Filterscripts = new string[] { "" };
+            Filterscripts = new string[] {""};
+            Handle = "default";
         }
     }
 }

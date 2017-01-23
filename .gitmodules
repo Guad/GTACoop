@@ -1,0 +1,3 @@
+[submodule "lidgren.network"]
+	path = lidgren.network
+	url = https://gitlab.com/TinyMP/LidgrenNetwork.git

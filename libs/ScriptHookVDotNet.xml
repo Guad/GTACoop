@@ -1,0 +1,1685 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        "ScriptHookVDotNet"
+    </assembly>
+    <members>
+        <member name="M:GTA.Tasks.PlayAnimation(System.String,System.String,System.Single,System.Single,System.Int32,GTA.AnimationFlags,System.Single)">
+            <summary>
+Starts an animation.
+</summary>
+            <param name="animDict">The animation dictionary.</param>
+            <param name="animName">The animation name.</param>
+            <param name="blendInSpeed">Normal value is 8.0.</param>
+            <param name="blendOutSpeed">Normal value is -8.0.</param>
+            <param name="duration">The duration.</param>
+            <param name="flags">The animation flags.</param>
+            <param name="playbackRate">Values are between 0.0 and 1.0.</param>
+        </member>
+        <member name="M:GTA.Tasks.PlayAnimation(System.String,System.String,System.Single,System.Int32,GTA.AnimationFlags)">
+            <summary>
+Starts an animation.
+</summary>
+            <param name="animDict">The animation dictionary.</param>
+            <param name="animName">The animation name.</param>
+            <param name="blendInSpeed">Normal value is 8.0.</param>
+            <param name="duration">The duration.</param>
+            <param name="flags">The animation flags.</param>
+        </member>
+        <member name="M:GTA.Tasks.PlayAnimation(System.String,System.String)">
+            <summary>
+Starts an animation.
+</summary>
+            <param name="animDict">The animation dictionary.</param>
+            <param name="animName">The animation name.</param>
+        </member>
+        <member name="P:GTA.Viewport.MenuTransitions">
+Have more than one menu on the screen on the time and transition them 
+</member>
+        <member name="P:GTA.Viewport.MenuOffset">
+The offset each menu in the stack has from the one above it 
+</member>
+        <member name="P:GTA.Viewport.MenuPosition">
+The top left position of the current menu 
+</member>
+        <member name="M:GTA.Viewport.HandleChangeItem(System.Boolean)">
+Handles when the user presses the left or right button (e.g. numpad-4 and 6) 
+</member>
+        <member name="M:GTA.Viewport.HandleChangeSelection(System.Boolean)">
+Handles when the user presses the up or down button (e.g. numpad-2 and 8) 
+</member>
+        <member name="M:GTA.Viewport.HandleBack">
+Handles when the back button is pressed (e.g. numpad-0) 
+</member>
+        <member name="M:GTA.Viewport.HandleActivate">
+Handles when the activate button is pressed (e.g. numpad-5) 
+</member>
+        <member name="M:GTA.Viewport.Draw">
+Draw all the active UIs 
+</member>
+        <member name="M:GTA.Viewport.CloseAllMenus">
+Closes all menus 
+</member>
+        <member name="M:GTA.Viewport.PopMenu">
+Remove the active menu from the stack, this will focus the next highest menu 
+</member>
+        <member name="M:GTA.Viewport.RemoveMenu(GTA.MenuBase)">
+Remove a menu from the stack of active menus 
+</member>
+        <member name="M:GTA.Viewport.AddMenu(GTA.MenuBase)">
+Add a menu to the stack of active menus and set it as focused 
+</member>
+        <member name="P:GTA.IMenuItem.Parent">
+Set by the parent so that the MenuItem can access its properties 
+</member>
+        <member name="M:GTA.IMenuItem.SetOriginAndSize(System.Drawing.Point,System.Drawing.Size)">
+Called by the Menu to set this item's origin 
+</member>
+        <member name="M:GTA.IMenuItem.Change(System.Boolean)">
+Called when the user changes this item (e.g. numpad-4 and 6) 
+</member>
+        <member name="M:GTA.IMenuItem.Activate">
+Called when the user activates this item (e.g. numpad-5) 
+</member>
+        <member name="M:GTA.IMenuItem.Deselect">
+Called when the user deselects this item 
+</member>
+        <member name="M:GTA.IMenuItem.Select">
+Called when the user selects this item 
+</member>
+        <member name="M:GTA.IMenuItem.Draw(System.Drawing.Size)">
+Called when the MenuItem should be drawn with an offset 
+</member>
+        <member name="M:GTA.IMenuItem.Draw">
+Called when the MenuItem should be drawn 
+</member>
+        <member name="P:GTA.MessageBox.OkCancel">
+Use Ok and Cancel instead of Yes and No 
+</member>
+        <member name="M:GTA.MenuBase.OnChangeItem(System.Boolean)">
+Called when the user changes the current element (i.e. left and right) 
+</member>
+        <member name="M:GTA.MenuBase.OnChangeSelection(System.Boolean)">
+Called when the user changes what element is selected (i.e. up and down) 
+</member>
+        <member name="M:GTA.MenuBase.OnActivate">
+Called when the user hits the activate button 
+</member>
+        <member name="M:GTA.MenuBase.OnClose">
+Called when the user hits the back button or unfocuses from this menu 
+</member>
+        <member name="M:GTA.MenuBase.OnOpen">
+Called when the menu gains or regains focus 
+</member>
+        <member name="M:GTA.MenuBase.Initialize">
+Called when the menu is first added to the Viewport 
+</member>
+        <member name="M:GTA.MenuBase.Draw(System.Drawing.Size)">
+Draws the menu with an offset 
+</member>
+        <member name="M:GTA.MenuBase.Draw">
+Draws the menu 
+</member>
+        <member name="M:GTA.Math.Matrix.Equals(GTA.Math.Matrix@,GTA.Math.Matrix@)">
+            <summary>
+Determines whether the specified object instances are considered equal. 
+</summary>
+            <param name="value1" />
+            <param name="value2" />
+            <returns>
+                <c>true</c> if <paramref name="value1" /> is the same instance as <paramref name="value2" /> or 
+if both are <c>null</c> references or if <c>value1.Equals(value2)</c> returns <c>true</c>; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.Equals(GTA.Math.Matrix)">
+            <summary>
+Returns a value that indicates whether the current instance is equal to the specified object. 
+</summary>
+            <param name="other">Object to make the comparison with.</param>
+            <returns>
+                <c>true</c> if the current instance is equal to the specified object; <c>false</c> otherwise.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.Equals(System.Object)">
+            <summary>
+Returns a value that indicates whether the current instance is equal to a specified object. 
+</summary>
+            <param name="obj">Object to make the comparison with.</param>
+            <returns>
+                <c>true</c> if the current instance is equal to the specified object; <c>false</c> otherwise.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.GetHashCode">
+            <summary>
+Returns the hash code for this instance.
+</summary>
+            <returns>A 32-bit signed integer hash code.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.ToString">
+            <summary>
+Converts the value of the object to its equivalent string representation.
+</summary>
+            <returns>The string representation of the value of this instance.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.ToArray">
+            <summary>
+Converts the matrix to an array of floats.
+</summary>
+        </member>
+        <member name="M:GTA.Math.Matrix.op_Inequality(GTA.Math.Matrix,GTA.Math.Matrix)">
+            <summary>
+Tests for inequality between two objects.
+</summary>
+            <param name="left">The first value to compare.</param>
+            <param name="right">The second value to compare.</param>
+            <returns>
+                <c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.op_Equality(GTA.Math.Matrix,GTA.Math.Matrix)">
+            <summary>
+Tests for equality between two objects.
+</summary>
+            <param name="left">The first value to compare.</param>
+            <param name="right">The second value to compare.</param>
+            <returns>
+                <c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.op_Multiply(System.Single,GTA.Math.Matrix)">
+            <summary>
+Scales a matrix by a given value.
+</summary>
+            <param name="right">The matrix to scale.</param>
+            <param name="left">The amount by which to scale.</param>
+            <returns>The scaled matrix.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.op_Multiply(GTA.Math.Matrix,System.Single)">
+            <summary>
+Scales a matrix by a given value.
+</summary>
+            <param name="left">The matrix to scale.</param>
+            <param name="right">The amount by which to scale.</param>
+            <returns>The scaled matrix.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.op_Multiply(GTA.Math.Matrix,GTA.Math.Matrix)">
+            <summary>
+Multiplies two matricies.
+</summary>
+            <param name="left">The first matrix to multiply.</param>
+            <param name="right">The second matrix to multiply.</param>
+            <returns>The product of the two matricies.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.op_Division(GTA.Math.Matrix,System.Single)">
+            <summary>
+Scales a matrix by a given value.
+</summary>
+            <param name="left">The matrix to scale.</param>
+            <param name="right">The amount by which to scale.</param>
+            <returns>The scaled matrix.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.op_Division(GTA.Math.Matrix,GTA.Math.Matrix)">
+            <summary>
+Divides two matricies.
+</summary>
+            <param name="left">The first matrix to divide.</param>
+            <param name="right">The second matrix to divide.</param>
+            <returns>The quotient of the two matricies.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.op_Subtraction(GTA.Math.Matrix,GTA.Math.Matrix)">
+            <summary>
+Subtracts two matricies.
+</summary>
+            <param name="left">The first matrix to subtract.</param>
+            <param name="right">The second matrix to subtract.</param>
+            <returns>The difference between the two matricies.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.op_Addition(GTA.Math.Matrix,GTA.Math.Matrix)">
+            <summary>
+Adds two matricies.
+</summary>
+            <param name="left">The first matrix to add.</param>
+            <param name="right">The second matrix to add.</param>
+            <returns>The sum of the two matricies.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.op_UnaryNegation(GTA.Math.Matrix)">
+            <summary>
+Negates a matrix.
+</summary>
+            <param name="matrix">The matrix to negate.</param>
+            <returns>The negated matrix.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.Transpose(GTA.Math.Matrix)">
+            <summary>
+Calculates the transpose of the specified matrix.
+</summary>
+            <param name="matrix">The matrix whose transpose is to be calculated.</param>
+            <returns>The transpose of the specified matrix.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.Translation(GTA.Math.Vector3)">
+            <summary>
+Creates a translation matrix using the specified offsets.
+</summary>
+            <param name="amount">The offset for all three coordinate planes.</param>
+            <returns>The created translation matrix.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.Translation(System.Single,System.Single,System.Single)">
+            <summary>
+Creates a translation matrix using the specified offsets.
+</summary>
+            <param name="x">X-coordinate offset.</param>
+            <param name="y">Y-coordinate offset.</param>
+            <param name="z">Z-coordinate offset.</param>
+            <returns>The created translation matrix.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.Scaling(GTA.Math.Vector3)">
+            <summary>
+Creates a matrix that scales along the x-axis, y-axis, and y-axis.
+</summary>
+            <param name="scale">Scaling factor for all three axes.</param>
+            <returns>The created scaling matrix.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.Scaling(System.Single,System.Single,System.Single)">
+            <summary>
+Creates a matrix that scales along the x-axis, y-axis, and y-axis.
+</summary>
+            <param name="x">Scaling factor that is applied along the x-axis.</param>
+            <param name="y">Scaling factor that is applied along the y-axis.</param>
+            <param name="z">Scaling factor that is applied along the z-axis.</param>
+            <returns>The created scaling matrix.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.RotationYawPitchRoll(System.Single,System.Single,System.Single)">
+            <summary>
+Creates a rotation matrix with a specified yaw, pitch, and roll.
+</summary>
+            <param name="yaw">Yaw around the y-axis, in radians.</param>
+            <param name="pitch">Pitch around the x-axis, in radians.</param>
+            <param name="roll">Roll around the z-axis, in radians.</param>
+            <returns>The created rotation matrix.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.RotationQuaternion(GTA.Math.Quaternion)">
+            <summary>
+Creates a rotation matrix from a quaternion.
+</summary>
+            <param name="rotation">The quaternion to use to build the matrix.</param>
+            <returns>The created rotation matrix.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.RotationAxis(GTA.Math.Vector3,System.Single)">
+            <summary>
+Creates a matrix that rotates around an arbitary axis.
+</summary>
+            <param name="axis">The axis around which to rotate.</param>
+            <param name="angle">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
+            <returns>The created rotation matrix.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.RotationZ(System.Single)">
+            <summary>
+Creates a matrix that rotates around the z-axis.
+</summary>
+            <param name="angle">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
+            <returns>The created rotation matrix.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.RotationY(System.Single)">
+            <summary>
+Creates a matrix that rotates around the y-axis.
+</summary>
+            <param name="angle">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
+            <returns>The created rotation matrix.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.RotationX(System.Single)">
+            <summary>
+Creates a matrix that rotates around the x-axis.
+</summary>
+            <param name="angle">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
+            <returns>The created rotation matrix.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.Lerp(GTA.Math.Matrix,GTA.Math.Matrix,System.Single)">
+            <summary>
+Performs a linear interpolation between two matricies.
+</summary>
+            <param name="start">Start matrix.</param>
+            <param name="end">End matrix.</param>
+            <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
+            <returns>The linear interpolation of the two matrices.</returns>
+            <remarks>
+This method performs the linear interpolation based on the following formula.
+<code>start + (end - start) * amount</code>
+Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned. 
+</remarks>
+        </member>
+        <member name="M:GTA.Math.Matrix.Inverse(GTA.Math.Matrix)">
+            <summary>
+Calculates the inverse of a matrix if it exists.
+</summary>
+            <returns>The inverse of the matrix.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.Negate(GTA.Math.Matrix)">
+            <summary>
+Negates a matrix.
+</summary>
+            <param name="matrix">The matrix to be negated.</param>
+            <returns>The negated matrix.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.Divide(GTA.Math.Matrix,System.Single)">
+            <summary>
+Scales a matrix by the given value.
+</summary>
+            <param name="left">The matrix to scale.</param>
+            <param name="right">The amount by which to scale.</param>
+            <returns>The scaled matrix.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.Divide(GTA.Math.Matrix,GTA.Math.Matrix)">
+            <summary>
+Determines the quotient of two matrices.
+</summary>
+            <param name="left">The first matrix to divide.</param>
+            <param name="right">The second matrix to divide.</param>
+            <returns>The quotient of the two matrices.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.Multiply(GTA.Math.Matrix,System.Single)">
+            <summary>
+Scales a matrix by the given value.
+</summary>
+            <param name="left">The matrix to scale.</param>
+            <param name="right">The amount by which to scale.</param>
+            <returns>The scaled matrix.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.Multiply(GTA.Math.Matrix,GTA.Math.Matrix)">
+            <summary>
+Determines the product of two matrices.
+</summary>
+            <param name="left">The first matrix to multiply.</param>
+            <param name="right">The second matrix to multiply.</param>
+            <returns>The product of the two matrices.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.Subtract(GTA.Math.Matrix,GTA.Math.Matrix)">
+            <summary>
+Determines the difference between two matrices.
+</summary>
+            <param name="left">The first matrix to subtract.</param>
+            <param name="right">The second matrix to subtract.</param>
+            <returns>The difference between the two matrices.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.Add(GTA.Math.Matrix,GTA.Math.Matrix)">
+            <summary>
+Determines the sum of two matrices.
+</summary>
+            <param name="left">The first matrix to add.</param>
+            <param name="right">The second matrix to add.</param>
+            <returns>The sum of the two matrices.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.Inverse">
+            <summary>
+Calculates the inverse of the matrix if it exists.
+</summary>
+        </member>
+        <member name="M:GTA.Math.Matrix.Determinant">
+            <summary>
+Calculates the determinant of the matrix.
+</summary>
+            <returns>The determinant of the matrix.</returns>
+        </member>
+        <member name="M:GTA.Math.Matrix.FromArray(System.Single[])">
+            <summary>
+Converts the matrix to an array of floats.
+</summary>
+        </member>
+        <member name="P:GTA.Math.Matrix.HasInverse">
+            <summary>
+Gets a value indicating whether this instance has an inverse matrix.
+</summary>
+        </member>
+        <member name="P:GTA.Math.Matrix.IsIdentity">
+            <summary>
+Gets a value indicating whether this instance is an identity matrix.
+</summary>
+        </member>
+        <member name="P:GTA.Math.Matrix.Identity">
+            <summary>
+Gets a <see cref="T:GTA.Math.Matrix" /> that represents an identity matrix.
+</summary>
+        </member>
+        <member name="F:GTA.Math.Matrix.M44">
+            <summary>
+Gets or sets the element of the matrix that exists in the fourth row and fourth column. 
+</summary>
+        </member>
+        <member name="F:GTA.Math.Matrix.M43">
+            <summary>
+Gets or sets the element of the matrix that exists in the fourth row and third column. 
+</summary>
+        </member>
+        <member name="F:GTA.Math.Matrix.M42">
+            <summary>
+Gets or sets the element of the matrix that exists in the fourth row and second column. 
+</summary>
+        </member>
+        <member name="F:GTA.Math.Matrix.M41">
+            <summary>
+Gets or sets the element of the matrix that exists in the fourth row and first column. 
+</summary>
+        </member>
+        <member name="F:GTA.Math.Matrix.M34">
+            <summary>
+Gets or sets the element of the matrix that exists in the third row and fourth column. 
+</summary>
+        </member>
+        <member name="F:GTA.Math.Matrix.M33">
+            <summary>
+Gets or sets the element of the matrix that exists in the third row and third column. 
+</summary>
+        </member>
+        <member name="F:GTA.Math.Matrix.M32">
+            <summary>
+Gets or sets the element of the matrix that exists in the third row and second column. 
+</summary>
+        </member>
+        <member name="F:GTA.Math.Matrix.M31">
+            <summary>
+Gets or sets the element of the matrix that exists in the third row and first column. 
+</summary>
+        </member>
+        <member name="F:GTA.Math.Matrix.M24">
+            <summary>
+Gets or sets the element of the matrix that exists in the second row and fourth column. 
+</summary>
+        </member>
+        <member name="F:GTA.Math.Matrix.M23">
+            <summary>
+Gets or sets the element of the matrix that exists in the second row and third column. 
+</summary>
+        </member>
+        <member name="F:GTA.Math.Matrix.M22">
+            <summary>
+Gets or sets the element of the matrix that exists in the second row and second column. 
+</summary>
+        </member>
+        <member name="F:GTA.Math.Matrix.M21">
+            <summary>
+Gets or sets the element of the matrix that exists in the second row and first column. 
+</summary>
+        </member>
+        <member name="F:GTA.Math.Matrix.M14">
+            <summary>
+Gets or sets the element of the matrix that exists in the first row and fourth column. 
+</summary>
+        </member>
+        <member name="F:GTA.Math.Matrix.M13">
+            <summary>
+Gets or sets the element of the matrix that exists in the first row and third column. 
+</summary>
+        </member>
+        <member name="F:GTA.Math.Matrix.M12">
+            <summary>
+Gets or sets the element of the matrix that exists in the first row and second column. 
+</summary>
+        </member>
+        <member name="F:GTA.Math.Matrix.M11">
+            <summary>
+Gets or sets the element of the matrix that exists in the first row and first column. 
+</summary>
+        </member>
+        <member name="T:GTA.Math.Matrix">
+            <summary>
+Defines a 4x4 matrix.
+</summary>
+            <unmanaged>D3DXMATRIX</unmanaged>
+        </member>
+        <member name="P:GTA.World.WeatherTransition">
+            <summary>Gets or sets the current transition ratio of the weather.</summary>
+            <value>A Single representing the current time ratio between 0.0f and 1.0f.</value>
+        </member>
+        <member name="M:GTA.Math.Vector2.Equals(GTA.Math.Vector2@,GTA.Math.Vector2@)">
+            <summary>
+Determines whether the specified object instances are considered equal. 
+</summary>
+            <param name="value1">The first value to compare.</param>
+            <param name="value2">The second value to compare.</param>
+            <returns>
+                <c>true</c> if <paramref name="value1" /> is the same instance as <paramref name="value2" /> or 
+if both are <c>null</c> references or if <c>value1.Equals(value2)</c> returns <c>true</c>; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.Equals(GTA.Math.Vector2)">
+            <summary>
+Returns a value that indicates whether the current instance is equal to the specified object. 
+</summary>
+            <param name="other">Object to make the comparison with.</param>
+            <returns>
+                <c>true</c> if the current instance is equal to the specified object; <c>false</c> otherwise.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.Equals(System.Object)">
+            <summary>
+Returns a value that indicates whether the current instance is equal to a specified object. 
+</summary>
+            <param name="obj">Object to make the comparison with.</param>
+            <returns>
+                <c>true</c> if the current instance is equal to the specified object; <c>false</c> otherwise.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.GetHashCode">
+            <summary>
+Returns the hash code for this instance.
+</summary>
+            <returns>A 32-bit signed integer hash code.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.ToString">
+            <summary>
+Converts the value of the object to its equivalent string representation.
+</summary>
+            <returns>The string representation of the value of this instance.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.op_Inequality(GTA.Math.Vector2,GTA.Math.Vector2)">
+            <summary>
+Tests for inequality between two objects.
+</summary>
+            <param name="left">The first value to compare.</param>
+            <param name="right">The second value to compare.</param>
+            <returns>
+                <c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.op_Equality(GTA.Math.Vector2,GTA.Math.Vector2)">
+            <summary>
+Tests for equality between two objects.
+</summary>
+            <param name="left">The first value to compare.</param>
+            <param name="right">The second value to compare.</param>
+            <returns>
+                <c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.op_Division(GTA.Math.Vector2,System.Single)">
+            <summary>
+Scales a vector by the given value.
+</summary>
+            <param name="vector">The vector to scale.</param>
+            <param name="scale">The amount by which to scale the vector.</param>
+            <returns>The scaled vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.op_Multiply(System.Single,GTA.Math.Vector2)">
+            <summary>
+Scales a vector by the given value.
+</summary>
+            <param name="vector">The vector to scale.</param>
+            <param name="scale">The amount by which to scale the vector.</param>
+            <returns>The scaled vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.op_Multiply(GTA.Math.Vector2,System.Single)">
+            <summary>
+Scales a vector by the given value.
+</summary>
+            <param name="vector">The vector to scale.</param>
+            <param name="scale">The amount by which to scale the vector.</param>
+            <returns>The scaled vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.op_UnaryNegation(GTA.Math.Vector2)">
+            <summary>
+Reverses the direction of a given vector.
+</summary>
+            <param name="value">The vector to negate.</param>
+            <returns>A vector facing in the opposite direction.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.op_Subtraction(GTA.Math.Vector2,GTA.Math.Vector2)">
+            <summary>
+Subtracts two vectors.
+</summary>
+            <param name="left">The first vector to subtract.</param>
+            <param name="right">The second vector to subtract.</param>
+            <returns>The difference of the two vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.op_Addition(GTA.Math.Vector2,GTA.Math.Vector2)">
+            <summary>
+Adds two vectors.
+</summary>
+            <param name="left">The first vector to add.</param>
+            <param name="right">The second vector to add.</param>
+            <returns>The sum of the two vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.Maximize(GTA.Math.Vector2,GTA.Math.Vector2)">
+            <summary>
+Returns a vector containing the largest components of the specified vectors.
+</summary>
+            <param name="value1">The first source vector.</param>
+            <param name="value2">The second source vector.</param>
+            <returns>A vector containing the largest components of the source vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.Minimize(GTA.Math.Vector2,GTA.Math.Vector2)">
+            <summary>
+Returns a vector containing the smallest components of the specified vectors.
+</summary>
+            <param name="value1">The first source vector.</param>
+            <param name="value2">The second source vector.</param>
+            <returns>A vector containing the smallest components of the source vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.Reflect(GTA.Math.Vector2,GTA.Math.Vector2)">
+            <summary>
+Returns the reflection of a vector off a surface that has the specified normal. 
+</summary>
+            <param name="vector">The source vector.</param>
+            <param name="normal">Normal of the surface.</param>
+            <returns>The reflected vector.</returns>
+            <remarks>Reflect only gives the direction of a reflection off a surface, it does not determine 
+whether the original vector was close enough to the surface to hit it.</remarks>
+        </member>
+        <member name="M:GTA.Math.Vector2.Dot(GTA.Math.Vector2,GTA.Math.Vector2)">
+            <summary>
+Calculates the dot product of two vectors.
+</summary>
+            <param name="left">First source vector.</param>
+            <param name="right">Second source vector.</param>
+            <returns>The dot product of the two vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.Normalize(GTA.Math.Vector2)">
+            <summary>
+Converts the vector into a unit vector.
+</summary>
+            <param name="vector">The vector to normalize.</param>
+            <returns>The normalized vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.Lerp(GTA.Math.Vector2,GTA.Math.Vector2,System.Single)">
+            <summary>
+Performs a linear interpolation between two vectors.
+</summary>
+            <param name="start">Start vector.</param>
+            <param name="end">End vector.</param>
+            <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
+            <returns>The linear interpolation of the two vectors.</returns>
+            <remarks>
+This method performs the linear interpolation based on the following formula.
+<code>start + (end - start) * amount</code>
+Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned. 
+</remarks>
+        </member>
+        <member name="M:GTA.Math.Vector2.Clamp(GTA.Math.Vector2,GTA.Math.Vector2,GTA.Math.Vector2)">
+            <summary>
+Restricts a value to be within a specified range.
+</summary>
+            <param name="value">The value to clamp.</param>
+            <param name="min">The minimum value.</param>
+            <param name="max">The maximum value.</param>
+            <returns>The clamped value.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.Negate(GTA.Math.Vector2)">
+            <summary>
+Reverses the direction of a given vector.
+</summary>
+            <param name="value">The vector to negate.</param>
+            <returns>A vector facing in the opposite direction.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.Divide(GTA.Math.Vector2,System.Single)">
+            <summary>
+Scales a vector by the given value.
+</summary>
+            <param name="value">The vector to scale.</param>
+            <param name="scale">The amount by which to scale the vector.</param>
+            <returns>The scaled vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.Modulate(GTA.Math.Vector2,GTA.Math.Vector2)">
+            <summary>
+Modulates a vector by another.
+</summary>
+            <param name="left">The first vector to modulate.</param>
+            <param name="right">The second vector to modulate.</param>
+            <returns>The modulated vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.Multiply(GTA.Math.Vector2,System.Single)">
+            <summary>
+Scales a vector by the given value.
+</summary>
+            <param name="value">The vector to scale.</param>
+            <param name="scale">The amount by which to scale the vector.</param>
+            <returns>The scaled vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.Subtract(GTA.Math.Vector2,GTA.Math.Vector2)">
+            <summary>
+Subtracts two vectors.
+</summary>
+            <param name="left">The first vector to subtract.</param>
+            <param name="right">The second vector to subtract.</param>
+            <returns>The difference of the two vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.Add(GTA.Math.Vector2,GTA.Math.Vector2)">
+            <summary>
+Adds two vectors.
+</summary>
+            <param name="left">The first vector to add.</param>
+            <param name="right">The second vector to add.</param>
+            <returns>The sum of the two vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.RandomXY">
+            <summary>
+Returns a new normalized vector with random X and Y components.
+</summary>
+        </member>
+        <member name="M:GTA.Math.Vector2.ToHeading">
+            <summary>
+Converts a vector to a heading.
+</summary>
+        </member>
+        <member name="M:GTA.Math.Vector2.SignedAngle(GTA.Math.Vector2,GTA.Math.Vector2)">
+            <summary>
+Returns the signed angle in degrees between from and to.
+</summary>
+        </member>
+        <member name="M:GTA.Math.Vector2.Angle(GTA.Math.Vector2,GTA.Math.Vector2)">
+            <summary>
+Returns the angle in degrees between from and to.
+The angle returned is always the acute angle between the two vectors.
+</summary>
+        </member>
+        <member name="M:GTA.Math.Vector2.DistanceSquared(GTA.Math.Vector2,GTA.Math.Vector2)">
+            <summary>
+Calculates the squared distance between two vectors.
+</summary>
+            <param name="position2">The first vector to calculate the squared distance to the second vector.</param>
+            <param name="position2">The second vector to calculate the squared distance to the first vector.</param>
+            <returns>The squared distance between the two vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.Distance(GTA.Math.Vector2,GTA.Math.Vector2)">
+            <summary>
+Calculates the distance between two vectors.
+</summary>
+            <param name="position2">The first vector to calculate the distance to the second vector.</param>
+            <param name="position2">The second vector to calculate the distance to the first vector.</param>
+            <returns>The distance between the two vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.DistanceToSquared(GTA.Math.Vector2)">
+            <summary>
+Calculates the squared distance between two vectors.
+</summary>
+            <param name="position">The second vector to calculate the squared distance to.</param>
+            <returns>The squared distance to the other vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.DistanceTo(GTA.Math.Vector2)">
+            <summary>
+Calculates the distance between two vectors.
+</summary>
+            <param name="position">The second vector to calculate the distance to.</param>
+            <returns>The distance to the other vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.Normalize">
+            <summary>
+Converts the vector into a unit vector.
+</summary>
+        </member>
+        <member name="M:GTA.Math.Vector2.LengthSquared">
+            <summary>
+Calculates the squared length of the vector.
+</summary>
+            <returns>The squared length of the vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector2.Length">
+            <summary>
+Calculates the length of the vector.
+</summary>
+            <returns>The length of the vector.</returns>
+        </member>
+        <member name="P:GTA.Math.Vector2.Left">
+            <summary>
+Returns the left vector. (-1,0)
+</summary>
+        </member>
+        <member name="P:GTA.Math.Vector2.Right">
+            <summary>
+Returns the right vector. (1,0)
+</summary>
+        </member>
+        <member name="P:GTA.Math.Vector2.Down">
+            <summary>
+Returns the down vector. (0,-1)
+</summary>
+        </member>
+        <member name="P:GTA.Math.Vector2.Up">
+            <summary>
+Returns the up vector. (0,1)
+</summary>
+        </member>
+        <member name="P:GTA.Math.Vector2.Zero">
+            <summary>
+Returns a null vector. (0,0)
+</summary>
+        </member>
+        <member name="P:GTA.Math.Vector2.Normalized">
+            <summary>
+Returns this vector with a magnitude of 1.
+</summary>
+        </member>
+        <member name="M:GTA.Math.Vector2.#ctor(System.Single,System.Single)">
+            <summary>
+Initializes a new instance of the <see cref="T:GTA.Math.Vector2" /> class.
+</summary>
+            <param name="x">Initial value for the X component of the vector.</param>
+            <param name="y">Initial value for the Y component of the vector.</param>
+        </member>
+        <member name="F:GTA.Math.Vector2.Y">
+            <summary>
+Gets or sets the Y component of the vector.
+</summary>
+            <value>The Y component of the vector.</value>
+        </member>
+        <member name="F:GTA.Math.Vector2.X">
+            <summary>
+Gets or sets the X component of the vector.
+</summary>
+            <value>The X component of the vector.</value>
+        </member>
+        <member name="P:GTA.Vehicle.SteeringScale">
+            <summary>
+Gets or sets the steering scale.
+</summary>
+            <value>A single between -1.0f (fully right) and 1.0f (fully left).</value>
+        </member>
+        <member name="P:GTA.Vehicle.SteeringAngle">
+            <summary>
+Gets or sets the steering angle.
+</summary>
+            <value>The steering angle in degrees.</value>
+        </member>
+        <member name="P:GTA.Vehicle.WheelSpeed">
+            <summary>
+Gets the speed the wheels are spinning at
+</summary>
+            <value>The speed in meters per second</value>
+        </member>
+        <member name="F:GTA.VehicleLockStatus.CanBeBrokenInto">
+            <summary>Can be broken into the car. if the glass is broken, the value will be set to 1.</summary>
+        </member>
+        <member name="F:GTA.VehicleLockStatus.StickPlayerInside">
+            <summary>Doesn't allow players to exit the vehicle with the exit vehicle key.</summary>
+        </member>
+        <member name="M:GTA.Math.Quaternion.Equals(GTA.Math.Quaternion@,GTA.Math.Quaternion@)">
+            <summary>
+Determines whether the specified object instances are considered equal. 
+</summary>
+            <param name="value1" />
+            <param name="value2" />
+            <returns>
+                <c>true</c> if <paramref name="value1" /> is the same instance as <paramref name="value2" /> or 
+if both are <c>null</c> references or if <c>value1.Equals(value2)</c> returns <c>true</c>; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.Equals(GTA.Math.Quaternion)">
+            <summary>
+Returns a value that indicates whether the current instance is equal to the specified object. 
+</summary>
+            <param name="other">Object to make the comparison with.</param>
+            <returns>
+                <c>true</c> if the current instance is equal to the specified object; <c>false</c> otherwise.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.Equals(System.Object)">
+            <summary>
+Returns a value that indicates whether the current instance is equal to a specified object. 
+</summary>
+            <param name="obj">Object to make the comparison with.</param>
+            <returns>
+                <c>true</c> if the current instance is equal to the specified object; <c>false</c> otherwise.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.GetHashCode">
+            <summary>
+Returns the hash code for this instance.
+</summary>
+            <returns>A 32-bit signed integer hash code.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.ToString">
+            <summary>
+Converts the value of the object to its equivalent string representation.
+</summary>
+            <returns>The string representation of the value of this instance.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.op_Inequality(GTA.Math.Quaternion,GTA.Math.Quaternion)">
+            <summary>
+Tests for inequality between two objects.
+</summary>
+            <param name="left">The first value to compare.</param>
+            <param name="right">The second value to compare.</param>
+            <returns>
+                <c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.op_Equality(GTA.Math.Quaternion,GTA.Math.Quaternion)">
+            <summary>
+Tests for equality between two objects.
+</summary>
+            <param name="left">The first value to compare.</param>
+            <param name="right">The second value to compare.</param>
+            <returns>
+                <c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.op_UnaryNegation(GTA.Math.Quaternion)">
+            <summary>
+Reverses the direction of a given quaternion.
+</summary>
+            <param name="quaternion">The quaternion to negate.</param>
+            <returns>A quaternion facing in the opposite direction.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.op_Subtraction(GTA.Math.Quaternion,GTA.Math.Quaternion)">
+            <summary>
+Subtracts two quaternions.
+</summary>
+            <param name="left">The first quaternion to subtract.</param>
+            <param name="right">The second quaternion to subtract.</param>
+            <returns>The difference of the two quaternions.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.op_Addition(GTA.Math.Quaternion,GTA.Math.Quaternion)">
+            <summary>
+Adds two quaternions.
+</summary>
+            <param name="left">The first quaternion to add.</param>
+            <param name="right">The second quaternion to add.</param>
+            <returns>The sum of the two quaternions.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.op_Division(GTA.Math.Quaternion,System.Single)">
+            <summary>
+Divides a quaternion by another.
+</summary>
+            <param name="left">The first quaternion to divide.</param>
+            <param name="right">The second quaternion to divide.</param>
+            <returns>The divided quaternion.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.op_Multiply(System.Single,GTA.Math.Quaternion)">
+            <summary>
+Scales a quaternion by the given value.
+</summary>
+            <param name="quaternion">The quaternion to scale.</param>
+            <param name="scale">The amount by which to scale the quaternion.</param>
+            <returns>The scaled quaternion.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.op_Multiply(GTA.Math.Quaternion,System.Single)">
+            <summary>
+Scales a quaternion by the given value.
+</summary>
+            <param name="quaternion">The quaternion to scale.</param>
+            <param name="scale">The amount by which to scale the quaternion.</param>
+            <returns>The scaled quaternion.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.op_Multiply(GTA.Math.Quaternion,GTA.Math.Vector3)">
+            <summary>
+Rotates the point with rotation.
+</summary>
+            <param name="rotation">The quaternion to rotate the vector.</param>
+            <param name="point">The vector to be rotated.</param>
+            <returns>The vector after rotation.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.op_Multiply(GTA.Math.Quaternion,GTA.Math.Quaternion)">
+            <summary>
+Multiplies a quaternion by another.
+</summary>
+            <param name="left">The first quaternion to multiply.</param>
+            <param name="right">The second quaternion to multiply.</param>
+            <returns>The multiplied quaternion.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.Subtract(GTA.Math.Quaternion,GTA.Math.Quaternion)">
+            <summary>
+Subtracts two quaternions.
+</summary>
+            <param name="left">The first quaternion to subtract.</param>
+            <param name="right">The second quaternion to subtract.</param>
+            <returns>The difference of the two quaternions.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.RotationYawPitchRoll(System.Single,System.Single,System.Single)">
+            <summary>
+Creates a quaternion given a yaw, pitch, and roll value.
+</summary>
+            <param name="yaw">The yaw of rotation.</param>
+            <param name="pitch">The pitch of rotation.</param>
+            <param name="roll">The roll of rotation.</param>
+            <returns>The newly created quaternion.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.RotationMatrix(GTA.Math.Matrix)">
+            <summary>
+Creates a quaternion given a rotation matrix.
+</summary>
+            <param name="matrix">The rotation matrix.</param>
+            <returns>The newly created quaternion.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.RotationAxis(GTA.Math.Vector3,System.Single)">
+            <summary>
+Creates a quaternion given a rotation and an axis.
+</summary>
+            <param name="axis">The axis of rotation.</param>
+            <param name="angle">The angle of rotation.</param>
+            <returns>The newly created quaternion.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.Euler(GTA.Math.Vector3)">
+            <summary>
+Returns a rotation that rotates z degrees around the z axis, x degrees around the x axis, and y degrees around the y axis (in that order).
+</summary>
+            <param name="euler">Euler angles in degrees.</param>
+        </member>
+        <member name="M:GTA.Math.Quaternion.Euler(System.Single,System.Single,System.Single)">
+            <summary>
+eturns a rotation that rotates z degrees around the z axis, x degrees around the x axis, and y degrees around the y axis (in that order).
+</summary>
+            <param name="x">X degrees.</param>
+            <param name="y">Y degrees.</param>
+            <param name="z">Z degrees.</param>
+        </member>
+        <member name="M:GTA.Math.Quaternion.AngleBetween(GTA.Math.Quaternion,GTA.Math.Quaternion)">
+            <summary>
+Returns the angle in degrees between two rotations a and b.
+</summary>
+            <param name="a">The first quaternion to calculate angle.</param>
+            <param name="b">The second quaternion to calculate angle.</param>
+            <returns>The angle in degrees between two rotations a and b.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.Normalize(GTA.Math.Quaternion)">
+            <summary>
+Converts the quaternion into a unit quaternion.
+</summary>
+            <param name="quaternion">The quaternion to normalize.</param>
+            <returns>The normalized quaternion.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.Negate(GTA.Math.Quaternion)">
+            <summary>
+Reverses the direction of a given quaternion.
+</summary>
+            <param name="quaternion">The quaternion to negate.</param>
+            <returns>A quaternion facing in the opposite direction.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.Multiply(GTA.Math.Quaternion,System.Single)">
+            <summary>
+Scales a quaternion by the given value.
+</summary>
+            <param name="quaternion">The quaternion to scale.</param>
+            <param name="scale">The amount by which to scale the quaternion.</param>
+            <returns>The scaled quaternion.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.Multiply(GTA.Math.Quaternion,GTA.Math.Quaternion)">
+            <summary>
+Modulates a quaternion by another.
+</summary>
+            <param name="left">The first quaternion to modulate.</param>
+            <param name="right">The second quaternion to modulate.</param>
+            <returns>The modulated quaternion.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.RotateTowards(GTA.Math.Quaternion,GTA.Math.Quaternion,System.Single)">
+            <summary>
+Rotates a rotation from towards to.
+</summary>
+            <param name="from">From Quaternion.</param>
+            <param name="to">To Quaternion.</param>
+            <param name="maxDegreesDelta" />
+        </member>
+        <member name="M:GTA.Math.Quaternion.FromToRotation(GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Creates a rotation which rotates from fromDirection to toDirection.
+</summary>
+        </member>
+        <member name="M:GTA.Math.Quaternion.SlerpUnclamped(GTA.Math.Quaternion,GTA.Math.Quaternion,System.Single)">
+            <summary>
+Interpolates between two quaternions, using spherical linear interpolation. The parameter /t/ is not clamped.
+</summary>
+            <param name="a" />
+            <param name="b" />
+            <param name="t" />
+        </member>
+        <member name="M:GTA.Math.Quaternion.Slerp(GTA.Math.Quaternion,GTA.Math.Quaternion,System.Single)">
+            <summary>
+Interpolates between two quaternions, using spherical linear interpolation..
+</summary>
+            <param name="start">Start quaternion.</param>
+            <param name="end">End quaternion.</param>
+            <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
+            <returns>The spherical linear interpolation of the two quaternions.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.Lerp(GTA.Math.Quaternion,GTA.Math.Quaternion,System.Single)">
+            <summary>
+Performs a linear interpolation between two quaternion.
+</summary>
+            <param name="start">Start quaternion.</param>
+            <param name="end">End quaternion.</param>
+            <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
+            <returns>The linear interpolation of the two quaternions.</returns>
+            <remarks>
+This method performs the linear interpolation based on the following formula.
+<code>start + (end - start) * amount</code>
+Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned. 
+</remarks>
+        </member>
+        <member name="M:GTA.Math.Quaternion.Invert(GTA.Math.Quaternion)">
+            <summary>
+Conjugates and renormalizes the quaternion.
+</summary>
+            <param name="quaternion">The quaternion to conjugate and renormalize.</param>
+            <returns>The conjugated and renormalized quaternion.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.Dot(GTA.Math.Quaternion,GTA.Math.Quaternion)">
+            <summary>
+Calculates the dot product of two quaternions.
+</summary>
+            <param name="left">First source quaternion.</param>
+            <param name="right">Second source quaternion.</param>
+            <returns>The dot product of the two quaternions.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.Divide(GTA.Math.Quaternion,GTA.Math.Quaternion)">
+            <summary>
+Divides a quaternion by another.
+</summary>
+            <param name="left">The first quaternion to divide.</param>
+            <param name="right">The second quaternion to divide.</param>
+            <returns>The divided quaternion.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.Add(GTA.Math.Quaternion,GTA.Math.Quaternion)">
+            <summary>
+Adds two quaternions.
+</summary>
+            <param name="left">The first quaternion to add.</param>
+            <param name="right">The second quaternion to add.</param>
+            <returns>The sum of the two quaternions.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.Invert">
+            <summary>
+Conjugates and renormalizes the quaternion.
+</summary>
+        </member>
+        <member name="M:GTA.Math.Quaternion.Conjugate">
+            <summary>
+Conjugates the quaternion.
+</summary>
+        </member>
+        <member name="M:GTA.Math.Quaternion.Normalize">
+            <summary>
+Converts the quaternion into a unit quaternion.
+</summary>
+        </member>
+        <member name="M:GTA.Math.Quaternion.LengthSquared">
+            <summary>
+Calculates the squared length of the quaternion.
+</summary>
+            <returns>The squared length of the quaternion.</returns>
+        </member>
+        <member name="M:GTA.Math.Quaternion.Length">
+            <summary>
+Calculates the length of the quaternion.
+</summary>
+            <returns>The length of the quaternion.</returns>
+        </member>
+        <member name="P:GTA.Math.Quaternion.Angle">
+            <summary>
+Gets the angle of the quaternion.
+</summary>
+        </member>
+        <member name="P:GTA.Math.Quaternion.Axis">
+            <summary>
+Gets the axis components of the quaternion.
+</summary>
+        </member>
+        <member name="P:GTA.Math.Quaternion.Identity">
+            <summary>
+Gets the identity <see cref="T:GTA.Math.Quaternion" /> (0, 0, 0, 1).
+</summary>
+        </member>
+        <member name="M:GTA.Math.Quaternion.#ctor(GTA.Math.Vector3,System.Single)">
+            <summary>
+Initializes a new instance of the <see cref="T:GTA.Math.Quaternion" /> structure.
+</summary>
+            <param name="value">A <see cref="T:GTA.Math.Vector3" /> containing the first three values of the quaternion.</param>
+            <param name="w">The W component of the quaternion.</param>
+        </member>
+        <member name="M:GTA.Math.Quaternion.#ctor(System.Single,System.Single,System.Single,System.Single)">
+            <summary>
+Initializes a new instance of the <see cref="T:GTA.Math.Quaternion" /> structure.
+</summary>
+            <param name="x">The X component of the quaternion.</param>
+            <param name="y">The Y component of the quaternion.</param>
+            <param name="z">The Z component of the quaternion.</param>
+            <param name="w">The W component of the quaternion.</param>
+        </member>
+        <member name="F:GTA.Math.Quaternion.W">
+            <summary>
+Gets or sets the W component of the quaternion.
+</summary>
+            <value>The W component of the quaternion.</value>
+        </member>
+        <member name="F:GTA.Math.Quaternion.Z">
+            <summary>
+Gets or sets the Z component of the quaternion.
+</summary>
+            <value>The Z component of the quaternion.</value>
+        </member>
+        <member name="F:GTA.Math.Quaternion.Y">
+            <summary>
+Gets or sets the Y component of the quaternion.
+</summary>
+            <value>The Y component of the quaternion.</value>
+        </member>
+        <member name="F:GTA.Math.Quaternion.X">
+            <summary>
+Gets or sets the X component of the quaternion.
+</summary>
+            <value>The X component of the quaternion.</value>
+        </member>
+        <member name="M:GTA.Math.Vector3.Equals(GTA.Math.Vector3@,GTA.Math.Vector3@)">
+            <summary>
+Determines whether the specified object instances are considered equal. 
+</summary>
+            <param name="value1">The first value to compare.</param>
+            <param name="value2">The second value to compare.</param>
+            <returns>
+                <c>true</c> if <paramref name="value1" /> is the same instance as <paramref name="value2" /> or 
+if both are <c>null</c> references or if <c>value1.Equals(value2)</c> returns <c>true</c>; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.Equals(GTA.Math.Vector3)">
+            <summary>
+Returns a value that indicates whether the current instance is equal to the specified object. 
+</summary>
+            <param name="other">Object to make the comparison with.</param>
+            <returns>
+                <c>true</c> if the current instance is equal to the specified object; <c>false</c> otherwise.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.Equals(System.Object)">
+            <summary>
+Returns a value that indicates whether the current instance is equal to a specified object. 
+</summary>
+            <param name="obj">Object to make the comparison with.</param>
+            <returns>
+                <c>true</c> if the current instance is equal to the specified object; <c>false</c> otherwise.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.GetHashCode">
+            <summary>
+Returns the hash code for this instance.
+</summary>
+            <returns>A 32-bit signed integer hash code.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.ToString">
+            <summary>
+Converts the value of the object to its equivalent string representation.
+</summary>
+            <returns>The string representation of the value of this instance.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.op_Inequality(GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Tests for inequality between two objects.
+</summary>
+            <param name="left">The first value to compare.</param>
+            <param name="right">The second value to compare.</param>
+            <returns>
+                <c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.op_Equality(GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Tests for equality between two objects.
+</summary>
+            <param name="left">The first value to compare.</param>
+            <param name="right">The second value to compare.</param>
+            <returns>
+                <c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.op_Division(GTA.Math.Vector3,System.Single)">
+            <summary>
+Scales a vector by the given value.
+</summary>
+            <param name="vector">The vector to scale.</param>
+            <param name="scale">The amount by which to scale the vector.</param>
+            <returns>The scaled vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.op_Multiply(System.Single,GTA.Math.Vector3)">
+            <summary>
+Scales a vector by the given value.
+</summary>
+            <param name="vector">The vector to scale.</param>
+            <param name="scale">The amount by which to scale the vector.</param>
+            <returns>The scaled vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.op_Multiply(GTA.Math.Vector3,System.Single)">
+            <summary>
+Scales a vector by the given value.
+</summary>
+            <param name="vector">The vector to scale.</param>
+            <param name="scale">The amount by which to scale the vector.</param>
+            <returns>The scaled vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.op_UnaryNegation(GTA.Math.Vector3)">
+            <summary>
+Reverses the direction of a given vector.
+</summary>
+            <param name="value">The vector to negate.</param>
+            <returns>A vector facing in the opposite direction.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.op_Subtraction(GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Subtracts two vectors.
+</summary>
+            <param name="left">The first vector to subtract.</param>
+            <param name="right">The second vector to subtract.</param>
+            <returns>The difference of the two vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.op_Addition(GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Adds two vectors.
+</summary>
+            <param name="left">The first vector to add.</param>
+            <param name="right">The second vector to add.</param>
+            <returns>The sum of the two vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.Maximize(GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Returns a vector containing the largest components of the specified vectors.
+</summary>
+            <param name="value1">The first source vector.</param>
+            <param name="value2">The second source vector.</param>
+            <returns>A vector containing the largest components of the source vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.Minimize(GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Returns a vector containing the smallest components of the specified vectors.
+</summary>
+            <param name="value1">The first source vector.</param>
+            <param name="value2">The second source vector.</param>
+            <returns>A vector containing the smallest components of the source vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.Reflect(GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Returns the reflection of a vector off a surface that has the specified normal. 
+</summary>
+            <param name="vector">The vector to project onto the plane.</param>
+            <param name="normal">Normal of the surface.</param>
+            <returns>The reflected vector.</returns>
+            <remarks>Reflect only gives the direction of a reflection off a surface, it does not determine 
+whether the original vector was close enough to the surface to hit it.</remarks>
+        </member>
+        <member name="M:GTA.Math.Vector3.ProjectOnPlane(GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Projects a vector onto a plane defined by a normal orthogonal to the plane.
+</summary>
+            <param name="vector">The vector to project.</param>
+            <param name="planeNormal">Normal of the plane,  does not assume it is normalized.</param>
+            <returns>The Projection of vector onto plane.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.Project(GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Projects a vector onto another vector.
+</summary>
+            <param name="vector">The vector to project.</param>
+            <param name="onNormal">Vector to project onto, does not assume it is normalized.</param>
+            <returns>The projected vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.Cross(GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Calculates the cross product of two vectors.
+</summary>
+            <param name="left">First source vector.</param>
+            <param name="right">Second source vector.</param>
+            <returns>The cross product of the two vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.Dot(GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Calculates the dot product of two vectors.
+</summary>
+            <param name="left">First source vector.</param>
+            <param name="right">Second source vector.</param>
+            <returns>The dot product of the two vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.Normalize(GTA.Math.Vector3)">
+            <summary>
+Converts the vector into a unit vector.
+</summary>
+            <param name="vector">The vector to normalize.</param>
+            <returns>The normalized vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.Lerp(GTA.Math.Vector3,GTA.Math.Vector3,System.Single)">
+            <summary>
+Performs a linear interpolation between two vectors.
+</summary>
+            <param name="start">Start vector.</param>
+            <param name="end">End vector.</param>
+            <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
+            <returns>The linear interpolation of the two vectors.</returns>
+            <remarks>
+This method performs the linear interpolation based on the following formula.
+<code>start + (end - start) * amount</code>
+Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned. 
+</remarks>
+        </member>
+        <member name="M:GTA.Math.Vector3.Clamp(GTA.Math.Vector3,GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Restricts a value to be within a specified range.
+</summary>
+            <param name="value">The value to clamp.</param>
+            <param name="min">The minimum value.</param>
+            <param name="max">The maximum value.</param>
+            <returns>The clamped value.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.Negate(GTA.Math.Vector3)">
+            <summary>
+Reverses the direction of a given vector.
+</summary>
+            <param name="value">The vector to negate.</param>
+            <returns>A vector facing in the opposite direction.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.Divide(GTA.Math.Vector3,System.Single)">
+            <summary>
+Scales a vector by the given value.
+</summary>
+            <param name="value">The vector to scale.</param>
+            <param name="scale">The amount by which to scale the vector.</param>
+            <returns>The scaled vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.Modulate(GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Modulates a vector by another.
+</summary>
+            <param name="left">The first vector to modulate.</param>
+            <param name="right">The second vector to modulate.</param>
+            <returns>The modulated vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.Multiply(GTA.Math.Vector3,System.Single)">
+            <summary>
+Scales a vector by the given value.
+</summary>
+            <param name="value">The vector to scale.</param>
+            <param name="scale">The amount by which to scale the vector.</param>
+            <returns>The scaled vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.Subtract(GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Subtracts two vectors.
+</summary>
+            <param name="left">The first vector to subtract.</param>
+            <param name="right">The second vector to subtract.</param>
+            <returns>The difference of the two vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.Add(GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Adds two vectors.
+</summary>
+            <param name="left">The first vector to add.</param>
+            <param name="right">The second vector to add.</param>
+            <returns>The sum of the two vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.RandomXYZ">
+            <summary>
+Returns a new normalized vector with random X, Y and Z components.
+</summary>
+        </member>
+        <member name="M:GTA.Math.Vector3.RandomXY">
+            <summary>
+Returns a new normalized vector with random X and Y components.
+</summary>
+        </member>
+        <member name="M:GTA.Math.Vector3.Around(System.Single)">
+            <summary>
+Creates a random vector inside the circle around this position.
+</summary>
+        </member>
+        <member name="M:GTA.Math.Vector3.ToHeading">
+            <summary>
+Converts a vector to a heading.
+</summary>
+        </member>
+        <member name="M:GTA.Math.Vector3.SignedAngle(GTA.Math.Vector3,GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Returns the signed angle in degrees between from and to.
+</summary>
+        </member>
+        <member name="M:GTA.Math.Vector3.Angle(GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Returns the angle in degrees between from and to.
+The angle returned is always the acute angle between the two vectors.
+</summary>
+        </member>
+        <member name="M:GTA.Math.Vector3.DistanceSquared2D(GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Calculates the squared distance between two vectors, ignoring the Z-component.
+</summary>
+            <param name="position2">The first vector to calculate the squared distance to the second vector.</param>
+            <param name="position2">The second vector to calculate the squared distance to the first vector.</param>
+            <returns>The squared distance between the two vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.Distance2D(GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Calculates the distance between two vectors, ignoring the Z-component.
+</summary>
+            <param name="position2">The first vector to calculate the distance to the second vector.</param>
+            <param name="position2">The second vector to calculate the distance to the first vector.</param>
+            <returns>The distance between the two vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.DistanceSquared(GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Calculates the squared distance between two vectors.
+</summary>
+            <param name="position2">The first vector to calculate the squared distance to the second vector.</param>
+            <param name="position2">The second vector to calculate the squared distance to the first vector.</param>
+            <returns>The squared distance between the two vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.Distance(GTA.Math.Vector3,GTA.Math.Vector3)">
+            <summary>
+Calculates the distance between two vectors.
+</summary>
+            <param name="position2">The first vector to calculate the distance to the second vector.</param>
+            <param name="position2">The second vector to calculate the distance to the first vector.</param>
+            <returns>The distance between the two vectors.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.DistanceToSquared2D(GTA.Math.Vector3)">
+            <summary>
+Calculates the squared distance between two vectors, ignoring the Z-component.
+</summary>
+            <param name="position">The second vector to calculate the squared distance to.</param>
+            <returns>The distance to the other vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.DistanceTo2D(GTA.Math.Vector3)">
+            <summary>
+Calculates the distance between two vectors, ignoring the Z-component.
+</summary>
+            <param name="position">The second vector to calculate the distance to.</param>
+            <returns>The distance to the other vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.DistanceToSquared(GTA.Math.Vector3)">
+            <summary>
+Calculates the squared distance between two vectors.
+</summary>
+            <param name="position">The second vector to calculate the distance to.</param>
+            <returns>The distance to the other vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.DistanceTo(GTA.Math.Vector3)">
+            <summary>
+Calculates the distance between two vectors.
+</summary>
+            <param name="position">The second vector to calculate the distance to.</param>
+            <returns>The distance to the other vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.Normalize">
+            <summary>
+Converts the vector into a unit vector.
+</summary>
+        </member>
+        <member name="M:GTA.Math.Vector3.LengthSquared">
+            <summary>
+Calculates the squared length of the vector.
+</summary>
+            <returns>The squared length of the vector.</returns>
+        </member>
+        <member name="M:GTA.Math.Vector3.Length">
+            <summary>
+Calculates the length of the vector.
+</summary>
+            <returns>The length of the vector.</returns>
+        </member>
+        <member name="P:GTA.Math.Vector3.RelativeBottom">
+            <summary>
+Returns the relative Bottom vector as used. (0,0,-1)
+</summary>
+        </member>
+        <member name="P:GTA.Math.Vector3.RelativeTop">
+            <summary>
+Returns the relative Top vector. (0,0,1)
+</summary>
+        </member>
+        <member name="P:GTA.Math.Vector3.RelativeBack">
+            <summary>
+Returns the relative Back vector. (0,-1,0)
+</summary>
+        </member>
+        <member name="P:GTA.Math.Vector3.RelativeFront">
+            <summary>
+Returns the relative Front vector. (0,1,0)
+</summary>
+        </member>
+        <member name="P:GTA.Math.Vector3.RelativeLeft">
+            <summary>
+Returns the relative Left vector. (-1,0,0)
+</summary>
+        </member>
+        <member name="P:GTA.Math.Vector3.RelativeRight">
+            <summary>
+Returns the relative Right vector. (1,0,0)
+</summary>
+        </member>
+        <member name="P:GTA.Math.Vector3.WorldWest">
+            <summary>
+Returns the world West vector. (-1,0,0)
+</summary>
+        </member>
+        <member name="P:GTA.Math.Vector3.WorldEast">
+            <summary>
+Returns the world East vector. (1,0,0)
+</summary>
+        </member>
+        <member name="P:GTA.Math.Vector3.WorldSouth">
+            <summary>
+Returns the world South vector. (0,-1,0)
+</summary>
+        </member>
+        <member name="P:GTA.Math.Vector3.WorldNorth">
+            <summary>
+Returns the world North vector. (0,1,0)
+</summary>
+        </member>
+        <member name="P:GTA.Math.Vector3.WorldDown">
+            <summary>
+Returns the world Down vector. (0,0,-1)
+</summary>
+        </member>
+        <member name="P:GTA.Math.Vector3.WorldUp">
+            <summary>
+Returns the world Up vector. (0,0,1)
+</summary>
+        </member>
+        <member name="P:GTA.Math.Vector3.Zero">
+            <summary>
+Returns a null vector. (0,0,0)
+</summary>
+        </member>
+        <member name="P:GTA.Math.Vector3.Normalized">
+            <summary>
+Returns this vector with a magnitude of 1.
+</summary>
+        </member>
+        <member name="M:GTA.Math.Vector3.#ctor(System.Single,System.Single,System.Single)">
+            <summary>
+Initializes a new instance of the <see cref="T:GTA.Math.Vector3" /> class.
+</summary>
+            <param name="x">Initial value for the X component of the vector.</param>
+            <param name="y">Initial value for the Y component of the vector.</param>
+            <param name="z">Initial value for the Z component of the vector.</param>
+        </member>
+        <member name="F:GTA.Math.Vector3.Z">
+            <summary>
+Gets or sets the Z component of the vector.
+</summary>
+            <value>The Z component of the vector.</value>
+        </member>
+        <member name="F:GTA.Math.Vector3.Y">
+            <summary>
+Gets or sets the Y component of the vector.
+</summary>
+            <value>The Y component of the vector.</value>
+        </member>
+        <member name="F:GTA.Math.Vector3.X">
+            <summary>
+Gets or sets the X component of the vector.
+</summary>
+            <value>The X component of the vector.</value>
+        </member>
+    </members>
+</doc>

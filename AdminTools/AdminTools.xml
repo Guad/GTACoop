@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<AdminSettings xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Debug>false</Debug>
+  <KickOnDefaultNickName>true</KickOnDefaultNickName>
+  <KickOnNameDifference>false</KickOnNameDifference>
+  <SocialClubOnly>false</SocialClubOnly>
+  <MOTD>Welcome to this GTA 5 Co-op Server! Max Ping: 250</MOTD>
+  <MaxPing>250</MaxPing>
+  <AntiClones>true</AntiClones>
+  <KickOnDifferentScript>true</KickOnDifferentScript>
+  <MinScriptVersion>VERSION_0_9_2</MinScriptVersion>
+  <KickOnOutdatedGame>false</KickOnOutdatedGame>
+  <MinGameVersion>25</MinGameVersion>
+  <ColoredNicknames>true</ColoredNicknames>
+  <OnlyAsciiNickName>true</OnlyAsciiNickName>
+  <OnlyAsciiUserName>false</OnlyAsciiUserName>
+  <LimitNickNames>true</LimitNickNames>
+</AdminSettings>
