@@ -7,7 +7,7 @@ using System.Xml.Serialization;
 using GTA;
 using GTA.Math;
 using GTA.Native;
-
+//using GTAServer;
 namespace GTACoOp
 {
     public static class Util
@@ -106,11 +106,51 @@ namespace GTACoOp
             return settings;
         }
 
+        public static ServerSettings ReadServerSettings(string path)
+        {
+            var ser = new XmlSerializer(typeof(ServerSettings));
+
+            ServerSettings settings = null;
+
+            if (File.Exists(path))
+            {
+                using (var stream = File.OpenRead(path)) settings = (ServerSettings)ser.Deserialize(stream);
+
+                using (var stream = new FileStream(path, File.Exists(path) ? FileMode.Truncate : FileMode.Create, FileAccess.ReadWrite)) ser.Serialize(stream, settings);
+            }
+            else
+            {
+                using (var stream = File.OpenWrite(path)) ser.Serialize(stream, settings = new ServerSettings());
+            }
+
+            return settings;
+        }
+
         public static void SaveSettings(string path)
         {
-            var ser = new XmlSerializer(typeof(PlayerSettings));
-            using (var stream = new FileStream(path, File.Exists(path) ? FileMode.Truncate : FileMode.Create, FileAccess.ReadWrite)) ser.Serialize(stream, Main.PlayerSettings);
+            try {
+                if (string.IsNullOrEmpty(path)) { path = Program.Location + Path.DirectorySeparatorChar + "ClientSettings.xml"; }
+                var ser = new XmlSerializer(typeof(PlayerSettings));
+                using (var stream = new FileStream(path, File.Exists(path) ? FileMode.Truncate : FileMode.Create, FileAccess.ReadWrite)) ser.Serialize(stream, Main.PlayerSettings);
+                if (Main.PlayerSettings.Logging)
+                {
+                    File.AppendAllText("scripts\\GTACOOP.log", "Saved settings to " + path);
+                }
+            } catch (Exception ex) {
+                UI.Notify("Error saving player settings: " + ex.Message);
+            }
         }
+
+        public static void SaveServerSettings(string path)
+        {
+            try
+            {
+                var ser = new XmlSerializer(typeof(ServerSettings));
+            using (var stream = new FileStream(path, File.Exists(path) ? FileMode.Truncate : FileMode.Create, FileAccess.ReadWrite)) ser.Serialize(stream, Main.ServerSettings);
+            } catch (Exception ex) {
+                UI.Notify("Error saving server settings: " + ex.Message);
+            }
+}
 
         public static Vector3 GetLastWeaponImpact(Ped ped)
         {

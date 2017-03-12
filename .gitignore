@@ -211,3 +211,7 @@ GeneratedArtifacts/
 _Pvt_Extensions/
 ModelManifest.xml
 *.csproj
+*.csproj
+*.csproj
+gtaserver.core/serverSettings.xml
+gtaserver.core/*.ipl

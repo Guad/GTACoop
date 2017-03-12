@@ -41,10 +41,14 @@ namespace GTACoOp
             output += "VehModel: " + player.Value.VehicleHash + "\n";
             output += "Last Updated: " + player.Value.LastUpdateReceived + "\n";
             output += "Latency: " + player.Value.Latency + "\n";
-            output += "Character Pos: " + player.Value.Character?.Position + "\n";
-            output += "CharacterIsInVeh: " + player.Value.Character?.IsInVehicle() + "\n";
+            if (player.Value.Character != null) {
+                output += "Character Pos: " + player.Value.Character.Position + "\n";
+                output += "CharacterIsInVeh: " + player.Value.Character.IsInVehicle() + "\n";
+                if (player.Value.Character.CurrentVehicle != null)
+                    output += "Char Speed: " + player.Value.Character.CurrentVehicle.Speed + "\n";
+            }
             output += "Net Speed: " + player.Value.Speed + "\n";
-            output += "Char Speed: " + player.Value.Character?.CurrentVehicle?.Speed + "\n";
+
             
             new UIResText(output, new Point(500, 10), 0.5f) {Outline = true}.Draw();
         }

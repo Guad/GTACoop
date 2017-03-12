@@ -25,21 +25,43 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>..\..\..\..\SERVERS\GameServer\Grand Theft Auto\GTA V\gamemodes\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Colorful.Console, Version=1.0.5.0, Culture=neutral, PublicKeyToken=cc1f2a0d977b1e28, processorArchitecture=MSIL">
+      <HintPath>..\packages\Colorful.Console.1.0.5\lib\net452\Colorful.Console.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="GTAServer">
-      <HintPath>..\Server\bin\Release\GTAServer.exe</HintPath>
+      <HintPath>..\Server\bin\Debug\GTAServer.exe</HintPath>
     </Reference>
     <Reference Include="Lidgren.Network, Version=2012.1.7.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\libs\Lidgren.Network.dll</HintPath>
+      <HintPath>..\packages\Lidgren.Network.1.0.2\lib\net451\Lidgren.Network.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="MaxMind.Db, Version=2.0.0.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
+      <HintPath>..\packages\MaxMind.Db.2.0.0\lib\net45\MaxMind.Db.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="MaxMind.GeoIP2, Version=2.6.0.0, Culture=neutral, PublicKeyToken=66afa4cc5ae853ac, processorArchitecture=MSIL">
+      <HintPath>..\packages\MaxMind.GeoIP2.2.6.0\lib\net45\MaxMind.GeoIP2.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="protobuf-net, Version=2.1.0.0, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
+      <HintPath>..\packages\protobuf-net.2.1.0\lib\net451\protobuf-net.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -52,6 +74,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Race.cs" />
     <Compile Include="VehicleHashes.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

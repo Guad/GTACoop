@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GTACoOp", "Client\GTACoOp.csproj", "{1BC495C9-DC44-478A-9E16-3FC482A8B850}"
 EndProject
@@ -10,6 +10,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminTools", "AdminTools\AdminTools.csproj", "{158CCEB2-E6EC-457B-BA61-E448BD6B0F40}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Race", "Race\Race.csproj", "{988CD1D8-48ED-4C19-8953-79FAFDBB34DD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lidgren.Network", "lidgren.network\Lidgren.Network\Lidgren.Network.csproj", "{49BA1C69-6104-41AC-A5D8-B54FA9F696E8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{988CD1D8-48ED-4C19-8953-79FAFDBB34DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{988CD1D8-48ED-4C19-8953-79FAFDBB34DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{988CD1D8-48ED-4C19-8953-79FAFDBB34DD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{49BA1C69-6104-41AC-A5D8-B54FA9F696E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{49BA1C69-6104-41AC-A5D8-B54FA9F696E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{49BA1C69-6104-41AC-A5D8-B54FA9F696E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{49BA1C69-6104-41AC-A5D8-B54FA9F696E8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -48,7 +48,7 @@ namespace GTACoOp
                 }
 
                 _isFocused = value;
-                
+
             }
         }
 
@@ -66,7 +66,7 @@ namespace GTACoOp
 
             _mainScaleform.Render2D();
 
-            
+
             if (!IsFocused) return;
             Function.Call(Hash.DISABLE_ALL_CONTROL_ACTIONS, 0);
         }
@@ -74,9 +74,17 @@ namespace GTACoOp
         public void AddMessage(string sender, string msg)
         {
             if (string.IsNullOrEmpty(sender))
+            {
                 _mainScaleform.CallFunction("ADD_MESSAGE", "", SanitizeString(msg));
+                if(Main.PlayerSettings.ChatLog)
+                    System.IO.File.AppendAllText("scripts\\GTACOOP_chat.log", "[" + DateTime.UtcNow + "] " + msg + "\n");
+            }
             else
+            {
                 _mainScaleform.CallFunction("ADD_MESSAGE", SanitizeString(sender) + ":", SanitizeString(msg));
+                if (Main.PlayerSettings.ChatLog)
+                    System.IO.File.AppendAllText("scripts\\GTACOOP_chat.log", "[" + DateTime.UtcNow + "] " + sender + ": " + msg + "\n");
+            }
         }
 
         public string SanitizeString(string input)
@@ -84,7 +92,7 @@ namespace GTACoOp
             input = Regex.Replace(input, "~.~", "", RegexOptions.IgnoreCase);
             return input;
         }
-        
+
         public void OnKeyDown(Keys key)
         {
             if (key == Keys.PageUp && Main.IsOnServer())
@@ -140,7 +148,7 @@ namespace GTACoOp
         public static extern int ToUnicodeEx(uint virtualKeyCode, uint scanCode,
         byte[] keyboardState,
         [Out, MarshalAs(UnmanagedType.LPWStr, SizeConst = 64)]
-        StringBuilder receivingBuffer,
+                StringBuilder receivingBuffer,
         int bufferSize, uint flags, IntPtr kblayout);
 
         [DllImport("user32.dll")]
